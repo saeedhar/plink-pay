@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@plugin "flowbite-react/plugin/tailwindcss";
+@source "../.flowbite-react/class-list.json";
+
+@theme {
+  --color-brand-600: #E83E99;
+  --color-brand-700: #D61E85;
+  --color-indigo-700: #2E248F;
+  --color-gray-25: #F5F6F7;
+  --color-gray-50: #F9FAFB;
+  --color-gray-200: #E5E7EB;
+  --color-gray-600: #6B7280;
+  --color-gray-900: #0B0B0F;
+  --color-coolgray-200: #E6E8EC;
+
+  --shadow-wizardly-lg: 0 25px 50px -12px rgba(0,0,0,0.25);
+}
+
+html, body, #root { height: 100%; }
