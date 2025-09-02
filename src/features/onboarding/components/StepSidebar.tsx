@@ -9,8 +9,8 @@ export interface StepSidebarProps {
 export default function StepSidebar({ steps, activeIndex, logoSrc }: StepSidebarProps) {
   return (
     <aside className="relative w-80 text-white overflow-visible">
-      {/* Purple background with rounded top-right corner */}
-      <div className="absolute inset-0 bg-[#2E248F] rounded-tr-[88px]" />
+      {/* Purple background */}
+      <div className="absolute inset-0 bg-[#2E248F]" />
 
       {/* Content */}
       <div className="relative z-10 p-8 h-full flex flex-col">
