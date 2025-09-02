@@ -1,1 +1,2 @@
-export { default as BusinessTypeOption } from './BusinessTypeOption';
+export { BusinessTypeOption } from './BusinessTypeOption';
+export { default as StepSidebar } from './StepSidebar';
