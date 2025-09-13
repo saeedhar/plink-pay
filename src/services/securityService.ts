@@ -99,7 +99,9 @@ export class SecurityService {
    * Get time until session expires
    */
   getTimeUntilExpiry(): number {
-    if (!this.session) return 0;
+    if (!this.session || !this.session.isActive) {
+      return Infinity; // No expiry if no active session
+    }
     
     const elapsed = Date.now() - this.session.lastActivity;
     return Math.max(0, this.config.sessionTimeoutMs - elapsed);
@@ -109,7 +111,9 @@ export class SecurityService {
    * Get time until warning should be shown
    */
   getTimeUntilWarning(): number {
-    if (!this.session) return 0;
+    if (!this.session || !this.session.isActive) {
+      return Infinity; // Never show warning if no active session
+    }
     
     const timeUntilExpiry = this.getTimeUntilExpiry();
     return Math.max(0, timeUntilExpiry - this.config.warningTimeoutMs);
@@ -126,7 +130,10 @@ export class SecurityService {
    * Check if warning should be shown
    */
   shouldShowWarning(): boolean {
-    return this.getTimeUntilWarning() <= 0 && !this.session?.warningShown;
+    if (!this.session || !this.session.isActive) {
+      return false; // No warning if no active session
+    }
+    return this.getTimeUntilWarning() <= 0 && !this.session.warningShown;
   }
 
   /**
