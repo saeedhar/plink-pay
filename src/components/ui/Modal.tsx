@@ -262,8 +262,9 @@ export interface AlertModalProps {
   title: string;
   message: string;
   buttonLabel?: string;
-  variant?: 'primary' | 'danger';
+  variant?: 'primary' | 'danger' | 'success' | 'info';
   icon?: ReactNode;
+  children?: ReactNode;
 }
 
 export function AlertModal({
@@ -273,7 +274,8 @@ export function AlertModal({
   message,
   buttonLabel = 'OK',
   variant = 'primary',
-  icon
+  icon,
+  children
 }: AlertModalProps) {
   return (
     <Modal
@@ -284,13 +286,15 @@ export function AlertModal({
       primaryButton={{
         label: buttonLabel,
         onClick: onClose,
-        variant
+        variant: variant === 'danger' ? 'danger' : 'primary'
       }}
       size="sm"
     >
-      <p className="text-gray-600 leading-relaxed">
-        {message}
-      </p>
+      {children ? children : (
+        <p className="text-gray-600 leading-relaxed">
+          {message}
+        </p>
+      )}
     </Modal>
   );
 }

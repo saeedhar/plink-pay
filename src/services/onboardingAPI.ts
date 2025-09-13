@@ -1,7 +1,10 @@
 /**
  * Onboarding API service layer with typed responses
- * Implements BRD-specified endpoints and error handling
+ * Implements BRD-specified endpoints with caching and error handling
  */
+
+import { globalCache, verificationCache } from './cacheService';
+import { globalScreeningService, complianceService } from './complianceService';
 
 // ==========================================
 // TYPE DEFINITIONS
@@ -212,14 +215,19 @@ export async function verifyOTP(
 // ==========================================
 
 export async function checkPhoneDuplicate(phoneNumber: string): Promise<{ isDuplicate: boolean }> {
-  // For demo purposes, simulate API call
-  await new Promise(resolve => setTimeout(resolve, 800));
+  const cacheKey = `phone_duplicate:${phoneNumber}`;
   
-  // Simulate some phone numbers being duplicates
-  const duplicates = ['0501234567', '0509876543'];
-  return {
-    isDuplicate: duplicates.includes(phoneNumber.replace(/\s/g, ''))
-  };
+  // Check cache first (valid for 5 minutes)
+  return await globalCache.getOrSet(cacheKey, async () => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Simulate some phone numbers being duplicates
+    const duplicates = ['0501234567', '0509876543'];
+    return {
+      isDuplicate: duplicates.includes(phoneNumber.replace(/\s/g, ''))
+    };
+  }, 5 * 60 * 1000);
 }
 
 // ==========================================
@@ -227,22 +235,27 @@ export async function checkPhoneDuplicate(phoneNumber: string): Promise<{ isDupl
 // ==========================================
 
 export async function verifyCR(crNumber: string): Promise<CRVerificationResponse> {
-  // For demo purposes, simulate API call
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  const cacheKey = `cr_verification:${crNumber}`;
   
-  // Simulate some CR numbers failing verification
-  const invalidCRs = ['1234567890', '0000000000'];
-  
-  if (invalidCRs.includes(crNumber.replace(/\D/g, ''))) {
-    throw new CRVerificationError('CR Number not found in commercial registry');
-  }
-  
-  return {
-    valid: true,
-    companyName: 'Demo Company Ltd.',
-    registrationDate: '2020-01-15',
-    status: 'active'
-  };
+  // Check cache first (valid for 10 minutes)
+  return await verificationCache.getOrSet(cacheKey, async () => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Simulate some CR numbers failing verification
+    const invalidCRs = ['1234567890', '0000000000'];
+    
+    if (invalidCRs.includes(crNumber.replace(/\D/g, ''))) {
+      throw new CRVerificationError('CR Number not found in commercial registry');
+    }
+    
+    return {
+      valid: true,
+      companyName: 'Demo Company Ltd.',
+      registrationDate: '2020-01-15',
+      status: 'active' as const
+    };
+  }, 10 * 60 * 1000);
 }
 
 // ==========================================
@@ -344,15 +357,30 @@ export async function submitKYB(kybData: {
     deposits?: string;
   };
 }): Promise<KYBSubmitResponse> {
-  // For demo purposes, simulate API call
+  // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 2000));
   
-  // Simulate risk rating based on data
+  // Enhanced risk rating with Mozon integration simulation
   let riskRating: 'low' | 'medium' | 'high' = 'low';
+  
+  // High risk activities
+  const highRiskActivities = ['financial', 'crypto', 'money-exchange'];
+  const highRiskPurposes = ['international-payments', 'other'];
   
   if (kybData.annualRevenue === 'above-10m') {
     riskRating = 'high';
-  } else if (kybData.purposeOfAccount.includes('other')) {
+  } else if (
+    highRiskActivities.includes(kybData.businessActivity) ||
+    kybData.purposeOfAccount.some(purpose => highRiskPurposes.includes(purpose))
+  ) {
+    riskRating = 'medium';
+  }
+
+  // Simulate Mozon risk assessment integration
+  const mozonRiskScore = Math.random() * 100;
+  if (mozonRiskScore > 80) {
+    riskRating = 'high';
+  } else if (mozonRiskScore > 50) {
     riskRating = 'medium';
   }
   
@@ -368,34 +396,61 @@ export async function submitKYB(kybData: {
 // ==========================================
 
 export async function performGlobalScreening(data: {
-  name: string;
+  firstName: string;
+  lastName: string;
   idNumber: string;
   phoneNumber: string;
-}): Promise<{ isClean: boolean; riskScore: number }> {
-  // For demo purposes, simulate screening
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  dateOfBirth?: string;
+  nationality?: string;
+}): Promise<{ isClean: boolean; riskScore: number; riskLevel: string }> {
+  const result = await globalScreeningService.performScreening({
+    firstName: data.firstName,
+    lastName: data.lastName,
+    idNumber: data.idNumber,
+    phoneNumber: data.phoneNumber,
+    dateOfBirth: data.dateOfBirth,
+    nationality: data.nationality
+  });
   
   return {
-    isClean: true,
-    riskScore: 0.15 // Low risk score
+    isClean: result.isClean,
+    riskScore: result.riskScore,
+    riskLevel: result.riskLevel
   };
 }
 
-export async function submitCompliance(data: any): Promise<void> {
-  // For demo purposes, simulate compliance submission
-  await new Promise(resolve => setTimeout(resolve, 1000));
+export async function submitCompliance(data: {
+  customerData: any;
+  screeningResult: any;
+  kybData: any;
+  documents?: any[];
+}): Promise<{ submissionId: string }> {
+  const submission = {
+    customerData: data.customerData,
+    screeningResult: data.screeningResult,
+    kybData: data.kybData,
+    documents: data.documents || [],
+    riskAssessment: await complianceService.performRiskAssessment(
+      data.customerData,
+      data.screeningResult,
+      data.kybData
+    ),
+    submittedAt: new Date().toISOString(),
+    submittedBy: 'ONBOARDING_SYSTEM'
+  };
+  
+  return await complianceService.submitCompliance(submission);
 }
 
 export async function getComplianceDecision(
-  referenceId: string
+  submissionId: string
 ): Promise<ComplianceDecisionResponse> {
-  // For demo purposes, simulate compliance decision
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  const decision = await complianceService.getComplianceDecision(submissionId);
   
   return {
-    status: 'approved',
-    riskScore: 0.25,
-    requiresManualReview: false
+    status: decision.status.toLowerCase() as any,
+    riskScore: decision.riskScore,
+    requiresManualReview: decision.requiresManualReview
   };
 }
 
