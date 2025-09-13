@@ -1,0 +1,320 @@
+/**
+ * Accessibility and RTL CSS Utilities
+ * Implements BRD requirements for WCAG compliance and RTL support
+ */
+
+/* Screen Reader Only - Hide visually but keep for screen readers */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Focus visible styles for better keyboard navigation */
+.focus-visible:focus {
+  outline: 2px solid #2E248F !important;
+  outline-offset: 2px !important;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .high-contrast {
+    --tw-border-opacity: 1;
+    --tw-bg-opacity: 1;
+    --tw-text-opacity: 1;
+  }
+  
+  .high-contrast button {
+    border: 2px solid currentColor !important;
+  }
+  
+  .high-contrast input,
+  .high-contrast select,
+  .high-contrast textarea {
+    border: 2px solid currentColor !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl\:text-left {
+  text-align: left;
+}
+
+[dir="rtl"] .rtl\:text-right {
+  text-align: right;
+}
+
+[dir="rtl"] .rtl\:ml-auto {
+  margin-left: auto;
+}
+
+[dir="rtl"] .rtl\:mr-auto {
+  margin-right: auto;
+}
+
+[dir="rtl"] .rtl\:flex-row-reverse {
+  flex-direction: row-reverse;
+}
+
+/* RTL-aware spacing utilities */
+.ms-1 { margin-inline-start: 0.25rem; }
+.ms-2 { margin-inline-start: 0.5rem; }
+.ms-3 { margin-inline-start: 0.75rem; }
+.ms-4 { margin-inline-start: 1rem; }
+.ms-6 { margin-inline-start: 1.5rem; }
+.ms-8 { margin-inline-start: 2rem; }
+
+.me-1 { margin-inline-end: 0.25rem; }
+.me-2 { margin-inline-end: 0.5rem; }
+.me-3 { margin-inline-end: 0.75rem; }
+.me-4 { margin-inline-end: 1rem; }
+.me-6 { margin-inline-end: 1.5rem; }
+.me-8 { margin-inline-end: 2rem; }
+
+.ps-1 { padding-inline-start: 0.25rem; }
+.ps-2 { padding-inline-start: 0.5rem; }
+.ps-3 { padding-inline-start: 0.75rem; }
+.ps-4 { padding-inline-start: 1rem; }
+.ps-6 { padding-inline-start: 1.5rem; }
+.ps-8 { padding-inline-start: 2rem; }
+.ps-10 { padding-inline-start: 2.5rem; }
+.ps-12 { padding-inline-start: 3rem; }
+
+.pe-1 { padding-inline-end: 0.25rem; }
+.pe-2 { padding-inline-end: 0.5rem; }
+.pe-3 { padding-inline-end: 0.75rem; }
+.pe-4 { padding-inline-end: 1rem; }
+.pe-6 { padding-inline-end: 1.5rem; }
+.pe-8 { padding-inline-end: 2rem; }
+.pe-10 { padding-inline-end: 2.5rem; }
+.pe-12 { padding-inline-end: 3rem; }
+
+/* Border utilities for RTL */
+.border-s { border-inline-start-width: 1px; }
+.border-e { border-inline-end-width: 1px; }
+.border-s-2 { border-inline-start-width: 2px; }
+.border-e-2 { border-inline-end-width: 2px; }
+
+/* Text alignment utilities */
+.text-start { text-align: start; }
+.text-end { text-align: end; }
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #2E248F;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* Focus indicators */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-[#2E248F] focus:ring-offset-2;
+}
+
+.focus-ring-inset {
+  @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#2E248F];
+}
+
+/* Accessible color combinations */
+.text-accessible-contrast {
+  color: #1a1a1a;
+}
+
+.bg-accessible-contrast {
+  background-color: #ffffff;
+}
+
+/* Error states with sufficient contrast */
+.error-text {
+  color: #dc2626; /* Red-600 - WCAG AA compliant */
+}
+
+.error-border {
+  border-color: #dc2626;
+}
+
+.error-bg {
+  background-color: #fef2f2; /* Red-50 */
+}
+
+/* Success states */
+.success-text {
+  color: #059669; /* Green-600 - WCAG AA compliant */
+}
+
+.success-border {
+  border-color: #059669;
+}
+
+.success-bg {
+  background-color: #ecfdf5; /* Green-50 */
+}
+
+/* Warning states */
+.warning-text {
+  color: #d97706; /* Amber-600 - WCAG AA compliant */
+}
+
+.warning-border {
+  border-color: #d97706;
+}
+
+.warning-bg {
+  background-color: #fffbeb; /* Amber-50 */
+}
+
+/* Loading states */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* Accessible form states */
+.form-field-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-field-required::after {
+  content: " *";
+  color: #dc2626;
+}
+
+/* Accessible button states */
+.btn-loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin-left: -8px;
+  margin-top: -8px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Accessible modal styles */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Accessible stepper styles */
+.stepper-step-active {
+  background-color: #2E248F;
+  color: white;
+}
+
+.stepper-step-completed {
+  background-color: #10b981; /* Green-500 */
+  color: white;
+}
+
+.stepper-step-inactive {
+  background-color: #e5e7eb; /* Gray-200 */
+  color: #6b7280; /* Gray-500 */
+}
+
+/* Accessible table styles */
+.table-accessible th {
+  background-color: #f9fafb; /* Gray-50 */
+  font-weight: 600;
+  text-align: left;
+}
+
+.table-accessible tr:nth-child(even) {
+  background-color: #f9fafb; /* Gray-50 */
+}
+
+.table-accessible tr:hover {
+  background-color: #f3f4f6; /* Gray-100 */
+}
+
+/* Print styles for accessibility */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  a, a:visited {
+    text-decoration: underline;
+  }
+  
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+  
+  abbr[title]:after {
+    content: " (" attr(title) ")";
+  }
+}
