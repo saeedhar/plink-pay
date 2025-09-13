@@ -280,8 +280,9 @@ export default function OTPVerification() {
               </div>
             )}
         </div>
-          </Modal>
+        </Modal>
         </div>
+      </div>
     </>
   );
 }
