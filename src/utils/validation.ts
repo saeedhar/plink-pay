@@ -22,23 +22,45 @@ export const SAUDI_PATTERNS = {
 };
 
 /**
+ * Normalizes Saudi mobile number to E.164 format (+9665XXXXXXXX)
+ * Accepts: +9665XXXXXXXX, 05XXXXXXXX, or 5XXXXXXXX
+ */
+export const normalizeSaudiMobile = (mobile: string): string => {
+  // Remove all non-digit characters
+  const cleaned = mobile.replace(/\D/g, '');
+  
+  // Handle different input formats
+  if (cleaned.startsWith('9665') && cleaned.length === 13) {
+    // +9665XXXXXXXX format
+    return `+${cleaned}`;
+  } else if (cleaned.startsWith('05') && cleaned.length === 10) {
+    // 05XXXXXXXX format
+    return `+966${cleaned.substring(1)}`;
+  } else if (cleaned.startsWith('5') && cleaned.length === 9) {
+    // 5XXXXXXXX format  
+    return `+966${cleaned}`;
+  }
+  
+  // Return as-is if doesn't match expected patterns
+  return mobile;
+};
+
+/**
  * Validates Saudi mobile number format
- * Format: 5XXXXXXXX (9 digits starting with 5)
+ * Accepts: +9665XXXXXXXX, 05XXXXXXXX, or 5XXXXXXXX
+ * Stores: E.164 format (+9665XXXXXXXX)
  */
 export const validateSaudiMobile = (mobile: string): string | undefined => {
   if (!mobile.trim()) {
     return "Mobile number is required";
   }
   
-  // Remove any spaces or formatting
-  const cleanMobile = mobile.replace(/\s+/g, '');
+  const normalized = normalizeSaudiMobile(mobile);
   
-  if (cleanMobile.length !== 9) {
-    return "Saudi mobile number must be exactly 9 digits";
-  }
-  
-  if (!SAUDI_PATTERNS.MOBILE.test(cleanMobile)) {
-    return "Invalid Saudi mobile number. Must start with 5 and be 9 digits";
+  // Check if normalized number is valid E.164 Saudi mobile
+  const e164Pattern = /^\+9665[0-9]{8}$/;
+  if (!e164Pattern.test(normalized)) {
+    return "Enter a valid Saudi mobile number";
   }
   
   return undefined;
@@ -94,25 +116,30 @@ export const validateSaudiCR = (cr: string): string | undefined => {
 };
 
 /**
- * Saudi National ID checksum validation algorithm
- * Based on the official Saudi ID validation algorithm
+ * Saudi National ID Luhn algorithm validation
+ * Based on the official Saudi ID validation using Luhn checksum
  */
 const validateSaudiIDChecksum = (id: string): boolean => {
   if (id.length !== 10) return false;
   
   let sum = 0;
+  
+  // Process first 9 digits
   for (let i = 0; i < 9; i++) {
-    const digit = parseInt(id[i]);
-    if (i % 2 === 0) {
-      // Even positions (0, 2, 4, 6, 8): multiply by 1
-      sum += digit;
-    } else {
-      // Odd positions (1, 3, 5, 7): multiply by 2
-      const doubled = digit * 2;
-      sum += doubled > 9 ? doubled - 9 : doubled;
+    let digit = parseInt(id[i]);
+    
+    // Every second digit from right gets doubled (positions 1,3,5,7)
+    if ((9 - i) % 2 === 0) {
+      digit *= 2;
+      if (digit > 9) {
+        digit = Math.floor(digit / 10) + (digit % 10);
+      }
     }
+    
+    sum += digit;
   }
   
+  // Calculate check digit
   const checkDigit = (10 - (sum % 10)) % 10;
   return checkDigit === parseInt(id[9]);
 };
@@ -181,15 +208,43 @@ export const getPasswordRequirements = (password: string) => {
  */
 export const formatters = {
   /**
-   * Formats phone number as user types: 555 123 456
+   * Formats phone number as user types: supports multiple formats
+   * Handles: +966 5XXXX XXXX, 05XXXX XXXX, or 5XXXX XXXX
    */
   phone: (value: string): string => {
-    const numbers = value.replace(/\D/g, '').substring(0, 9);
-    if (numbers.length >= 6) {
-      return `${numbers.substring(0, 3)} ${numbers.substring(3, 6)} ${numbers.substring(6)}`;
-    } else if (numbers.length >= 3) {
-      return `${numbers.substring(0, 3)} ${numbers.substring(3)}`;
+    const numbers = value.replace(/\D/g, '');
+    
+    // Handle +966 format
+    if (numbers.startsWith('9665') || numbers.startsWith('966')) {
+      const digits = numbers.startsWith('9665') ? numbers.substring(4) : numbers.substring(3);
+      if (digits.length >= 6) {
+        return `+966 ${digits.substring(0, 1)} ${digits.substring(1, 5)} ${digits.substring(5, 9)}`;
+      } else if (digits.length >= 1) {
+        return `+966 ${digits.substring(0, 1)} ${digits.substring(1)}`;
+      }
+      return '+966 ';
     }
+    
+    // Handle 05 format
+    if (numbers.startsWith('05')) {
+      const digits = numbers.substring(1);
+      if (digits.length >= 6) {
+        return `0${digits.substring(0, 1)} ${digits.substring(1, 5)} ${digits.substring(5, 9)}`;
+      } else if (digits.length >= 1) {
+        return `0${digits.substring(0, 1)} ${digits.substring(1)}`;
+      }
+      return '05';
+    }
+    
+    // Handle 5 format
+    if (numbers.startsWith('5')) {
+      if (numbers.length >= 6) {
+        return `${numbers.substring(0, 1)} ${numbers.substring(1, 5)} ${numbers.substring(5, 9)}`;
+      } else if (numbers.length >= 1) {
+        return `${numbers.substring(0, 1)} ${numbers.substring(1)}`;
+      }
+    }
+    
     return numbers;
   },
   
