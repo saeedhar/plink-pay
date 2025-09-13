@@ -6,13 +6,12 @@ import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 
 export default function NafathPage() {
-  const { state } = useOnboarding();
+  const { state, dispatch } = useOnboarding();
 
   useEffect(() => {
     // Set current step in FSM
-    const { dispatch } = useOnboarding();
     dispatch({ type: 'SET_CURRENT_STEP', payload: 'nafath' });
-  }, []);
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen bg-gray-50">
