@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface StepSidebarProps {
   steps: string[];
   activeIndex: number; // 0-based

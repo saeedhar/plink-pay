@@ -87,12 +87,7 @@ export default function CRNumberEntry() {
             <div className="text-center">
               <button
                 onClick={handleNext}
-                disabled={!crNumber || !!validateCRNumber(crNumber)}
-                className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
-                  !crNumber || !!validateCRNumber(crNumber)
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
-                }`}
+                className="bg-[#2E248F] text-white px-12 py-4 rounded-lg font-semibold hover:bg-[#1a1a5a] transition-colors text-lg w-full"
               >
                 Next
               </button>

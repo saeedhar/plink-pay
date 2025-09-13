@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { BiHide, BiShow } from "react-icons/bi";
 
 export interface CustomInputProps {

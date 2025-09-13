@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PasswordIcon from "../../../assets/password.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import RightSectionImage from "../../../assets/right-section-password.png";
@@ -8,6 +9,7 @@ export default function PasswordSetup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showErrors, setShowErrors] = useState(false);
+  const navigate = useNavigate();
 
   // Validation functions
   const validatePassword = (value: string): string | undefined => {

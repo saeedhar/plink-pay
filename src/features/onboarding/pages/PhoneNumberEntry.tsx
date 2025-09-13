@@ -5,7 +5,7 @@ import SignupIcon from "../../../assets/signup.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { CustomInput } from "../components/CustomInput";
-import { validateSaudiMobile, normalizeSaudiMobile, formatters, cleanInput } from "../../../utils/validation";
+import { validateSaudiMobile, formatters, cleanInput } from "../../../utils/validation";
 
 export default function PhoneNumberEntry() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -14,7 +14,9 @@ export default function PhoneNumberEntry() {
 
   // Enhanced Saudi phone number validation
   const validatePhoneNumber = (value: string): string | undefined => {
-    return validateSaudiMobile(value);
+    // Clean the input (remove formatting)
+    const cleanNumber = cleanInput(value);
+    return validateSaudiMobile(cleanNumber);
   };
 
   const handleNext = () => {
@@ -24,9 +26,7 @@ export default function PhoneNumberEntry() {
       return;
     }
     
-    // Store in E.164 format
-    const normalizedPhone = normalizeSaudiMobile(phoneNumber);
-    console.log("Phone number (E.164):", normalizedPhone);
+    console.log("Phone number:", cleanInput(phoneNumber));
     navigate("/onboarding/cr-number");
   };
 
@@ -69,35 +69,27 @@ export default function PhoneNumberEntry() {
               <CustomInput
                 id="phone"
                 label="Phone Number"
-                placeholder="555 123 456 or 05 1234 5678"
+                placeholder="555 123 456"
                 value={phoneNumber}
                 onChange={(value) => {
                   setPhoneNumber(value);
                   setShowError(false); // Clear error when user types
                 }}
                 type="tel"
+                prefix="+966"
                 formatter={formatters.phone}
-                maxLength={15} // Support longer formats
+                maxLength={11} // 9 digits + 2 spaces
                 validation={validatePhoneNumber}
                 showError={showError}
                 realTimeValidation={true}
                 autoComplete="tel"
               />
-              {/* Helper text for multiple formats */}
-              <p className="text-sm text-gray-500 mt-2">
-                Accepts: +966 5XXXX XXXX, 05XXXX XXXX, or 5XXXX XXXX
-              </p>
             </div>
 
             <div className="text-center">
               <button
                 onClick={handleNext}
-                disabled={!phoneNumber || !!validatePhoneNumber(phoneNumber)}
-                className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
-                  !phoneNumber || !!validatePhoneNumber(phoneNumber)
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
-                }`}
+                className="bg-[#2E248F] text-white px-12 py-4 rounded-lg font-semibold hover:bg-[#1a1a5a] transition-colors text-lg w-full"
               >
                 Next
               </button>

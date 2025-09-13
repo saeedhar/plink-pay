@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface BusinessTypeOptionProps {
   id: string;
   name: string;
@@ -7,26 +9,30 @@ export interface BusinessTypeOptionProps {
 }
 
 export function BusinessTypeOption({
-  id, name, icon, isSelected, onSelect,
+  id,
+  name,
+  icon,
+  isSelected,
+  onSelect,
 }: BusinessTypeOptionProps) {
   return (
     <button
       type="button"
       onClick={() => onSelect(id)}
-      className={`w-full text-left p-4 rounded-lg border transition-all cursor-pointer
-        ${isSelected ? "bg-gray-100 border-gray-300" : "bg-white border-gray-200 hover:border-gray-300"}`}
+      className={`w-full text-left p-6 rounded-lg border-2 transition-all cursor-pointer
+        ${isSelected ? "bg-[#D9D9D9] border-gray-300" : "bg-[#F6F7F8] border-gray-300 hover:border-gray-400"}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <img src={icon} alt="" className="h-8 w-8" />
-          <div className="font-medium text-gray-800">{name}</div>
+          <div className="font-semibold text-gray-800 text-lg">{name}</div>
         </div>
         <div
-          className={`w-5 h-5 rounded border-2 flex items-center justify-center
-            ${isSelected ? "border-[#2E248F] bg-[#2E248F]" : "border-[#2E248F] bg-white"}`}
+          className={`w-6 h-6 rounded border-2 flex items-center justify-center
+            ${isSelected ? "border-[#2E248F] bg-[#2E248F]" : "border-gray-400 bg-white"}`}
         >
           {isSelected && (
-            <svg className="w-3 h-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+            <svg className="w-4 h-4 text-white" viewBox="0 0 20 20" fill="currentColor">
               <path
                 fillRule="evenodd"
                 d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
