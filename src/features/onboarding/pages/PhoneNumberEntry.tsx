@@ -31,7 +31,6 @@ export default function PhoneNumberEntry() {
     // Format as user types and convert Arabic numerals
     const formatted = formatPhoneNumber(value);
     setPhoneNumber(formatted);
-    setError("");
     
     // Update state
     dispatch({ type: 'SET_PHONE', payload: formatted });

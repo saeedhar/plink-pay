@@ -220,15 +220,15 @@ function getStepRoute(step: OnboardingStep): string | null {
  * Get next step in sequence
  */
 function getNextStep(currentStep: OnboardingStep): OnboardingStep | null {
-  const stepOrder = [
-    OnboardingStep.BUSINESS_TYPE,
-    OnboardingStep.PHONE,
-    OnboardingStep.OTP,
-    OnboardingStep.CR_NUMBER,
-    OnboardingStep.ID_NUMBER,
-    OnboardingStep.NAFATH,
-    OnboardingStep.KYB,
-    OnboardingStep.PASSWORD
+  const stepOrder: OnboardingStep[] = [
+    'businessType',
+    'phone',
+    'otp',
+    'cr',
+    'id',
+    'nafath',
+    'kyb',
+    'password'
   ];
 
   const currentIndex = stepOrder.indexOf(currentStep);
