@@ -6,20 +6,28 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../../../store/OnboardingContext';
+import { Stepper } from '../../../components/ui/Stepper';
 import { Modal } from '../../../components/ui/Modal';
+import { validateOTP, convertArabicToEnglish, OTP_CONFIG } from '../../../utils/validators';
+import { verifyOTP, sendOTP } from '../../../services/onboardingAPI';
 
 export default function OTPVerification() {
   const [otp, setOtp] = useState(['', '', '', '']);
-  const [timeLeft, setTimeLeft] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(OTP_CONFIG.RESEND_SECONDS);
+  const [expiryTime, setExpiryTime] = useState<Date>(
+    new Date(Date.now() + OTP_CONFIG.EXPIRY_MINUTES * 60 * 1000)
+  );
   const [canResend, setCanResend] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState('');
+  const [isExpired, setIsExpired] = useState(false);
   
   const navigate = useNavigate();
   const { state, dispatch } = useOnboarding();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Timer effect
+  // Resend timer effect  
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -29,27 +37,41 @@ export default function OTPVerification() {
     }
   }, [timeLeft]);
 
+  // Expiry timer effect
+  useEffect(() => {
+    const checkExpiry = () => {
+      if (new Date() > expiryTime) {
+        setIsExpired(true);
+        setError('Verification code has expired. Please request a new one.');
+      }
+    };
+
+    const interval = setInterval(checkExpiry, 1000);
+    return () => clearInterval(interval);
+  }, [expiryTime]);
+
   // Auto-focus first input
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
 
   const handleInputChange = (index: number, value: string) => {
-    // Only allow numeric input
-    if (!/^\d*$/.test(value)) return;
+    // Convert Arabic numerals to English and only allow numeric input
+    const converted = convertArabicToEnglish(value);
+    if (!/^\d*$/.test(converted)) return;
 
     const newOtp = [...otp];
-    newOtp[index] = value.slice(-1); // Only take last character
+    newOtp[index] = converted.slice(-1); // Only take last character
     setOtp(newOtp);
     setError('');
 
     // Auto-focus next input
-    if (value && index < 3) {
+    if (converted && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all fields filled
-    if (newOtp.every(digit => digit !== '') && newOtp.join('').length === 4) {
+    // Auto-submit when all fields filled and not expired
+    if (newOtp.every(digit => digit !== '') && newOtp.join('').length === 4 && !isExpired) {
       handleVerify(newOtp.join(''));
     }
   };
@@ -63,19 +85,27 @@ export default function OTPVerification() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+    const pastedData = convertArabicToEnglish(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, 4);
     if (pastedData.length === 4) {
       const newOtp = pastedData.split('');
       setOtp(newOtp);
       setError('');
       inputRefs.current[3]?.focus();
-      handleVerify(pastedData);
+      if (!isExpired) {
+        handleVerify(pastedData);
+      }
     }
   };
 
   const handleVerify = async (otpCode: string = otp.join('')) => {
-    if (otpCode.length !== 4) {
-      setError('Please enter the complete verification code');
+    if (isExpired) {
+      setError('Verification code has expired. Please request a new one.');
+      return;
+    }
+
+    const validationError = validateOTP(otpCode);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -83,31 +113,43 @@ export default function OTPVerification() {
     setError('');
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const result = await verifyOTP('dummy_request_id', otpCode);
       
-      // For demo, accept any 4-digit code
-      dispatch({ type: 'VERIFY_OTP_SUCCESS' });
-      navigate('/onboarding/cr-number');
-    } catch (err) {
-      setError('Invalid verification code. Please try again.');
+      if (result.verified) {
+        dispatch({ type: 'VERIFY_OTP_SUCCESS' });
+        navigate('/onboarding/cr-number');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Invalid verification code. Please try again.');
     } finally {
       setIsVerifying(false);
     }
   };
 
   const handleResend = async () => {
+    if (!state.data.phone) {
+      setError('Phone number not found. Please restart the process.');
+      return;
+    }
+
+    setIsResending(true);
     setCanResend(false);
-    setTimeLeft(30);
+    setTimeLeft(OTP_CONFIG.RESEND_SECONDS);
     setError('');
+    setIsExpired(false);
     
     try {
-      // Simulate API call to resend OTP
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Reset timer would happen here
-    } catch (err) {
-      setError('Failed to resend code. Please try again.');
+      const response = await sendOTP(state.data.phone.replace(/\s/g, ''));
+      
+      // Update expiry time
+      setExpiryTime(new Date(response.expiresAt));
+      
+      // Success feedback could be added here
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend code. Please try again.');
       setCanResend(true);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -115,19 +157,31 @@ export default function OTPVerification() {
     navigate('/onboarding/phone-number');
   };
 
+  // Calculate remaining expiry time for display
+  const expiryMinutes = Math.max(0, Math.floor((expiryTime.getTime() - Date.now()) / 60000));
+  const expirySeconds = Math.max(0, Math.floor(((expiryTime.getTime() - Date.now()) % 60000) / 1000));
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Modal
-        isOpen={true}
-        onClose={handleClose}
-        title="Enter Verification Code"
-        icon={
-          <svg className="w-6 h-6 text-[#2E248F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        }
-        size="sm"
-      >
+    <>
+      <div className="min-h-screen bg-gray-50">
+        {/* Stepper */}
+        <Stepper 
+          currentStep={state.currentStep} 
+          completedSteps={state.completedSteps} 
+        />
+        
+        <div className="flex items-center justify-center min-h-[calc(100vh-120px)] p-4">
+          <Modal
+            isOpen={true}
+            onClose={handleClose}
+            title="Enter Verification Code"
+            icon={
+              <svg className="w-6 h-6 text-[#2E248F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            }
+            size="sm"
+          >
         <div className="text-center">
           <p className="text-gray-600 mb-6">
             We've sent a verification code to<br />
@@ -194,12 +248,21 @@ export default function OTPVerification() {
 
             {/* Resend Button */}
             <div className="text-center">
-              {canResend ? (
+              {canResend && !isExpired ? (
                 <button
                   onClick={handleResend}
-                  className="text-[#2E248F] hover:text-[#1a1a5a] font-medium transition-colors"
+                  disabled={isResending}
+                  className="text-[#2E248F] hover:text-[#1a1a5a] font-medium transition-colors disabled:opacity-50"
                 >
-                  Resend verification code
+                  {isResending ? 'Sending...' : 'Resend verification code'}
+                </button>
+              ) : isExpired ? (
+                <button
+                  onClick={handleResend}
+                  disabled={isResending}
+                  className="bg-[#2E248F] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#1a1a5a] transition-colors disabled:opacity-50"
+                >
+                  {isResending ? 'Sending...' : 'Send New Code'}
                 </button>
               ) : (
                 <p className="text-gray-500 text-sm">
@@ -207,9 +270,19 @@ export default function OTPVerification() {
                 </p>
               )}
             </div>
+
+            {/* Expiry Timer */}
+            {!isExpired && (
+              <div className="text-center mt-4">
+                <p className="text-xs text-gray-400">
+                  Code expires in {expiryMinutes}:{expirySeconds.toString().padStart(2, '0')}
+                </p>
+              </div>
+            )}
           </div>
+            </Modal>
         </div>
-      </Modal>
-    </div>
+      </div>
+    </>
   );
 }
