@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { OnboardingProvider } from './store/OnboardingContext';
 import { RouteGuard } from './components/navigation/RouteGuard';
-import { OnboardingStep } from './store/onboardingFSM';
+import { SessionWarningModal } from './components/security/SessionWarningModal';
+import { useSecurity } from './hooks/useSecurity';
 import { 
   Splash, 
   BusinessTypeSelection, 
@@ -14,9 +15,11 @@ import {
   PasswordSetup 
 } from './features/onboarding/pages';
 
-export default function App() {
+function AppContent() {
+  const security = useSecurity();
+
   return (
-    <OnboardingProvider>
+    <>
       <Router>
         <Routes>
           {/* Main route - Splash screen */}
@@ -27,7 +30,7 @@ export default function App() {
             <Route 
               path="business-type" 
               element={
-                <RouteGuard requiredStep={OnboardingStep.BUSINESS_TYPE}>
+                <RouteGuard requiredStep="businessType">
                   <BusinessTypeSelection />
                 </RouteGuard>
               } 
@@ -35,7 +38,7 @@ export default function App() {
             <Route 
               path="phone" 
               element={
-                <RouteGuard requiredStep={OnboardingStep.PHONE}>
+                <RouteGuard requiredStep="phone">
                   <PhoneNumberEntry />
                 </RouteGuard>
               } 
@@ -43,7 +46,7 @@ export default function App() {
             <Route 
               path="otp" 
               element={
-                <RouteGuard requiredStep={OnboardingStep.OTP}>
+                <RouteGuard requiredStep="otp">
                   <OTPVerification />
                 </RouteGuard>
               } 
@@ -51,7 +54,7 @@ export default function App() {
             <Route 
               path="cr-number" 
               element={
-                <RouteGuard requiredStep={OnboardingStep.CR_NUMBER}>
+                <RouteGuard requiredStep="cr">
                   <CRNumberEntry />
                 </RouteGuard>
               } 
@@ -59,7 +62,7 @@ export default function App() {
             <Route 
               path="id-number" 
               element={
-                <RouteGuard requiredStep={OnboardingStep.ID_NUMBER}>
+                <RouteGuard requiredStep="id">
                   <IDNumberEntry />
                 </RouteGuard>
               } 
@@ -67,7 +70,7 @@ export default function App() {
             <Route 
               path="nafath" 
               element={
-                <RouteGuard requiredStep={OnboardingStep.NAFATH}>
+                <RouteGuard requiredStep="nafath">
                   <NafathPage />
                 </RouteGuard>
               } 
@@ -75,7 +78,7 @@ export default function App() {
             <Route 
               path="kyb" 
               element={
-                <RouteGuard requiredStep={OnboardingStep.KYB}>
+                <RouteGuard requiredStep="kyb">
                   <KYBPage />
                 </RouteGuard>
               } 
@@ -83,7 +86,7 @@ export default function App() {
             <Route 
               path="password" 
               element={
-                <RouteGuard requiredStep={OnboardingStep.PASSWORD}>
+                <RouteGuard requiredStep="password">
                   <PasswordSetup />
                 </RouteGuard>
               } 
@@ -91,6 +94,22 @@ export default function App() {
           </Route>
         </Routes>
       </Router>
+
+      {/* Session Warning Modal */}
+      <SessionWarningModal
+        isOpen={security.shouldShowWarning}
+        timeRemaining={security.timeUntilExpiry}
+        onExtendSession={security.extendSession}
+        onLogout={security.endSession}
+      />
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <OnboardingProvider>
+      <AppContent />
     </OnboardingProvider>
   );
 }
