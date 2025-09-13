@@ -26,7 +26,7 @@ const DISPLAY_STEPS: OnboardingStep[] = [
   'kyb'
 ];
 
-export function Stepper({ currentStep, completedSteps, className = '' }: StepperProps) {
+export function Stepper({ currentStep, completedSteps = [], className = '' }: StepperProps) {
   const currentIndex = DISPLAY_STEPS.indexOf(currentStep);
   
   return (
@@ -71,7 +71,7 @@ export function Stepper({ currentStep, completedSteps, className = '' }: Stepper
             
             {DISPLAY_STEPS.map((step, index) => {
               const isActive = step === currentStep;
-              const isCompleted = completedSteps.includes(step);
+              const isCompleted = completedSteps?.includes(step) || false;
               const isPast = index < currentIndex;
               
               return (
