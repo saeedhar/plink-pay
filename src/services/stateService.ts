@@ -25,11 +25,7 @@ export class StateService {
     try {
       const persistedState: PersistedState = {
         version: STATE_VERSION,
-        data: {
-          ...state,
-          // Convert Set to Array for JSON serialization
-          completedSteps: Array.from(state.completedSteps)
-        } as any,
+        data: state, // No conversion needed since completedSteps is already an array
         timestamp: Date.now(),
         expiresAt: Date.now() + (this.EXPIRY_HOURS * 60 * 60 * 1000)
       };
@@ -64,12 +60,8 @@ export class StateService {
         return null;
       }
 
-      // Restore state with proper Set conversion
-      const restoredState: OnboardingState = {
-        ...persistedState.data,
-        // Convert Array back to Set
-        completedSteps: new Set(persistedState.data.completedSteps as any)
-      };
+      // Restore state (no conversion needed since completedSteps is already an array)
+      const restoredState: OnboardingState = persistedState.data;
 
       return restoredState;
     } catch (error) {
@@ -120,10 +112,7 @@ export class StateService {
       const checkpointKey = `${STORAGE_KEY}_checkpoint_${label}`;
       const checkpoint = {
         version: STATE_VERSION,
-        data: {
-          ...state,
-          completedSteps: Array.from(state.completedSteps)
-        } as any,
+        data: state, // No conversion needed since completedSteps is already an array
         timestamp: Date.now(),
         label
       };

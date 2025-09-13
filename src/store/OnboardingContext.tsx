@@ -49,7 +49,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   const canAdvanceTo = (step: OnboardingStep) => canAdvanceToStep(state, step);
   
-  const isStepCompleted = (step: OnboardingStep) => state.completedSteps.has(step);
+  const isStepCompleted = (step: OnboardingStep) => state.completedSteps.includes(step);
   
   const goToNextStep = () => {
     dispatch({ type: 'NEXT_STEP' });

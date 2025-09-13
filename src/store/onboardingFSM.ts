@@ -16,7 +16,7 @@ export type OnboardingStep =
 
 export interface OnboardingState {
   currentStep: OnboardingStep;
-  completedSteps: Set<OnboardingStep>;
+  completedSteps: OnboardingStep[]; // Changed from Set to Array for serialization
   data: {
     businessType?: string;
     phone?: string;
@@ -67,7 +67,7 @@ export const STEP_LABELS = {
 
 export const initialState: OnboardingState = {
   currentStep: 'businessType',
-  completedSteps: new Set(),
+  completedSteps: [], // Changed from Set to Array
   data: {},
   validationErrors: {},
   isLoading: false,
@@ -113,7 +113,7 @@ export function onboardingReducer(
       return {
         ...state,
         data: { ...state.data, otpVerified: true },
-        completedSteps: new Set([...state.completedSteps, 'otp'])
+        completedSteps: [...state.completedSteps, 'otp'].filter((step, index, arr) => arr.indexOf(step) === index)
       };
 
     case 'SET_CR_NUMBER':
@@ -127,7 +127,7 @@ export function onboardingReducer(
       return {
         ...state,
         data: { ...state.data, crVerified: true },
-        completedSteps: new Set([...state.completedSteps, 'cr'])
+        completedSteps: [...state.completedSteps, 'cr'].filter((step, index, arr) => arr.indexOf(step) === index)
       };
 
     case 'SET_ID_NUMBER':
@@ -141,7 +141,7 @@ export function onboardingReducer(
       return {
         ...state,
         data: { ...state.data, idVerified: true },
-        completedSteps: new Set([...state.completedSteps, 'id'])
+        completedSteps: [...state.completedSteps, 'id'].filter((step, index, arr) => arr.indexOf(step) === index)
       };
 
     case 'SET_NAFATH_STATUS':
@@ -149,7 +149,7 @@ export function onboardingReducer(
         ...state,
         data: { ...state.data, nafathStatus: action.payload },
         completedSteps: action.payload === 'RECEIVED' 
-          ? new Set([...state.completedSteps, 'nafath'])
+          ? [...state.completedSteps, 'nafath'].filter((step, index, arr) => arr.indexOf(step) === index)
           : state.completedSteps
       };
 
@@ -157,14 +157,14 @@ export function onboardingReducer(
       return {
         ...state,
         data: { ...state.data, kybData: action.payload },
-        completedSteps: new Set([...state.completedSteps, 'kyb'])
+        completedSteps: [...state.completedSteps, 'kyb'].filter((step, index, arr) => arr.indexOf(step) === index)
       };
 
     case 'SET_PASSWORD_SUCCESS':
       return {
         ...state,
         data: { ...state.data, passwordSet: true },
-        completedSteps: new Set([...state.completedSteps, 'password'])
+        completedSteps: [...state.completedSteps, 'password'].filter((step, index, arr) => arr.indexOf(step) === index)
       };
 
     case 'NEXT_STEP':
@@ -173,7 +173,7 @@ export function onboardingReducer(
       return {
         ...state,
         currentStep: nextStep,
-        completedSteps: new Set([...state.completedSteps, state.currentStep])
+        completedSteps: [...state.completedSteps, state.currentStep].filter((step, index, arr) => arr.indexOf(step) === index)
       };
 
     case 'SET_VALIDATION_ERROR':
