@@ -26,6 +26,14 @@ export default function PhoneNumberEntry() {
   // Real-time validation
   const validationError = validateSaudiPhone(phoneNumber);
   const isValid = !validationError && phoneNumber.length > 0;
+  
+  // Debug logging
+  console.log('Phone validation:', {
+    phoneNumber,
+    validationError,
+    isValid,
+    length: phoneNumber.length
+  });
 
   const handlePhoneChange = (value: string) => {
     // Format as user types and convert Arabic numerals
@@ -141,9 +149,9 @@ export default function PhoneNumberEntry() {
                 <div className="text-center">
                   <button
                     onClick={handleNext}
-                    disabled={!canGoToNextStep(() => isValid) || isLoading}
+                    disabled={!isValid || isLoading}
                     className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
-                      !canGoToNextStep(() => isValid) || isLoading
+                      !isValid || isLoading
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                         : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
                     }`}
