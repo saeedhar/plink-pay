@@ -1,14 +1,30 @@
 import { http, HttpResponse } from 'msw';
 import { scenario } from './scenario';
 
+// Helper to read scenario from request headers
+function readScenario(req: Request) {
+  try {
+    const h = req.headers.get('x-mock-scenario');
+    return h ? JSON.parse(h) : {};
+  } catch { 
+    return {}; 
+  }
+}
+
+// Helper to merge scenario with request-specific overrides
+function getEffectiveScenario(req: Request) {
+  return { ...scenario, ...readScenario(req) };
+}
+
 // Track Nafath request statuses
 const nafathStatusMap = new Map<string, { currentIndex: number; seq: string[] }>();
 
 // OTP handlers
 export const handlers = [
   // OTP send
-  http.post('/otp/send', () => {
-    if (scenario.duplicatePhone) {
+  http.post('/otp/send', ({ request }) => {
+    const s = getEffectiveScenario(request);
+    if (s.duplicatePhone) {
       return HttpResponse.json(
         { error: 'PHONE_IN_USE' },
         { status: 409 }
@@ -22,8 +38,9 @@ export const handlers = [
 
   // OTP verify
   http.post('/otp/verify', async ({ request }) => {
+    const s = getEffectiveScenario(request);
     const body = await request.json() as { code: string };
-    if (body.code === scenario.otpAcceptCode) {
+    if (body.code === s.otpAcceptCode) {
       return HttpResponse.json({ ok: true });
     }
     return HttpResponse.json(
@@ -34,10 +51,11 @@ export const handlers = [
 
   // CR verification (Wathiq)
   http.get('/wathiq/cr/verify', ({ request }) => {
+    const s = getEffectiveScenario(request);
     const url = new URL(request.url);
     const cr = url.searchParams.get('cr');
     
-    if (scenario.crValid && cr && /^\d{10}$/.test(cr)) {
+    if (s.crValid && cr && /^\d{10}$/.test(cr)) {
       return HttpResponse.json({
         valid: true,
         companyType: 'SOLE_OWNER',
@@ -51,18 +69,20 @@ export const handlers = [
   }),
 
   // Local screening (Stitch)
-  http.get('/stitch/local-screen', () => {
+  http.get('/stitch/local-screen', ({ request }) => {
+    const s = getEffectiveScenario(request);
     return HttpResponse.json({
-      status: scenario.localHit ? 'HIT' : 'CLEAR'
+      status: s.localHit ? 'HIT' : 'CLEAR'
     });
   }),
 
   // ID verification
   http.get('/id/verify', ({ request }) => {
+    const s = getEffectiveScenario(request);
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
     
-    const ok = scenario.idValid && id && /^\d{10}$/.test(id) && /^[12]/.test(id);
+    const ok = s.idValid && id && /^\d{10}$/.test(id) && /^[12]/.test(id);
     if (ok) {
       return HttpResponse.json({ valid: true });
     }
@@ -74,23 +94,25 @@ export const handlers = [
 
   // Tahaquq phone-ID match
   http.post('/tahaquq/check', async ({ request }) => {
+    const s = getEffectiveScenario(request);
     const body = await request.json() as { phone: string; id: string };
     
-    if (scenario.idPhoneMismatch) {
+    if (s.idPhoneMismatch) {
       return HttpResponse.json({ match: false });
     }
-    return HttpResponse.json({ match: scenario.tahaquqMatch });
+    return HttpResponse.json({ match: s.tahaquqMatch });
   }),
 
   // Nafath initiate
   http.post('/nafath/initiate', async ({ request }) => {
+    const s = getEffectiveScenario(request);
     const body = await request.json() as { id: string };
     const requestId = `naf_${Date.now()}`;
     
     // Track this request's status sequence
     nafathStatusMap.set(requestId, {
       currentIndex: 0,
-      seq: [...scenario.nafathSeq]
+      seq: [...s.nafathSeq]
     });
     
     return HttpResponse.json({
@@ -135,16 +157,18 @@ export const handlers = [
   }),
 
   // Global screening
-  http.post('/screening/global', () => {
+  http.post('/screening/global', ({ request }) => {
+    const s = getEffectiveScenario(request);
     return HttpResponse.json({
-      status: scenario.globalHit ? 'HIT' : 'CLEAR'
+      status: s.globalHit ? 'HIT' : 'CLEAR'
     });
   }),
 
   // Compliance decision
-  http.get('/compliance/decision', () => {
+  http.get('/compliance/decision', ({ request }) => {
+    const s = getEffectiveScenario(request);
     return HttpResponse.json({
-      status: scenario.complianceApproved ? 'APPROVED' : 'REJECTED'
+      status: s.complianceApproved ? 'APPROVED' : 'REJECTED'
     });
   }),
 
