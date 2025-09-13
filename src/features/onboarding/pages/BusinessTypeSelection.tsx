@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useOnboarding } from "../../../store/OnboardingContext";
+import { Stepper } from "../../../components/ui/Stepper";
+import { AlertModal } from "../../../components/ui/Modal";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import heroLogo from "../../../assets/hero-logo-mini.svg";
-import { validateBusinessType } from "../../../utils/validation";
 // icons
 import SoleProprietorshipIcon from "../../../assets/select your buisness type assets/Vector.svg";
 import IndividualOwnerIcon from "../../../assets/select your buisness type assets/Vector-1.svg";
@@ -14,44 +16,53 @@ import { BusinessTypeOption } from "../components/BusinessTypeOption";
 
 export default function BusinessTypeSelection() {
   const [selectedType, setSelectedType] = useState("");
-  const [validationError, setValidationError] = useState<string>("");
-  const [showError, setShowError] = useState(false);
+  const [showBlockedModal, setShowBlockedModal] = useState(false);
   const navigate = useNavigate();
-
-  const steps = [
-    "Select Your Business Type",
-    "phone number",
-    "CR Number",
-    "ID Number",
-    "Nafath",
-    "KYB",
-  ];
-  const activeStep = 0; // later: tie this to form progress
+  const { state, dispatch } = useOnboarding();
 
   // Handle business type selection
   const handleBusinessTypeSelect = (typeId: string) => {
-    setSelectedType(typeId);
-    setValidationError("");
-    setShowError(false);
-  };
-
-  // Handle form submission with validation
-  const handleNext = () => {
-    const error = validateBusinessType(selectedType);
-    if (error) {
-      setValidationError(error);
-      setShowError(true);
+    if (typeId === "multi-owner-company") {
+      setShowBlockedModal(true);
       return;
     }
     
-    console.log("Selected type:", selectedType);
+    setSelectedType(typeId);
+    dispatch({ type: 'SET_BUSINESS_TYPE', payload: typeId });
+  };
+
+  // Handle form submission
+  const handleNext = () => {
+    if (!selectedType) {
+      return;
+    }
+    
     navigate("/onboarding/phone-number");
   };
 
   return (
-    <div className="min-h-screen flex bg-[#2E248F]">
-      {/* Sidebar */}
-      <StepSidebar steps={steps} activeIndex={activeStep} logoSrc={WhiteLogo} />
+    <>
+      <div className="min-h-screen bg-gray-50">
+        {/* Stepper */}
+        <Stepper 
+          currentStep={state.currentStep} 
+          completedSteps={state.completedSteps} 
+        />
+        
+        <div className="flex min-h-[calc(100vh-120px)] bg-[#2E248F]">
+          {/* Sidebar */}
+          <StepSidebar 
+            steps={[
+              "Select Your Business Type",
+              "phone number", 
+              "CR Number",
+              "ID Number",
+              "Nafath",
+              "KYB"
+            ]} 
+            activeIndex={0} 
+            logoSrc={WhiteLogo} 
+          />
 
       {/* Right content */}
       <main className="flex-1 bg-white p-12 rounded-tl-[88px] relative">
@@ -104,18 +115,6 @@ export default function BusinessTypeSelection() {
             </ul>
           </div>
 
-          {/* Validation Error Message */}
-          {showError && validationError && (
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
-                <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <p className="text-sm text-red-700 font-medium">{validationError}</p>
-              </div>
-            </div>
-          )}
-
           <div className="text-center">
             <button
               onClick={handleNext}
@@ -131,6 +130,23 @@ export default function BusinessTypeSelection() {
           </div>
         </div>
       </main>
-    </div>
+        </div>
+      </div>
+
+      {/* Account Cannot be Opened Modal */}
+      <AlertModal
+        isOpen={showBlockedModal}
+        onClose={() => setShowBlockedModal(false)}
+        title="Account Cannot be Opened"
+        message="Unfortunately, we are currently unable to open accounts for Multi-Owner Companies. Please contact our support team for alternative solutions."
+        buttonLabel="I Understand"
+        variant="primary"
+        icon={
+          <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        }
+      />
+    </>
   );
 }
