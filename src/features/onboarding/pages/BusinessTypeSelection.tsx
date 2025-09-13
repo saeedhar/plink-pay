@@ -29,6 +29,8 @@ export default function BusinessTypeSelection() {
     
     setSelectedType(typeId);
     dispatch({ type: 'SET_BUSINESS_TYPE', payload: typeId });
+    // Ensure we're on the correct step
+    dispatch({ type: 'SET_CURRENT_STEP', payload: 'businessType' });
   };
 
   // Handle form submission
@@ -37,6 +39,8 @@ export default function BusinessTypeSelection() {
       return;
     }
     
+    // Update FSM to next step
+    dispatch({ type: 'NEXT_STEP' });
     navigate("/onboarding/phone");
   };
 

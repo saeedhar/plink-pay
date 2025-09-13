@@ -85,6 +85,7 @@ export type OnboardingAction =
   | { type: 'SET_KYB_DATA'; payload: OnboardingState['data']['kybData'] }
   | { type: 'SET_PASSWORD_SUCCESS' }
   | { type: 'NEXT_STEP' }
+  | { type: 'SET_CURRENT_STEP'; payload: OnboardingStep }
   | { type: 'SET_VALIDATION_ERROR'; payload: { field: string; error: string } }
   | { type: 'CLEAR_VALIDATION_ERROR'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
@@ -209,6 +210,12 @@ export function onboardingReducer(
       return {
         ...state,
         isLoading: action.payload
+      };
+
+    case 'SET_CURRENT_STEP':
+      return {
+        ...state,
+        currentStep: action.payload
       };
     
     case 'RESET_STATE':

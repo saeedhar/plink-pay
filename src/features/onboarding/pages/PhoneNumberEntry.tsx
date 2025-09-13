@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
 import { FormField, Input } from "../../../components/ui/FormField";
@@ -16,6 +17,7 @@ export default function PhoneNumberEntry() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   
+  const navigate = useNavigate();
   const { state, dispatch, saveCheckpoint } = useOnboarding();
   const { goToNextStep, canGoToNextStep } = useOnboardingNavigation();
   const { executeAction, isLoading, error } = useLoadingState({
@@ -23,25 +25,23 @@ export default function PhoneNumberEntry() {
     debounceMs: 300
   });
 
+  // Ensure we're on the correct step when component mounts
+  useEffect(() => {
+    dispatch({ type: 'SET_CURRENT_STEP', payload: 'phone' });
+  }, [dispatch]);
+
   // Real-time validation
   const validationError = validateSaudiPhone(phoneNumber);
   const isValid = !validationError && phoneNumber.length > 0;
-  
-  // Debug logging
-  console.log('Phone validation:', {
-    phoneNumber,
-    validationError,
-    isValid,
-    length: phoneNumber.length
-  });
 
   const handlePhoneChange = (value: string) => {
     // Format as user types and convert Arabic numerals
     const formatted = formatPhoneNumber(value);
     setPhoneNumber(formatted);
     
-    // Update state
+    // Update state and ensure we're on phone step
     dispatch({ type: 'SET_PHONE', payload: formatted });
+    dispatch({ type: 'SET_CURRENT_STEP', payload: 'phone' });
   };
 
   const handleNext = async () => {
@@ -57,16 +57,11 @@ export default function PhoneNumberEntry() {
         // Send OTP with integrated retry logic
         await sendOTP(cleanPhone);
         
-        // Create checkpoint before proceeding
-        saveCheckpoint('phone_entered');
+        // Update FSM to next step
+        dispatch({ type: 'NEXT_STEP' });
         
-        // Navigate to next step using enhanced navigation
-        return goToNextStep(cleanPhone, {
-          optimisticUpdate: () => {
-            // Optimistically store phone number
-            dispatch({ type: 'SET_PHONE', payload: cleanPhone });
-          }
-        });
+        // Navigate to OTP page
+        navigate('/onboarding/otp');
       });
     } catch (err) {
       if (err instanceof DuplicatePhoneError) {
