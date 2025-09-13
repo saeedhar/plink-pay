@@ -4,24 +4,18 @@ import WhiteLogo from "../../../assets/select your buisness type assets/white-lo
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { CustomInput } from "../components/CustomInput";
+import { validateSaudiNationalID, formatters, cleanInput, getIdType } from "../../../utils/validation";
 
 export default function IDNumberEntry() {
   const [idNumber, setIdNumber] = useState("");
   const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
-  // ID Number validation function
+  // Enhanced Saudi ID Number validation
   const validateIDNumber = (value: string): string | undefined => {
-    if (!value.trim()) {
-      return "ID Number is required";
-    }
-    if (value.length < 10) {
-      return "Invalid ID number. Please enter a valid format";
-    }
-    if (!/^\d+$/.test(value)) {
-      return "ID Number must contain only numbers";
-    }
-    return undefined;
+    // Clean the input (remove formatting)
+    const cleanID = cleanInput(value);
+    return validateSaudiNationalID(cleanID);
   };
 
   const handleNext = () => {
@@ -31,9 +25,13 @@ export default function IDNumberEntry() {
       return;
     }
     
-    console.log("ID Number:", idNumber);
+    console.log("ID Number:", cleanInput(idNumber));
+    console.log("ID Type:", getIdType(cleanInput(idNumber)));
     navigate("/onboarding/nafath");
   };
+
+  // Get the ID type for display
+  const idType = getIdType(cleanInput(idNumber));
 
   const steps = [
     "Select Your Business Type",
@@ -74,16 +72,47 @@ export default function IDNumberEntry() {
               <CustomInput
                 id="idNumber"
                 label="ID Number"
-                placeholder="Enter ID Number"
+                placeholder="1234 567 890"
                 value={idNumber}
                 onChange={(value) => {
                   setIdNumber(value);
                   setShowError(false); // Clear error when user types
                 }}
                 type="text"
+                formatter={formatters.nationalId}
+                maxLength={12} // 10 digits + 2 spaces
                 validation={validateIDNumber}
                 showError={showError}
+                realTimeValidation={true}
+                autoComplete="off"
               />
+              
+              {/* ID Type Indicator */}
+              {idNumber && cleanInput(idNumber).length >= 1 && (
+                <div className="mt-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                      idType === 'Saudi National' 
+                        ? 'bg-green-100 text-green-700 border border-green-200'
+                        : idType === 'Resident (Iqama)'
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                        : 'bg-gray-100 text-gray-600 border border-gray-200'
+                    }`}>
+                      {idType === 'Saudi National' && (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {idType === 'Resident (Iqama)' && (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      <span>{idType}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="text-center">

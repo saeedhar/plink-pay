@@ -5,21 +5,18 @@ import CRIcon from "../../../assets/CR-Num.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { CustomInput } from "../components/CustomInput";
+import { validateSaudiCR, formatters, cleanInput } from "../../../utils/validation";
 
 export default function CRNumberEntry() {
   const [crNumber, setCrNumber] = useState("");
   const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
-  // CR Number validation function
+  // Enhanced Saudi CR Number validation
   const validateCRNumber = (value: string): string | undefined => {
-    if (!value.trim()) {
-      return "CR Number is required";
-    }
-    if (value.length < 10) {
-      return "Invalid CR number. Please enter a valid format";
-    }
-    return undefined;
+    // Clean the input (remove formatting)
+    const cleanCR = cleanInput(value);
+    return validateSaudiCR(cleanCR);
   };
 
   const handleNext = () => {
@@ -29,7 +26,7 @@ export default function CRNumberEntry() {
       return;
     }
     
-    console.log("CR Number:", crNumber);
+    console.log("CR Number:", cleanInput(crNumber));
     navigate("/onboarding/id-number");
   };
 
@@ -71,15 +68,19 @@ export default function CRNumberEntry() {
               <CustomInput
                 id="crNumber"
                 label="CR Number"
-                placeholder="Enter your CR Number"
+                placeholder="1234-56-7890"
                 value={crNumber}
                 onChange={(value) => {
                   setCrNumber(value);
                   setShowError(false); // Clear error when user types
                 }}
                 type="text"
+                formatter={formatters.crNumber}
+                maxLength={12} // 10 digits + 2 dashes
                 validation={validateCRNumber}
                 showError={showError}
+                realTimeValidation={true}
+                autoComplete="off"
               />
             </div>
 

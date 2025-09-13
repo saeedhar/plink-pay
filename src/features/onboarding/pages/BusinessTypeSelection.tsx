@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Logo from "../../../assets/logo-mark.svg";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import heroLogo from "../../../assets/hero-logo-mini.svg";
+import { validateBusinessType } from "../../../utils/validation";
 // icons
 import SoleProprietorshipIcon from "../../../assets/select your buisness type assets/Vector.svg";
 import IndividualOwnerIcon from "../../../assets/select your buisness type assets/Vector-1.svg";
@@ -13,7 +13,9 @@ import { BusinessTypeOption } from "../components/BusinessTypeOption";
 
 
 export default function BusinessTypeSelection() {
-  const [selectedType, setSelectedType] = useState("sole-proprietorship");
+  const [selectedType, setSelectedType] = useState("");
+  const [validationError, setValidationError] = useState<string>("");
+  const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
   const steps = [
@@ -25,6 +27,26 @@ export default function BusinessTypeSelection() {
     "KYB",
   ];
   const activeStep = 0; // later: tie this to form progress
+
+  // Handle business type selection
+  const handleBusinessTypeSelect = (typeId: string) => {
+    setSelectedType(typeId);
+    setValidationError("");
+    setShowError(false);
+  };
+
+  // Handle form submission with validation
+  const handleNext = () => {
+    const error = validateBusinessType(selectedType);
+    if (error) {
+      setValidationError(error);
+      setShowError(true);
+      return;
+    }
+    
+    console.log("Selected type:", selectedType);
+    navigate("/onboarding/phone-number");
+  };
 
   return (
     <div className="min-h-screen flex bg-[#2E248F]">
@@ -55,7 +77,7 @@ export default function BusinessTypeSelection() {
                 name={t.name}
                 icon={t.icon}
                 isSelected={selectedType === t.id}
-                onSelect={setSelectedType}
+                onSelect={handleBusinessTypeSelect}
               />
             ))}
           </div>
@@ -82,13 +104,27 @@ export default function BusinessTypeSelection() {
             </ul>
           </div>
 
+          {/* Validation Error Message */}
+          {showError && validationError && (
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+                <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <p className="text-sm text-red-700 font-medium">{validationError}</p>
+              </div>
+            </div>
+          )}
+
           <div className="text-center">
             <button
-              onClick={() => {
-                console.log("Selected type:", selectedType);
-                navigate("/onboarding/phone-number");
-              }}
-              className="bg-[#2E248F] text-white px-12 py-4 rounded-lg font-semibold hover:bg-[#1a1a5a] transition-colors text-lg"
+              onClick={handleNext}
+              className={`px-12 py-4 rounded-lg font-semibold transition-all text-lg ${
+                selectedType
+                  ? "bg-[#2E248F] text-white hover:bg-[#1a1a5a] hover:shadow-lg transform hover:-translate-y-0.5"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              disabled={!selectedType}
             >
               Sign up
             </button>

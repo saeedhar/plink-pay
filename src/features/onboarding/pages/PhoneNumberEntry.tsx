@@ -5,24 +5,18 @@ import SignupIcon from "../../../assets/signup.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { CustomInput } from "../components/CustomInput";
+import { validateSaudiMobile, formatters, cleanInput } from "../../../utils/validation";
 
 export default function PhoneNumberEntry() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showError, setShowError] = useState(false);
   const navigate = useNavigate();
 
-  // Phone number validation function
+  // Enhanced Saudi phone number validation
   const validatePhoneNumber = (value: string): string | undefined => {
-    if (!value.trim()) {
-      return "Phone number is required";
-    }
-    if (value.length < 9) {
-      return "Invalid phone number. Please enter a valid format";
-    }
-    if (!/^\d+$/.test(value)) {
-      return "Phone number must contain only numbers";
-    }
-    return undefined;
+    // Clean the input (remove formatting)
+    const cleanNumber = cleanInput(value);
+    return validateSaudiMobile(cleanNumber);
   };
 
   const handleNext = () => {
@@ -32,7 +26,7 @@ export default function PhoneNumberEntry() {
       return;
     }
     
-    console.log("Phone number:", phoneNumber);
+    console.log("Phone number:", cleanInput(phoneNumber));
     navigate("/onboarding/cr-number");
   };
 
@@ -72,45 +66,24 @@ export default function PhoneNumberEntry() {
             </p>
 
             <div className="mb-8">
-              <label className={`block text-sm mb-2 transition-colors ${
-                showError && validatePhoneNumber(phoneNumber) ? 
-                "text-red-500 font-medium" : 
-                !phoneNumber ? "text-gray-500" : "text-gray-700 font-medium"
-              }`}>
-                Phone Number
-              </label>
-              <div className="relative">
-                <input
-                  type="tel"
-                  id="phone"
-                  value={phoneNumber}
-                  onChange={(e) => {
-                    setPhoneNumber(e.target.value);
-                    setShowError(false); // Clear error when user types
-                  }}
-                  placeholder="0555555555555555"
-                  className={`w-full px-4 py-3 rounded-md focus:outline-none transition-all duration-200 pl-16 ${
-                    showError && validatePhoneNumber(phoneNumber) ? 
-                    "border-2 border-red-500 bg-white text-gray-900" :
-                    !phoneNumber ? 
-                    "border-2 border-gray-300 bg-gray-50 text-gray-400" : 
-                    "border-2 border-[#2E248F] bg-white text-gray-900"
-                  }`}
-                  style={{
-                    borderRadius: "20px"
-                  }}
-                />
-                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-700 font-medium">
-                  +966
-                </span>
-              </div>
-              {showError && validatePhoneNumber(phoneNumber) && (
-                <div className="mt-2">
-                  <p className="text-sm text-red-500 font-medium">
-                    {validatePhoneNumber(phoneNumber)}
-                  </p>
-                </div>
-              )}
+              <CustomInput
+                id="phone"
+                label="Phone Number"
+                placeholder="555 123 456"
+                value={phoneNumber}
+                onChange={(value) => {
+                  setPhoneNumber(value);
+                  setShowError(false); // Clear error when user types
+                }}
+                type="tel"
+                prefix="+966"
+                formatter={formatters.phone}
+                maxLength={11} // 9 digits + 2 spaces
+                validation={validatePhoneNumber}
+                showError={showError}
+                realTimeValidation={true}
+                autoComplete="tel"
+              />
             </div>
 
             <div className="text-center">
