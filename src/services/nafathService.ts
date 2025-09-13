@@ -149,7 +149,18 @@ export class NafathManager {
    */
   openNafath(): void {
     if (this.session?.nafathUrl) {
-      window.open(this.session.nafathUrl, '_blank', 'noopener,noreferrer');
+      // Only open if we have a valid deep link URL
+      const url = this.session.nafathUrl;
+      if (url && url.startsWith('http')) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        console.warn('Invalid Nafath URL:', url);
+        // Show inline instructions instead
+        alert('Please visit the Nafath portal manually to complete verification.');
+      }
+    } else {
+      console.warn('No Nafath URL available');
+      alert('Please visit the Nafath portal manually to complete verification.');
     }
   }
 

@@ -8,7 +8,7 @@ import WhiteLogo from "../../../assets/select your buisness type assets/white-lo
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { validateSaudiId, formatIdNumber, getIdType } from "../../../utils/validators";
-import { verifyID, IDVerificationError, IDMismatchError } from "../../../services/onboardingAPI";
+import { verifyID, IDVerificationError, IDMismatchError, localScreen, tahaquq } from "../../../services/onboardingAPI";
 
 export default function IDNumberEntry() {
   const [idNumber, setIdNumber] = useState("");
@@ -53,16 +53,32 @@ export default function IDNumberEntry() {
     setError("");
 
     try {
-      // Verify ID via API with phone cross-check
+      // Step 1: Local Screening
       const cleanId = idNumber.replace(/\s/g, '');
       const cleanPhone = state.data.phone.replace(/\s/g, '');
-      const result = await verifyID(cleanId, cleanPhone);
       
-      if (result.valid && result.matchesPhone) {
-        // Mark ID as verified
-        dispatch({ type: 'VERIFY_ID_SUCCESS' });
-        navigate("/onboarding/nafath");
+      console.log('Starting local screening...');
+      const screeningResult = await localScreen(cleanId);
+      
+      if (screeningResult.status === 'HIT') {
+        setError("ID verification failed. Please contact support.");
+        return;
       }
+      
+      // Step 2: Tahaquq (Phone-ID match verification)
+      console.log('Starting tahaquq verification...');
+      const tahaquqResult = await tahaquq(cleanPhone, cleanId);
+      
+      if (!tahaquqResult.match) {
+        setShowMismatchModal(true);
+        return;
+      }
+      
+      // Step 3: ID verification successful - proceed to Nafath
+      dispatch({ type: 'VERIFY_ID_SUCCESS' });
+      dispatch({ type: 'NEXT_STEP' });
+      navigate("/onboarding/nafath");
+      
     } catch (err) {
       if (err instanceof IDMismatchError) {
         setShowMismatchModal(true);

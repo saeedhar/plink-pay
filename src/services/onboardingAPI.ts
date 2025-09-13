@@ -301,6 +301,139 @@ export async function verifyID(
 }
 
 // ==========================================
+// LOCAL SCREENING SERVICES
+// ==========================================
+
+export interface LocalScreeningResponse {
+  status: 'CLEAR' | 'HIT';
+  riskScore?: number;
+  reason?: string;
+}
+
+export async function localScreen(idNumber: string): Promise<LocalScreeningResponse> {
+  const cacheKey = `local_screening:${idNumber}`;
+  
+  return await verificationCache.getOrSet(cacheKey, async () => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Simulate some IDs hitting local screening
+    const hitIDs = ['9999999999', '8888888888'];
+    const cleanId = idNumber.replace(/\D/g, '');
+    
+    if (hitIDs.includes(cleanId)) {
+      return {
+        status: 'HIT',
+        riskScore: 85,
+        reason: 'ID flagged in local screening database'
+      };
+    }
+    
+    return {
+      status: 'CLEAR',
+      riskScore: 10
+    };
+  }, 30 * 60 * 1000); // 30 minutes cache
+}
+
+// ==========================================
+// TAHAQUQ SERVICES (Phone-ID Match)
+// ==========================================
+
+export interface TahaquqResponse {
+  match: boolean;
+  confidence?: number;
+  source?: string;
+}
+
+export async function tahaquq(phoneNumber: string, idNumber: string): Promise<TahaquqResponse> {
+  const cacheKey = `tahaquq:${phoneNumber}:${idNumber}`;
+  
+  return await verificationCache.getOrSet(cacheKey, async () => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Simulate some phone-ID pairs not matching
+    const mismatchPairs = [
+      { phone: '0501234567', id: '1111111111' },
+      { phone: '0509876543', id: '2222222222' }
+    ];
+    
+    const hasMismatch = mismatchPairs.some(
+      pair => pair.phone === phoneNumber && pair.id !== idNumber.replace(/\D/g, '')
+    );
+    
+    if (hasMismatch) {
+      return {
+        match: false,
+        confidence: 95,
+        source: 'National telecom registry'
+      };
+    }
+    
+    return {
+      match: true,
+      confidence: 98,
+      source: 'National telecom registry'
+    };
+  }, 60 * 60 * 1000); // 1 hour cache
+}
+
+// ==========================================
+// GLOBAL SCREENING SERVICES
+// ==========================================
+
+export interface GlobalScreeningRequest {
+  idNumber: string;
+  phoneNumber: string;
+  crNumber: string;
+  businessType: string;
+}
+
+export interface GlobalScreeningResponse {
+  status: 'CLEAR' | 'HIT';
+  riskScore?: number;
+  reason?: string;
+  requiresManualReview?: boolean;
+}
+
+export async function globalScreening(data: GlobalScreeningRequest): Promise<GlobalScreeningResponse> {
+  const cacheKey = `global_screening:${data.idNumber}:${data.phoneNumber}:${data.crNumber}`;
+  
+  return await verificationCache.getOrSet(cacheKey, async () => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Simulate some combinations hitting global screening
+    const hitCombinations = [
+      { id: '9999999999', phone: '0501234567', cr: '1234567890' },
+      { id: '8888888888', phone: '0509876543', cr: '0987654321' }
+    ];
+    
+    const hasHit = hitCombinations.some(
+      hit => hit.id === data.idNumber.replace(/\D/g, '') ||
+             hit.phone === data.phoneNumber.replace(/\D/g, '') ||
+             hit.cr === data.crNumber.replace(/\D/g, '')
+    );
+    
+    if (hasHit) {
+      return {
+        status: 'HIT',
+        riskScore: 75,
+        reason: 'Information flagged in global screening database',
+        requiresManualReview: true
+      };
+    }
+    
+    return {
+      status: 'CLEAR',
+      riskScore: 15,
+      requiresManualReview: false
+    };
+  }, 60 * 60 * 1000); // 1 hour cache
+}
+
+// ==========================================
 // NAFATH SERVICES
 // ==========================================
 

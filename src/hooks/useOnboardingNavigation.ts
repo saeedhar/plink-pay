@@ -209,6 +209,7 @@ function getStepRoute(step: OnboardingStep): string | null {
     'cr': '/onboarding/cr-number',
     'id': '/onboarding/id-number',
     'nafath': '/onboarding/nafath',
+    'globalScreening': '/onboarding/global-screening',
     'kyb': '/onboarding/kyb',
     'password': '/onboarding/password',
     'done': '/onboarding/complete'
@@ -228,6 +229,7 @@ function getNextStep(currentStep: OnboardingStep): OnboardingStep | null {
     'cr',
     'id',
     'nafath',
+    'globalScreening',
     'kyb',
     'password'
   ];
@@ -274,6 +276,7 @@ function getUpdateActionForStep(step: OnboardingStep): string | null {
     'cr': 'SET_CR_NUMBER',
     'id': 'SET_ID_NUMBER',
     'nafath': 'SET_NAFATH_STATUS',
+    'globalScreening': 'SET_GLOBAL_SCREENING_STATUS',
     'kyb': 'SET_KYB_DATA',
     'password': 'SET_PASSWORD_SUCCESS',
     'done': 'COMPLETE'

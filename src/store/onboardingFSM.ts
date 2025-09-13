@@ -4,14 +4,15 @@
  */
 
 export type OnboardingStep = 
-  | 'businessType'
-  | 'phone'
-  | 'otp'
-  | 'cr'
-  | 'id'
-  | 'nafath'
-  | 'kyb'
-  | 'password'
+  | 'businessType' 
+  | 'phone' 
+  | 'otp' 
+  | 'cr' 
+  | 'id' 
+  | 'nafath' 
+  | 'globalScreening'
+  | 'kyb' 
+  | 'password' 
   | 'done';
 
 export interface OnboardingState {
@@ -51,6 +52,7 @@ export const STEP_ORDER: OnboardingStep[] = [
   'cr',
   'id',
   'nafath',
+  'globalScreening',
   'kyb',
   'password',
   'done'
@@ -62,7 +64,10 @@ export const STEP_LABELS = {
   cr: "CR Number",
   id: "ID Number",
   nafath: "Nafath",
-  kyb: "KYB"
+  globalScreening: "Global Screening",
+  kyb: "KYB",
+  password: "Set Password",
+  done: "Complete"
 } as const;
 
 export const initialState: OnboardingState = {

@@ -2,18 +2,21 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { OnboardingProvider } from './store/OnboardingContext';
 import { RouteGuard } from './components/navigation/RouteGuard';
 import { SessionWarningModal } from './components/security/SessionWarningModal';
+import { NafathModal } from './components/modals/NafathModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSecurity } from './hooks/useSecurity';
-import { 
-  Splash, 
-  BusinessTypeSelection, 
-  PhoneNumberEntry, 
+import {
+  Splash,
+  BusinessTypeSelection,
+  PhoneNumberEntry,
   OTPVerification,
-  CRNumberEntry, 
-  IDNumberEntry, 
-  NafathPage, 
-  KYBPage, 
-  PasswordSetup 
+  CRNumberEntry,
+  IDNumberEntry,
+  NafathPage,
+  KYBPage,
+  PasswordSetup
 } from './features/onboarding/pages';
+import GlobalScreeningPage from './features/onboarding/pages/GlobalScreeningPage';
 
 function AppRoutes() {
   const security = useSecurity();
@@ -75,6 +78,14 @@ function AppRoutes() {
             } 
           />
           <Route 
+            path="global-screening" 
+            element={
+              <RouteGuard requiredStep="globalScreening">
+                <GlobalScreeningPage />
+              </RouteGuard>
+            } 
+          />
+          <Route 
             path="kyb" 
             element={
               <RouteGuard requiredStep="kyb">
@@ -93,24 +104,29 @@ function AppRoutes() {
         </Route>
       </Routes>
 
-      {/* Session Warning Modal */}
-      <SessionWarningModal
-        isOpen={security.shouldShowWarning}
-        timeRemaining={security.timeUntilExpiry}
-        onExtendSession={security.extendSession}
-        onLogout={security.endSession}
-      />
-    </>
-  );
-}
+              {/* Session Warning Modal */}
+              <SessionWarningModal
+                isOpen={security.shouldShowWarning}
+                timeRemaining={security.timeUntilExpiry}
+                onExtendSession={security.extendSession}
+                onLogout={security.endSession}
+              />
+
+              {/* Global Nafath Modal */}
+              <NafathModal />
+            </>
+          );
+        }
 
 export default function App() {
   return (
-    <OnboardingProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </OnboardingProvider>
+    <ErrorBoundary>
+      <OnboardingProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </OnboardingProvider>
+    </ErrorBoundary>
   );
 }
 
