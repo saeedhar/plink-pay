@@ -90,6 +90,17 @@ export type OnboardingAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'RESET_STATE' };
 
+// Helper function to ensure completedSteps is always an array
+function ensureCompletedStepsArray(completedSteps: any): OnboardingStep[] {
+  return Array.isArray(completedSteps) ? completedSteps : [];
+}
+
+// Helper function to add step to completed steps without duplicates
+function addCompletedStep(completedSteps: any, step: OnboardingStep): OnboardingStep[] {
+  const currentSteps = ensureCompletedStepsArray(completedSteps);
+  return [...currentSteps, step].filter((s, index, arr) => arr.indexOf(s) === index);
+}
+
 export function onboardingReducer(
   state: OnboardingState,
   action: OnboardingAction
@@ -113,7 +124,7 @@ export function onboardingReducer(
       return {
         ...state,
         data: { ...state.data, otpVerified: true },
-        completedSteps: [...state.completedSteps, 'otp'].filter((step, index, arr) => arr.indexOf(step) === index)
+        completedSteps: addCompletedStep(state.completedSteps, 'otp')
       };
 
     case 'SET_CR_NUMBER':
@@ -127,7 +138,7 @@ export function onboardingReducer(
       return {
         ...state,
         data: { ...state.data, crVerified: true },
-        completedSteps: [...state.completedSteps, 'cr'].filter((step, index, arr) => arr.indexOf(step) === index)
+        completedSteps: addCompletedStep(state.completedSteps, 'cr')
       };
 
     case 'SET_ID_NUMBER':
@@ -141,7 +152,7 @@ export function onboardingReducer(
       return {
         ...state,
         data: { ...state.data, idVerified: true },
-        completedSteps: [...state.completedSteps, 'id'].filter((step, index, arr) => arr.indexOf(step) === index)
+        completedSteps: addCompletedStep(state.completedSteps, 'id')
       };
 
     case 'SET_NAFATH_STATUS':
@@ -149,22 +160,22 @@ export function onboardingReducer(
         ...state,
         data: { ...state.data, nafathStatus: action.payload },
         completedSteps: action.payload === 'RECEIVED' 
-          ? [...state.completedSteps, 'nafath'].filter((step, index, arr) => arr.indexOf(step) === index)
-          : state.completedSteps
+          ? addCompletedStep(state.completedSteps, 'nafath')
+          : ensureCompletedStepsArray(state.completedSteps)
       };
 
     case 'SET_KYB_DATA':
       return {
         ...state,
         data: { ...state.data, kybData: action.payload },
-        completedSteps: [...state.completedSteps, 'kyb'].filter((step, index, arr) => arr.indexOf(step) === index)
+        completedSteps: addCompletedStep(state.completedSteps, 'kyb')
       };
 
     case 'SET_PASSWORD_SUCCESS':
       return {
         ...state,
         data: { ...state.data, passwordSet: true },
-        completedSteps: [...state.completedSteps, 'password'].filter((step, index, arr) => arr.indexOf(step) === index)
+        completedSteps: addCompletedStep(state.completedSteps, 'password')
       };
 
     case 'NEXT_STEP':
@@ -173,7 +184,7 @@ export function onboardingReducer(
       return {
         ...state,
         currentStep: nextStep,
-        completedSteps: [...state.completedSteps, state.currentStep].filter((step, index, arr) => arr.indexOf(step) === index)
+        completedSteps: addCompletedStep(state.completedSteps, state.currentStep)
       };
 
     case 'SET_VALIDATION_ERROR':
