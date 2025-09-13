@@ -10,8 +10,8 @@ import { STEP_LABELS } from '../../store/onboardingFSM';
 export interface StepperProps {
   /** Current active step */
   currentStep: OnboardingStep;
-  /** Set of completed steps */
-  completedSteps: Set<OnboardingStep>;
+  /** Array of completed steps */
+  completedSteps: OnboardingStep[];
   /** Custom class names */
   className?: string;
 }
@@ -71,7 +71,7 @@ export function Stepper({ currentStep, completedSteps, className = '' }: Stepper
             
             {DISPLAY_STEPS.map((step, index) => {
               const isActive = step === currentStep;
-              const isCompleted = completedSteps.has(step);
+              const isCompleted = completedSteps.includes(step);
               const isPast = index < currentIndex;
               
               return (
