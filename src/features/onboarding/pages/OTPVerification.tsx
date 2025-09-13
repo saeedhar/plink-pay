@@ -182,7 +182,7 @@ export default function OTPVerification() {
             }
             size="sm"
           >
-          <div className="text-center">
+            <div className="text-center">
           <p className="text-gray-600 mb-6">
             We've sent a verification code to<br />
             <span className="font-medium text-gray-900">{state.data.phone}</span>
@@ -279,7 +279,7 @@ export default function OTPVerification() {
                 </p>
               </div>
             )}
-          </div>
+            </div>
           </Modal>
         </div>
       </div>
