@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
 import { FormField, Input } from "../../../components/ui/FormField";
 import { AlertModal } from "../../../components/ui/Modal";
+import { useOnboardingNavigation } from "../../../hooks/useOnboardingNavigation";
+import { useLoadingState } from "../../../hooks/useLoadingState";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import SignupIcon from "../../../assets/signup.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
@@ -13,12 +14,14 @@ import { sendOTP, DuplicatePhoneError } from "../../../services/onboardingAPI";
 
 export default function PhoneNumberEntry() {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   
-  const navigate = useNavigate();
-  const { state, dispatch } = useOnboarding();
+  const { state, dispatch, saveCheckpoint } = useOnboarding();
+  const { goToNextStep, canGoToNextStep } = useOnboardingNavigation();
+  const { executeAction, isLoading, error } = useLoadingState({
+    maxRetries: 3,
+    debounceMs: 300
+  });
 
   // Real-time validation
   const validationError = validateSaudiPhone(phoneNumber);
@@ -37,28 +40,32 @@ export default function PhoneNumberEntry() {
   const handleNext = async () => {
     const validationResult = validateSaudiPhone(phoneNumber);
     if (validationResult) {
-      setError(validationResult);
-      return;
+      return; // Validation handled by real-time validation
     }
 
-    setIsLoading(true);
-    setError("");
-
     try {
-      // Send OTP via API
-      const cleanPhone = phoneNumber.replace(/\s/g, '');
-      await sendOTP(cleanPhone);
-      
-      // Navigate to OTP verification
-      navigate("/onboarding/otp");
+      await executeAction('send_otp', async () => {
+        const cleanPhone = phoneNumber.replace(/\s/g, '');
+        
+        // Send OTP with integrated retry logic
+        await sendOTP(cleanPhone);
+        
+        // Create checkpoint before proceeding
+        saveCheckpoint('phone_entered');
+        
+        // Navigate to next step using enhanced navigation
+        return goToNextStep(cleanPhone, {
+          optimisticUpdate: () => {
+            // Optimistically store phone number
+            dispatch({ type: 'SET_PHONE', payload: cleanPhone });
+          }
+        });
+      });
     } catch (err) {
       if (err instanceof DuplicatePhoneError) {
         setShowDuplicateModal(true);
-      } else {
-        setError("Failed to send verification code. Please try again.");
       }
-    } finally {
-      setIsLoading(false);
+      // Other errors handled by useLoadingState
     }
   };
 
@@ -135,9 +142,9 @@ export default function PhoneNumberEntry() {
                 <div className="text-center">
                   <button
                     onClick={handleNext}
-                    disabled={!isValid || isLoading}
+                    disabled={!canGoToNextStep(() => isValid) || isLoading}
                     className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
-                      !isValid || isLoading
+                      !canGoToNextStep(() => isValid) || isLoading
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                         : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
                     }`}

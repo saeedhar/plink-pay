@@ -87,7 +87,8 @@ export type OnboardingAction =
   | { type: 'NEXT_STEP' }
   | { type: 'SET_VALIDATION_ERROR'; payload: { field: string; error: string } }
   | { type: 'CLEAR_VALIDATION_ERROR'; payload: string }
-  | { type: 'SET_LOADING'; payload: boolean };
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'RESET_STATE' };
 
 export function onboardingReducer(
   state: OnboardingState,
@@ -198,7 +199,10 @@ export function onboardingReducer(
         ...state,
         isLoading: action.payload
       };
-
+    
+    case 'RESET_STATE':
+      return initialState;
+    
     default:
       return state;
   }
