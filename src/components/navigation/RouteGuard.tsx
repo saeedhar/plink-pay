@@ -6,7 +6,8 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useOnboarding } from '../../store/OnboardingContext';
-import { OnboardingStep, canAdvanceToStep } from '../../store/onboardingFSM';
+import type { OnboardingStep } from '../../store/onboardingFSM';
+import { canAdvanceToStep } from '../../store/onboardingFSM';
 
 interface RouteGuardProps {
   children: React.ReactNode;

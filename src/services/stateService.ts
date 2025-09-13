@@ -3,7 +3,8 @@
  * Implements BRD requirements for state management across sessions
  */
 
-import { OnboardingState, initialState } from '../store/onboardingFSM';
+import type { OnboardingState } from '../store/onboardingFSM';
+import { initialState } from '../store/onboardingFSM';
 
 const STORAGE_KEY = 'plink_onboarding_state';
 const STATE_VERSION = '1.0';

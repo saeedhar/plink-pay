@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { OnboardingStep, STEP_LABELS } from '../../store/onboardingFSM';
+import type { OnboardingStep } from '../../store/onboardingFSM';
+import { STEP_LABELS } from '../../store/onboardingFSM';
 
 export interface StepperProps {
   /** Current active step */

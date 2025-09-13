@@ -6,7 +6,7 @@
 import { useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../store/OnboardingContext';
-import { OnboardingStep } from '../store/onboardingFSM';
+import type { OnboardingStep } from '../store/onboardingFSM';
 import { useLoadingState } from './useLoadingState';
 import { useTimerCleanup } from './useTimerCleanup';
 

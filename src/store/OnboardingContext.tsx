@@ -3,14 +3,8 @@
  */
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import {
-  OnboardingState,
-  OnboardingAction,
-  OnboardingStep,
-  onboardingReducer,
-  initialState,
-  canAdvanceToStep
-} from './onboardingFSM';
+import type { OnboardingState, OnboardingAction, OnboardingStep } from './onboardingFSM';
+import { onboardingReducer, initialState, canAdvanceToStep } from './onboardingFSM';
 import { stateService } from '../services/stateService';
 
 interface OnboardingContextType {
