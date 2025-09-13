@@ -203,14 +203,15 @@ export function useOnboardingNavigation() {
  */
 function getStepRoute(step: OnboardingStep): string | null {
   const routes: Record<OnboardingStep, string> = {
-    [OnboardingStep.BUSINESS_TYPE]: '/onboarding/business-type',
-    [OnboardingStep.PHONE]: '/onboarding/phone',
-    [OnboardingStep.OTP]: '/onboarding/otp',
-    [OnboardingStep.CR_NUMBER]: '/onboarding/cr-number',
-    [OnboardingStep.ID_NUMBER]: '/onboarding/id-number',
-    [OnboardingStep.NAFATH]: '/onboarding/nafath',
-    [OnboardingStep.KYB]: '/onboarding/kyb',
-    [OnboardingStep.PASSWORD]: '/onboarding/password'
+    'businessType': '/onboarding/business-type',
+    'phone': '/onboarding/phone',
+    'otp': '/onboarding/otp',
+    'cr': '/onboarding/cr-number',
+    'id': '/onboarding/id-number',
+    'nafath': '/onboarding/nafath',
+    'kyb': '/onboarding/kyb',
+    'password': '/onboarding/password',
+    'done': '/onboarding/complete'
   };
 
   return routes[step] || null;
@@ -243,15 +244,15 @@ function getNextStep(currentStep: OnboardingStep): OnboardingStep | null {
  * Get previous step in sequence
  */
 function getPreviousStep(currentStep: OnboardingStep): OnboardingStep | null {
-  const stepOrder = [
-    OnboardingStep.BUSINESS_TYPE,
-    OnboardingStep.PHONE,
-    OnboardingStep.OTP,
-    OnboardingStep.CR_NUMBER,
-    OnboardingStep.ID_NUMBER,
-    OnboardingStep.NAFATH,
-    OnboardingStep.KYB,
-    OnboardingStep.PASSWORD
+  const stepOrder: OnboardingStep[] = [
+    'businessType',
+    'phone',
+    'otp',
+    'cr',
+    'id',
+    'nafath',
+    'kyb',
+    'password'
   ];
 
   const currentIndex = stepOrder.indexOf(currentStep);
@@ -267,14 +268,15 @@ function getPreviousStep(currentStep: OnboardingStep): OnboardingStep | null {
  */
 function getUpdateActionForStep(step: OnboardingStep): string | null {
   const actionMap: Record<OnboardingStep, string> = {
-    [OnboardingStep.BUSINESS_TYPE]: 'SET_BUSINESS_TYPE',
-    [OnboardingStep.PHONE]: 'SET_PHONE',
-    [OnboardingStep.OTP]: 'VERIFY_OTP_SUCCESS',
-    [OnboardingStep.CR_NUMBER]: 'SET_CR_NUMBER',
-    [OnboardingStep.ID_NUMBER]: 'SET_ID_NUMBER',
-    [OnboardingStep.NAFATH]: 'SET_NAFATH_STATUS',
-    [OnboardingStep.KYB]: 'SET_KYB_DATA',
-    [OnboardingStep.PASSWORD]: 'SET_PASSWORD_SUCCESS'
+    'businessType': 'SET_BUSINESS_TYPE',
+    'phone': 'SET_PHONE',
+    'otp': 'VERIFY_OTP_SUCCESS',
+    'cr': 'SET_CR_NUMBER',
+    'id': 'SET_ID_NUMBER',
+    'nafath': 'SET_NAFATH_STATUS',
+    'kyb': 'SET_KYB_DATA',
+    'password': 'SET_PASSWORD_SUCCESS',
+    'done': 'COMPLETE'
   };
 
   return actionMap[step] || null;
