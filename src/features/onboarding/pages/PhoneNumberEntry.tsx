@@ -1,102 +1,177 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useOnboarding } from "../../../store/OnboardingContext";
+import { Stepper } from "../../../components/ui/Stepper";
+import { FormField, Input } from "../../../components/ui/FormField";
+import { AlertModal } from "../../../components/ui/Modal";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import SignupIcon from "../../../assets/signup.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
-import { CustomInput } from "../components/CustomInput";
-import { validateSaudiMobile, formatters, cleanInput } from "../../../utils/validation";
+import { validateSaudiPhone, formatPhoneNumber } from "../../../utils/validators";
+import { sendOTP, DuplicatePhoneError } from "../../../services/onboardingAPI";
 
 export default function PhoneNumberEntry() {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [showError, setShowError] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  
   const navigate = useNavigate();
+  const { state, dispatch } = useOnboarding();
 
-  // Enhanced Saudi phone number validation
-  const validatePhoneNumber = (value: string): string | undefined => {
-    // Clean the input (remove formatting)
-    const cleanNumber = cleanInput(value);
-    return validateSaudiMobile(cleanNumber);
+  // Real-time validation
+  const validationError = validateSaudiPhone(phoneNumber);
+  const isValid = !validationError && phoneNumber.length > 0;
+
+  const handlePhoneChange = (value: string) => {
+    // Format as user types and convert Arabic numerals
+    const formatted = formatPhoneNumber(value);
+    setPhoneNumber(formatted);
+    setError("");
+    
+    // Update state
+    dispatch({ type: 'SET_PHONE', payload: formatted });
   };
 
-  const handleNext = () => {
-    const error = validatePhoneNumber(phoneNumber);
-    if (error) {
-      setShowError(true);
+  const handleNext = async () => {
+    const validationResult = validateSaudiPhone(phoneNumber);
+    if (validationResult) {
+      setError(validationResult);
       return;
     }
-    
-    console.log("Phone number:", cleanInput(phoneNumber));
-    navigate("/onboarding/cr-number");
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // Send OTP via API
+      const cleanPhone = phoneNumber.replace(/\s/g, '');
+      await sendOTP(cleanPhone);
+      
+      // Navigate to OTP verification
+      navigate("/onboarding/otp");
+    } catch (err) {
+      if (err instanceof DuplicatePhoneError) {
+        setShowDuplicateModal(true);
+      } else {
+        setError("Failed to send verification code. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const steps = [
-    "Select Your Business Type",
-    "phone number",
-    "CR Number",
-    "ID Number",
-    "Nafath",
-    "KYB",
-  ];
-  const activeStep = 1; // Phone number step is active
-
   return (
-    <div className="min-h-screen flex bg-[#2E248F]">
-      {/* Sidebar */}
-      <StepSidebar steps={steps} activeIndex={activeStep} logoSrc={WhiteLogo} />
+    <>
+      <div className="min-h-screen bg-gray-50">
+        {/* Stepper */}
+        <Stepper 
+          currentStep={state.currentStep} 
+          completedSteps={state.completedSteps} 
+        />
+        
+        <div className="flex min-h-[calc(100vh-120px)] bg-[#2E248F]">
+          {/* Sidebar */}
+          <StepSidebar 
+            steps={[
+              "Select Your Business Type",
+              "phone number", 
+              "CR Number",
+              "ID Number",
+              "Nafath",
+              "KYB"
+            ]} 
+            activeIndex={1} 
+            logoSrc={WhiteLogo} 
+          />
 
-      {/* Right content */}
-      <main className="flex-1 bg-white rounded-tl-[88px] relative flex flex-col">
-        <div className="text-center pt-12 pb-8">
-          <img src={HeroLogo} alt="" className="h-12 w-12 mx-auto" />
+          {/* Right content */}
+          <main className="flex-1 bg-white rounded-tl-[88px] relative flex flex-col">
+            <div className="text-center pt-12 pb-8">
+              <img src={HeroLogo} alt="" className="h-12 w-12 mx-auto" />
+            </div>
+
+            <div className="flex-1 flex items-start justify-center pt-16">
+              <div className="max-w-md w-full px-8">
+                <div className="flex items-center justify-center gap-4 mb-6">
+                  <img src={SignupIcon} alt="" className="h-12 w-12" />
+                  <h1 className="text-4xl font-bold text-gray-800">
+                    Sign Up
+                  </h1>
+                </div>
+
+                <p className="text-gray-600 text-center mb-12">
+                  Enter your phone number<br />
+                  to Sign up
+                </p>
+
+                <div className="mb-8">
+                  <FormField
+                    id="phone"
+                    label="Phone Number"
+                    helper="Must start with 05 and be exactly 10 digits"
+                    error={error || validationError}
+                    required
+                  >
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="05X XXX XXXX"
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      hasError={!!(error || validationError)}
+                      maxLength={12} // Formatted length
+                      autoComplete="tel"
+                      leftIcon={
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                      }
+                    />
+                  </FormField>
+                </div>
+
+                <div className="text-center">
+                  <button
+                    onClick={handleNext}
+                    disabled={!isValid || isLoading}
+                    className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
+                      !isValid || isLoading
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
+                    }`}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Sending...
+                      </div>
+                    ) : (
+                      'Next'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
+      </div>
 
-        <div className="flex-1 flex items-start justify-center pt-16">
-          <div className="max-w-md w-full px-8">
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <img src={SignupIcon} alt="" className="h-12 w-12" />
-              <h1 className="text-4xl font-bold text-gray-800">
-                Sign Up
-              </h1>
-            </div>
-
-            <p className="text-gray-600 text-center mb-12">
-              Enter your phone number<br />
-              to Sign up
-            </p>
-
-            <div className="mb-8">
-              <CustomInput
-                id="phone"
-                label="Phone Number"
-                placeholder="555 123 456"
-                value={phoneNumber}
-                onChange={(value) => {
-                  setPhoneNumber(value);
-                  setShowError(false); // Clear error when user types
-                }}
-                type="tel"
-                prefix="+966"
-                formatter={formatters.phone}
-                maxLength={11} // 9 digits + 2 spaces
-                validation={validatePhoneNumber}
-                showError={showError}
-                realTimeValidation={true}
-                autoComplete="tel"
-              />
-            </div>
-
-            <div className="text-center">
-              <button
-                onClick={handleNext}
-                className="bg-[#2E248F] text-white px-12 py-4 rounded-lg font-semibold hover:bg-[#1a1a5a] transition-colors text-lg w-full"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+      {/* Duplicate Phone Modal */}
+      <AlertModal
+        isOpen={showDuplicateModal}
+        onClose={() => setShowDuplicateModal(false)}
+        title="Phone Number Already Registered"
+        message="This phone number is already associated with an existing account. Please use a different number or contact support if you believe this is an error."
+        buttonLabel="Try Different Number"
+        variant="primary"
+        icon={
+          <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        }
+      />
+    </>
   );
 }
