@@ -37,7 +37,7 @@ export default function BusinessTypeSelection() {
       return;
     }
     
-    navigate("/onboarding/phone-number");
+    navigate("/onboarding/phone");
   };
 
   return (
