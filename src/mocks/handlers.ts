@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { scenario } from './scenario';
+import { adminHandlers } from './handlers-admin';
 
 // Helper to read scenario from request headers
 function readScenario(req: Request) {
@@ -19,8 +20,8 @@ function getEffectiveScenario(req: Request) {
 // Track Nafath request statuses
 const nafathStatusMap = new Map<string, { currentIndex: number; seq: string[] }>();
 
-// OTP handlers
-export const handlers = [
+// Onboarding handlers
+const onboardingHandlers = [
   // OTP send
   http.post('/otp/send', ({ request }) => {
     console.log('MSW: Intercepted POST /otp/send', request.url)
@@ -185,4 +186,10 @@ export const handlers = [
   http.post('/password/set', () => {
     return HttpResponse.json({ ok: true });
   }),
+];
+
+// Export all handlers combined
+export const handlers = [
+  ...onboardingHandlers,
+  ...adminHandlers
 ];
