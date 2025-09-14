@@ -61,27 +61,25 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
       throw new Error('Email and password are required');
     }
 
-    // Mock authentication - accept any non-empty credentials
-    const mockToken = `adm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const mockUser: AdminUser = {
-      name: 'Admin',
-      role: 'admin',
-    };
-
-    // Persist to sessionStorage
-    sessionStorage.setItem(STORAGE_KEY, mockToken);
-    sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(mockUser));
+    // Use adminAuthService for actual API call
+    const { adminAuthService } = await import('../api/adminAuthService');
+    const response = await adminAuthService.login(email, password);
 
     setState({
-      token: mockToken,
-      user: mockUser,
+      token: response.token,
+      user: {
+        name: response.name,
+        role: response.role,
+      },
       isLoading: false,
     });
   };
 
   const signOut = (): void => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    sessionStorage.removeItem(USER_STORAGE_KEY);
+    // Use adminAuthService for consistent cleanup
+    import('../api/adminAuthService').then(({ adminAuthService }) => {
+      adminAuthService.signOut();
+    });
     
     setState({
       token: null,
