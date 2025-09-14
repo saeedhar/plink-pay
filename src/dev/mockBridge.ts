@@ -20,6 +20,9 @@ export function applyScenarioPatch(patch: Partial<Scenario>) {
   if (typeof (window as any).setMockScenario === 'function') {
     (window as any).setMockScenario(patch);
   }
+  
+  // Trigger custom event to notify components
+  window.dispatchEvent(new CustomEvent('mockScenarioChanged'));
 }
 
 export function getScenarioHeader(): string {

@@ -51,10 +51,10 @@ export class NafathManager {
   private startPolling(): void {
     if (!this.session) return;
 
-    // Poll every 3 seconds
+    // Poll every 5 seconds for slower transitions
     this.session.pollInterval = setInterval(async () => {
       await this.checkStatus();
-    }, 3000);
+    }, 10000);
   }
 
   /**

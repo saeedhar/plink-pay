@@ -12,6 +12,7 @@ import { CustomSelect } from "../components/CustomSelect";
 import { MultiSelect } from "../../../components/ui/MultiSelect";
 import { validateKYBField, validateOtherText, KYB_OPTIONS } from "../../../utils/validators";
 import { submitKYB } from "../../../services/onboardingAPI";
+import { DevScenarioBar } from "../../../dev/DevScenarioBar";
 
 export default function KYBPage() {
   const [annualRevenue, setAnnualRevenue] = useState("");
@@ -242,6 +243,14 @@ export default function KYBPage() {
           </main>
         </div>
       </div>
+      
+      <DevScenarioBar
+        title="KYB Scenarios"
+        items={[
+          { label: 'High Risk', patch: { globalHit: true } },
+          { label: 'Low Risk',  patch: { globalHit: false } },
+        ]}
+      />
     </>
   );
 }

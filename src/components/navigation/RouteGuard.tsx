@@ -43,15 +43,15 @@ export function RouteGuard({ children, requiredStep, redirectTo }: RouteGuardPro
  * Find the furthest step the user can access
  */
 function findFurthestAccessibleStep(state: any): OnboardingStep {
-  const steps = [
-    OnboardingStep.BUSINESS_TYPE,
-    OnboardingStep.PHONE,
-    OnboardingStep.OTP,
-    OnboardingStep.CR_NUMBER,
-    OnboardingStep.ID_NUMBER,
-    OnboardingStep.NAFATH,
-    OnboardingStep.KYB,
-    OnboardingStep.PASSWORD
+  const steps: OnboardingStep[] = [
+    'businessType',
+    'phone',
+    'otp',
+    'cr',
+    'id',
+    'nafath',
+    'kyb',
+    'password'
   ];
 
   // Start from the end and work backwards
@@ -61,7 +61,7 @@ function findFurthestAccessibleStep(state: any): OnboardingStep {
     }
   }
 
-  return OnboardingStep.BUSINESS_TYPE;
+  return 'businessType';
 }
 
 /**
@@ -69,14 +69,16 @@ function findFurthestAccessibleStep(state: any): OnboardingStep {
  */
 function getStepPath(step: OnboardingStep): string {
   const stepPaths: Record<OnboardingStep, string> = {
-    [OnboardingStep.BUSINESS_TYPE]: '/onboarding/business-type',
-    [OnboardingStep.PHONE]: '/onboarding/phone',
-    [OnboardingStep.OTP]: '/onboarding/otp',
-    [OnboardingStep.CR_NUMBER]: '/onboarding/cr-number',
-    [OnboardingStep.ID_NUMBER]: '/onboarding/id-number',
-    [OnboardingStep.NAFATH]: '/onboarding/nafath',
-    [OnboardingStep.KYB]: '/onboarding/kyb',
-    [OnboardingStep.PASSWORD]: '/onboarding/password'
+    'businessType': '/onboarding/business-type',
+    'phone': '/onboarding/phone',
+    'otp': '/onboarding/otp',
+    'cr': '/onboarding/cr-number',
+    'id': '/onboarding/id-number',
+    'nafath': '/onboarding/nafath',
+    'globalScreening': '/onboarding/global-screening',
+    'kyb': '/onboarding/kyb',
+    'password': '/onboarding/password',
+    'done': '/onboarding/business-type'
   };
 
   return stepPaths[step] || '/onboarding/business-type';

@@ -5,6 +5,7 @@
 
 import { globalCache, verificationCache } from './cacheService';
 import { globalScreeningService, complianceService } from './complianceService';
+import { http } from './http';
 
 // ==========================================
 // TYPE DEFINITIONS
@@ -176,38 +177,45 @@ async function apiRequest<T>(
 // ==========================================
 
 export async function sendOTP(phoneNumber: string): Promise<OTPSendResponse> {
-  // Check for duplicate phone first
-  const duplicateCheck = await checkPhoneDuplicate(phoneNumber);
-  if (duplicateCheck.isDuplicate) {
-    throw new DuplicatePhoneError();
+  try {
+    const response = await http<{ sessionId: string; expiresAt: number }>('/otp/send', {
+      method: 'POST',
+      body: JSON.stringify({ phone: phoneNumber })
+    });
+    
+    return {
+      requestId: response.sessionId,
+      expiresAt: new Date(response.expiresAt).toISOString(),
+      attemptsRemaining: 3
+    };
+  } catch (error: any) {
+    if (error.message === '409') {
+      throw new DuplicatePhoneError();
+    }
+    throw new APIError('Failed to send OTP', 'OTP_SEND_FAILED');
   }
-
-  // For demo purposes, simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return {
-    requestId: `otp_${Date.now()}`,
-    expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
-    attemptsRemaining: 3
-  };
 }
 
 export async function verifyOTP(
   requestId: string, 
   code: string
 ): Promise<OTPVerifyResponse> {
-  // For demo purposes, simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  // Accept any 4-digit code for demo
-  if (code.length === 4 && /^\d+$/.test(code)) {
+  try {
+    const response = await http<{ ok: boolean }>('/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ code })
+    });
+    
     return {
-      verified: true,
+      verified: response.ok,
       token: `token_${Date.now()}`
     };
+  } catch (error: any) {
+    if (error.message === '400') {
+      throw new ValidationError('Invalid verification code');
+    }
+    throw new APIError('Failed to verify OTP', 'OTP_VERIFY_FAILED');
   }
-  
-  throw new ValidationError('Invalid verification code');
 }
 
 // ==========================================
@@ -239,22 +247,25 @@ export async function verifyCR(crNumber: string): Promise<CRVerificationResponse
   
   // Check cache first (valid for 10 minutes)
   return await verificationCache.getOrSet(cacheKey, async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Simulate some CR numbers failing verification
-    const invalidCRs = ['1234567890', '0000000000'];
-    
-    if (invalidCRs.includes(crNumber.replace(/\D/g, ''))) {
-      throw new CRVerificationError('CR Number not found in commercial registry');
+    try {
+      const response = await http<{ valid: boolean; companyType: string; activityAllowed: boolean }>(`/wathiq/cr/verify?cr=${encodeURIComponent(crNumber)}`);
+      
+      if (!response.valid) {
+        throw new CRVerificationError('CR Number not found in commercial registry');
+      }
+      
+      return {
+        valid: response.valid,
+        companyName: 'Demo Company Ltd.',
+        registrationDate: '2020-01-15',
+        status: 'active' as const
+      };
+    } catch (error: any) {
+      if (error.message === '400') {
+        throw new CRVerificationError('CR Number not found in commercial registry');
+      }
+      throw new CRVerificationError('CR verification failed');
     }
-    
-    return {
-      valid: true,
-      companyName: 'Demo Company Ltd.',
-      registrationDate: '2020-01-15',
-      status: 'active' as const
-    };
   }, 10 * 60 * 1000);
 }
 
@@ -266,38 +277,41 @@ export async function verifyID(
   idNumber: string, 
   phoneNumber: string
 ): Promise<IDVerificationResponse> {
-  // For demo purposes, simulate API call
-  await new Promise(resolve => setTimeout(resolve, 2500));
-  
   const cleanId = idNumber.replace(/\s/g, '');
   const cleanPhone = phoneNumber.replace(/\s/g, '');
   
-  // Simulate ID verification failures
-  const invalidIds = ['1234567890', '2000000000'];
-  if (invalidIds.includes(cleanId)) {
-    throw new IDVerificationError('ID Number not found in national database');
+  try {
+    const response = await http<{ valid: boolean }>(`/id/verify?id=${encodeURIComponent(cleanId)}`);
+    
+    if (!response.valid) {
+      throw new IDVerificationError('ID Number not found in national database');
+    }
+    
+    // Check phone-ID match via Tahaquq
+    const tahaquqResponse = await http<{ match: boolean }>('/tahaquq/check', {
+      method: 'POST',
+      body: JSON.stringify({ phone: cleanPhone, id: cleanId })
+    });
+    
+    if (!tahaquqResponse.match) {
+      throw new IDMismatchError();
+    }
+    
+    return {
+      valid: response.valid,
+      matchesPhone: tahaquqResponse.match,
+      idType: cleanId.startsWith('1') ? 'saudi' : 'iqama',
+      expiryDate: '2030-12-31'
+    };
+  } catch (error: any) {
+    if (error instanceof IDMismatchError) {
+      throw error;
+    }
+    if (error.message === '400') {
+      throw new IDVerificationError('ID Number not found in national database');
+    }
+    throw new IDVerificationError('ID verification failed');
   }
-  
-  // Simulate phone mismatch
-  const mismatchPairs = [
-    { id: '1111111111', phone: '0501234567' },
-    { id: '2222222222', phone: '0509876543' }
-  ];
-  
-  const hasMismatch = mismatchPairs.some(
-    pair => pair.id === cleanId && pair.phone !== cleanPhone
-  );
-  
-  if (hasMismatch) {
-    throw new IDMismatchError();
-  }
-  
-  return {
-    valid: true,
-    matchesPhone: true,
-    idType: cleanId.startsWith('1') ? 'saudi' : 'iqama',
-    expiryDate: '2030-12-31'
-  };
 }
 
 // ==========================================
@@ -314,24 +328,12 @@ export async function localScreen(idNumber: string): Promise<LocalScreeningRespo
   const cacheKey = `local_screening:${idNumber}`;
   
   return await verificationCache.getOrSet(cacheKey, async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Simulate some IDs hitting local screening
-    const hitIDs = ['9999999999', '8888888888'];
-    const cleanId = idNumber.replace(/\D/g, '');
-    
-    if (hitIDs.includes(cleanId)) {
-      return {
-        status: 'HIT',
-        riskScore: 85,
-        reason: 'ID flagged in local screening database'
-      };
-    }
+    const response = await http<{ status: 'CLEAR' | 'HIT' }>('/stitch/local-screen');
     
     return {
-      status: 'CLEAR',
-      riskScore: 10
+      status: response.status,
+      riskScore: response.status === 'HIT' ? 85 : 10,
+      reason: response.status === 'HIT' ? 'ID flagged in local screening database' : undefined
     };
   }, 30 * 60 * 1000); // 30 minutes cache
 }
@@ -401,34 +403,16 @@ export async function globalScreening(data: GlobalScreeningRequest): Promise<Glo
   const cacheKey = `global_screening:${data.idNumber}:${data.phoneNumber}:${data.crNumber}`;
   
   return await verificationCache.getOrSet(cacheKey, async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Simulate some combinations hitting global screening
-    const hitCombinations = [
-      { id: '9999999999', phone: '0501234567', cr: '1234567890' },
-      { id: '8888888888', phone: '0509876543', cr: '0987654321' }
-    ];
-    
-    const hasHit = hitCombinations.some(
-      hit => hit.id === data.idNumber.replace(/\D/g, '') ||
-             hit.phone === data.phoneNumber.replace(/\D/g, '') ||
-             hit.cr === data.crNumber.replace(/\D/g, '')
-    );
-    
-    if (hasHit) {
-      return {
-        status: 'HIT',
-        riskScore: 75,
-        reason: 'Information flagged in global screening database',
-        requiresManualReview: true
-      };
-    }
+    const response = await http<{ status: 'CLEAR' | 'HIT' }>('/screening/global', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
     
     return {
-      status: 'CLEAR',
-      riskScore: 15,
-      requiresManualReview: false
+      status: response.status,
+      riskScore: response.status === 'HIT' ? 75 : 15,
+      reason: response.status === 'HIT' ? 'Information flagged in global screening database' : undefined,
+      requiresManualReview: response.status === 'HIT'
     };
   }, 60 * 60 * 1000); // 1 hour cache
 }
@@ -438,40 +422,27 @@ export async function globalScreening(data: GlobalScreeningRequest): Promise<Glo
 // ==========================================
 
 export async function initiateNafath(idNumber: string): Promise<NafathInitiateResponse> {
-  // For demo purposes, simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  const requestId = `nafath_${Date.now()}`;
+  const response = await http<{ requestId: string; deepLink: string; expiresAt: number }>('/nafath/initiate', {
+    method: 'POST',
+    body: JSON.stringify({ id: idNumber })
+  });
   
   return {
-    requestId,
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
-    nafathUrl: `https://nafath.sa/verify?requestId=${requestId}`
+    requestId: response.requestId,
+    expiresAt: new Date(response.expiresAt).toISOString(),
+    nafathUrl: response.deepLink
   };
 }
 
 export async function getNafathStatus(requestId: string): Promise<NafathStatusResponse> {
-  // For demo purposes, simulate API call and status progression
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  const response = await http<{ status: NafathStatus; requestId: string }>(`/nafath/status?requestId=${encodeURIComponent(requestId)}`);
   
-  // Simulate status progression based on time
-  const created = parseInt(requestId.split('_')[1]);
-  const elapsed = Date.now() - created;
-  
-  if (elapsed < 30000) { // First 30 seconds
-    return { status: 'SENT', requestId };
-  } else if (elapsed < 120000) { // Next 90 seconds
-    return { status: 'UNDER_REVIEW', requestId };
-  } else if (elapsed < 180000) { // Next 60 seconds
-    return { status: 'RECEIVED', requestId, completedAt: new Date().toISOString() };
-  } else {
-    // Simulate occasional failures
-    return { 
-      status: 'FAILED', 
-      requestId, 
-      failureReason: 'Request timeout or user declined' 
-    };
-  }
+  return {
+    status: response.status,
+    requestId: response.requestId,
+    completedAt: response.status === 'RECEIVED' ? new Date().toISOString() : undefined,
+    failureReason: response.status === 'FAILED' || response.status === 'REJECTED' ? 'Request timeout or user declined' : undefined
+  };
 }
 
 // ==========================================
@@ -490,36 +461,14 @@ export async function submitKYB(kybData: {
     deposits?: string;
   };
 }): Promise<KYBSubmitResponse> {
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Enhanced risk rating with Mozon integration simulation
-  let riskRating: 'low' | 'medium' | 'high' = 'low';
-  
-  // High risk activities
-  const highRiskActivities = ['financial', 'crypto', 'money-exchange'];
-  const highRiskPurposes = ['international-payments', 'other'];
-  
-  if (kybData.annualRevenue === 'above-10m') {
-    riskRating = 'high';
-  } else if (
-    highRiskActivities.includes(kybData.businessActivity) ||
-    kybData.purposeOfAccount.some(purpose => highRiskPurposes.includes(purpose))
-  ) {
-    riskRating = 'medium';
-  }
-
-  // Simulate Mozon risk assessment integration
-  const mozonRiskScore = Math.random() * 100;
-  if (mozonRiskScore > 80) {
-    riskRating = 'high';
-  } else if (mozonRiskScore > 50) {
-    riskRating = 'medium';
-  }
+  const response = await http<{ riskRating: 'LOW' | 'MEDIUM' | 'HIGH'; nextStep: string }>('/kyb/submit', {
+    method: 'POST',
+    body: JSON.stringify(kybData)
+  });
   
   return {
-    riskRating,
-    nextStep: riskRating === 'high' ? 'review' : 'approved',
+    riskRating: response.riskRating.toLowerCase() as 'low' | 'medium' | 'high',
+    nextStep: response.nextStep as 'approved' | 'review' | 'rejected',
     referenceId: `kyb_${Date.now()}`
   };
 }
@@ -578,12 +527,12 @@ export async function submitCompliance(data: {
 export async function getComplianceDecision(
   submissionId: string
 ): Promise<ComplianceDecisionResponse> {
-  const decision = await complianceService.getComplianceDecision(submissionId);
+  const response = await http<{ status: 'APPROVED' | 'PENDING' | 'REJECTED' }>('/compliance/decision');
   
   return {
-    status: decision.status.toLowerCase() as any,
-    riskScore: decision.riskScore,
-    requiresManualReview: decision.requiresManualReview
+    status: response.status.toLowerCase() as 'approved' | 'pending' | 'rejected',
+    riskScore: 50, // Mock value
+    requiresManualReview: response.status === 'PENDING'
   };
 }
 
@@ -592,8 +541,10 @@ export async function getComplianceDecision(
 // ==========================================
 
 export async function setPassword(password: string): Promise<{ success: boolean }> {
-  // For demo purposes, simulate password setting
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  const response = await http<{ ok: boolean }>('/password/set', {
+    method: 'POST',
+    body: JSON.stringify({ password })
+  });
   
-  return { success: true };
+  return { success: response.ok };
 }

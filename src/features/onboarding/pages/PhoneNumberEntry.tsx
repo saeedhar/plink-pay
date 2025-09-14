@@ -12,6 +12,7 @@ import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { validateSaudiPhone, formatPhoneNumber } from "../../../utils/validators";
 import { sendOTP, DuplicatePhoneError } from "../../../services/onboardingAPI";
+import { DevScenarioBar } from "../../../dev/DevScenarioBar";
 
 export default function PhoneNumberEntry() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -163,9 +164,17 @@ export default function PhoneNumberEntry() {
                 </div>
               </div>
             </div>
-          </main>
-        </div>
+        </main>
       </div>
+      
+      <DevScenarioBar
+        title="Phone Scenarios"
+        items={[
+          { label: 'Duplicate phone', patch: { duplicatePhone: true } },
+          { label: 'OK',               patch: { duplicatePhone: false } },
+        ]}
+      />
+    </div>
 
       {/* Duplicate Phone Modal */}
       <AlertModal

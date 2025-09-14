@@ -67,14 +67,7 @@ export function NafathModal() {
           <h3 className="text-2xl font-bold text-[#00B4A6] mb-4">نفاذ</h3>
           <div className="w-12 h-12 border-4 border-[#2E248F] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 mb-6">Request sent to Nafath</p>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={handleDone}
-              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium cursor-not-allowed"
-              disabled
-            >
-              Done
-            </button>
+          <div className="flex justify-center">
             <button
               onClick={handleDone}
               className="bg-[#2E248F] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#1a1a5a] transition-colors"
@@ -92,7 +85,7 @@ export function NafathModal() {
     return (
       <AlertModal
         isOpen={true}
-        onClose={handleClose}
+        onClose={handleDone}
         title="Request Under Review"
         message="Your request has been received and is under review for compliance. We'll notify you once the process is complete."
         buttonLabel="Done"

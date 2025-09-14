@@ -28,7 +28,9 @@ export function useNafathModal() {
 
   // Initialize Nafath when entering nafath step
   const initializeNafath = useCallback(async () => {
-    const onboardingState = JSON.parse(localStorage.getItem('onboardingState') || '{}');
+    const storedState = localStorage.getItem('plink_onboarding_state');
+    const persistedState = storedState ? JSON.parse(storedState) : null;
+    const onboardingState = persistedState?.data || {};
     
     if (!onboardingState.data?.idNumber) {
       console.error("ID Number not found");
@@ -53,8 +55,8 @@ export function useNafathModal() {
       // Subscribe to status changes
       const unsubscribe = nafathManager.onStatusChange((status) => {
         setState(prev => {
-          // Prevent duplicate processing
-          if (prev.processedRequestIds.has(nafathSession.requestId)) {
+          // Only prevent processing if modal is closed
+          if (!prev.isOpen) {
             return prev;
           }
           
@@ -129,7 +131,9 @@ export function useNafathModal() {
   }, []);
 
   const handleResend = useCallback(async () => {
-    const onboardingState = JSON.parse(localStorage.getItem('onboardingState') || '{}');
+    const storedState = localStorage.getItem('plink_onboarding_state');
+    const persistedState = storedState ? JSON.parse(storedState) : null;
+    const onboardingState = persistedState?.data || {};
     
     if (!onboardingState.data?.idNumber) return;
     
@@ -181,6 +185,9 @@ export function useNafathModal() {
       // Navigate to global screening step (which will then go to KYB)
       dispatch({ type: 'NEXT_STEP' });
       navigate("/onboarding/global-screening");
+    } else if (state.currentStatus === 'UNDER_REVIEW') {
+      // For under review, just close the modal and let it continue to RECEIVED
+      setState(prev => ({ ...prev, currentStatus: null }));
     } else if (state.currentStatus === 'SENT') {
       // Just close the modal, stay on page
       setState(prev => ({ ...prev, currentStatus: null }));

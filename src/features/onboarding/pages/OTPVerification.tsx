@@ -10,6 +10,7 @@ import { Stepper } from '../../../components/ui/Stepper';
 import { Modal } from '../../../components/ui/Modal';
 import { validateOTP, convertArabicToEnglish, OTP_CONFIG } from '../../../utils/validators';
 import { verifyOTP, sendOTP } from '../../../services/onboardingAPI';
+import { DevScenarioBar } from '../../../dev/DevScenarioBar';
 
 export default function OTPVerification() {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -284,6 +285,14 @@ export default function OTPVerification() {
           </Modal>
         </div>
       </div>
+      
+      <DevScenarioBar
+        title="OTP Scenarios"
+        items={[
+          { label: 'Accept code 1234', patch: { otpAcceptCode: '1234' } },
+          { label: 'Always invalid',   patch: { otpAcceptCode: 'never' } },
+        ]}
+      />
     </>
   );
 }

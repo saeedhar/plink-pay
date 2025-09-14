@@ -23,6 +23,7 @@ const nafathStatusMap = new Map<string, { currentIndex: number; seq: string[] }>
 export const handlers = [
   // OTP send
   http.post('/otp/send', ({ request }) => {
+    console.log('MSW: Intercepted POST /otp/send', request.url)
     const s = getEffectiveScenario(request);
     if (s.duplicatePhone) {
       return HttpResponse.json(

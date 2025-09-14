@@ -4,6 +4,7 @@ import { Stepper } from "../../../components/ui/Stepper";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
+import { DevScenarioBar } from "../../../dev/DevScenarioBar";
 
 export default function NafathPage() {
   const { state, dispatch } = useOnboarding();
@@ -44,6 +45,15 @@ export default function NafathPage() {
           </div>
         </main>
       </div>
+      
+      <DevScenarioBar
+        title="Nafath Scenarios"
+        items={[
+          { label: 'Happy: RECEIVED', patch: { nafathSeq: ['SENT','UNDER_REVIEW','RECEIVED'] } },
+          { label: 'Rejected',        patch: { nafathSeq: ['REJECTED'] } },
+          { label: 'Failed',          patch: { nafathSeq: ['FAILED'] } },
+        ]}
+      />
     </div>
   );
 }

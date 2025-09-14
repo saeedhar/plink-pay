@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
@@ -9,6 +9,7 @@ import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { validateSaudiId, formatIdNumber, getIdType } from "../../../utils/validators";
 import { verifyID, IDVerificationError, IDMismatchError, localScreen, tahaquq } from "../../../services/onboardingAPI";
+import { DevScenarioBar } from "../../../dev/DevScenarioBar";
 
 export default function IDNumberEntry() {
   const [idNumber, setIdNumber] = useState("");
@@ -16,13 +17,46 @@ export default function IDNumberEntry() {
   const [isLoading, setIsLoading] = useState(false);
   const [showVerificationFailedModal, setShowVerificationFailedModal] = useState(false);
   const [showMismatchModal, setShowMismatchModal] = useState(false);
+  const [mockScenario, setMockScenario] = useState<any>({});
   
   const navigate = useNavigate();
   const { state, dispatch } = useOnboarding();
 
-  // Real-time validation
-  const validationError = validateSaudiId(idNumber);
-  const isValid = !validationError && idNumber.length > 0;
+  // Update mock scenario when it changes
+  useEffect(() => {
+    const updateScenario = () => {
+      const currentScenario = (window as any).__MOCK_SCENARIO__ || {};
+      setMockScenario(currentScenario);
+    };
+    
+    // Initial update
+    updateScenario();
+    
+    // Listen for scenario changes with a custom event
+    const handleScenarioChange = () => updateScenario();
+    window.addEventListener('mockScenarioChanged', handleScenarioChange);
+    
+    return () => {
+      window.removeEventListener('mockScenarioChanged', handleScenarioChange);
+    };
+  }, []);
+  
+  // Debug logging
+  console.log('IDNumberEntry - mockScenario:', mockScenario);
+  
+  // Real-time validation - respect mock scenario for idValid
+  let validationError: string | null = null;
+  
+  if (mockScenario.idValid === false) {
+    validationError = "Invalid ID format (mock scenario)";
+  } else if (mockScenario.idValid === true) {
+    // If mock scenario says ID is valid, always pass validation
+    validationError = null;
+  } else {
+    validationError = validateSaudiId(idNumber);
+  }
+  
+  const isValid = !validationError && (idNumber.length > 0 || mockScenario.idValid === true);
 
   // Get the ID type for display
   const idType = getIdType(idNumber.replace(/\s/g, ''));
@@ -38,17 +72,35 @@ export default function IDNumberEntry() {
   };
 
   const handleNext = async () => {
-    const validationResult = validateSaudiId(idNumber);
-    if (validationResult) {
-      setError(validationResult);
+    console.log('🚀 handleNext START - mockScenario:', mockScenario);
+    
+    // Check mock scenario first
+    if (mockScenario.idValid === false) {
+      console.log('❌ Validation failed due to mock scenario');
+      setError("Invalid ID format (mock scenario)");
       return;
+    }
+    
+    // If mock scenario says ID is valid, skip validation completely
+    if (mockScenario.idValid === true) {
+      console.log('✅ Skipping validation due to mock scenario');
+      // Skip validation, proceed with API calls
+    } else {
+      const validationResult = validateSaudiId(idNumber);
+      if (validationResult) {
+        console.log('❌ Normal validation failed:', validationResult);
+        setError(validationResult);
+        return;
+      }
     }
 
     if (!state.data.phone) {
+      console.log('handleNext - ERROR: No phone number found');
       setError("Phone number not found. Please restart the process.");
       return;
     }
 
+    console.log('handleNext - Starting API calls...');
     setIsLoading(true);
     setError("");
 
@@ -57,8 +109,9 @@ export default function IDNumberEntry() {
       const cleanId = idNumber.replace(/\s/g, '');
       const cleanPhone = state.data.phone.replace(/\s/g, '');
       
-      console.log('Starting local screening...');
+      console.log('handleNext - Starting local screening for ID:', cleanId);
       const screeningResult = await localScreen(cleanId);
+      console.log('handleNext - Local screening result:', screeningResult);
       
       if (screeningResult.status === 'HIT') {
         setError("ID verification failed. Please contact support.");
@@ -66,28 +119,47 @@ export default function IDNumberEntry() {
       }
       
       // Step 2: Tahaquq (Phone-ID match verification)
-      console.log('Starting tahaquq verification...');
+      console.log('handleNext - Starting tahaquq verification...');
       const tahaquqResult = await tahaquq(cleanPhone, cleanId);
+      console.log('handleNext - Tahaquq result:', tahaquqResult);
       
       if (!tahaquqResult.match) {
+        console.log('handleNext - Tahaquq mismatch, showing modal');
         setShowMismatchModal(true);
         return;
       }
       
       // Step 3: ID verification successful - proceed to Nafath
-      dispatch({ type: 'VERIFY_ID_SUCCESS' });
-      dispatch({ type: 'NEXT_STEP' });
-      navigate("/onboarding/nafath");
+      console.log('🎉 All checks passed, navigating to Nafath');
+      
+      try {
+        dispatch({ type: 'SET_ID_NUMBER', payload: idNumber });
+        dispatch({ type: 'VERIFY_ID_SUCCESS' });
+        dispatch({ type: 'SET_CURRENT_STEP', payload: 'nafath' });
+        
+        // Small delay to ensure state updates before navigation
+        setTimeout(() => {
+          navigate("/onboarding/nafath");
+        }, 50);
+      } catch (navError) {
+        console.error('❌ Navigation error:', navError);
+        throw navError;
+      }
       
     } catch (err) {
+      console.log('handleNext - ERROR caught:', err);
       if (err instanceof IDMismatchError) {
+        console.log('handleNext - IDMismatchError, showing modal');
         setShowMismatchModal(true);
       } else if (err instanceof IDVerificationError) {
+        console.log('handleNext - IDVerificationError, showing modal');
         setShowVerificationFailedModal(true);
       } else {
+        console.log('handleNext - Generic error:', err);
         setError("Failed to verify ID Number. Please try again.");
       }
     } finally {
+      console.log('handleNext - Finished, setting loading to false');
       setIsLoading(false);
     }
   };
@@ -245,6 +317,15 @@ export default function IDNumberEntry() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
         }
+      />
+      
+      <DevScenarioBar
+        title="ID/Tahaquq Scenarios"
+        items={[
+          { label: 'Invalid ID format', patch: { idValid: false } },
+          { label: 'Phone↔ID mismatch', patch: { idPhoneMismatch: true } },
+          { label: 'All good',          patch: { idValid: true, idPhoneMismatch: false } },
+        ]}
       />
     </>
   );

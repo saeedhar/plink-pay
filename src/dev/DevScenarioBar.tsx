@@ -11,14 +11,18 @@ export function DevScenarioBar({ items, title }: { items: Item[]; title: string 
       <div className="text-xs font-semibold mb-1">{title}</div>
       <div className="flex flex-wrap gap-2">
         {items.map((it) => (
-          <button
-            key={it.label}
-            onClick={() => applyScenarioPatch(it.patch)}
-            className="text-xs rounded-md border px-2 py-1 hover:bg-gray-50 active:scale-[.99]"
-            type="button"
-          >
-            {it.label}
-          </button>
+            <button
+              key={it.label}
+              onClick={() => {
+                console.log('DevScenarioBar - applying patch:', it.patch);
+                applyScenarioPatch(it.patch);
+                console.log('DevScenarioBar - new scenario:', (window as any).__MOCK_SCENARIO__);
+              }}
+              className="text-xs rounded-md border px-2 py-1 hover:bg-gray-50 active:scale-[.99]"
+              type="button"
+            >
+              {it.label}
+            </button>
         ))}
         <button
           onClick={() => resetScenario()}

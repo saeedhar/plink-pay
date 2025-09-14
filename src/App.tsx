@@ -17,6 +17,7 @@ import {
   PasswordSetup
 } from './features/onboarding/pages';
 import GlobalScreeningPage from './features/onboarding/pages/GlobalScreeningPage';
+import { AppAdminRoutes } from './features/admin/AppAdminRoutes';
 
 function AppRoutes() {
   const security = useSecurity();
@@ -26,6 +27,11 @@ function AppRoutes() {
       <Routes>
         {/* Main route - Splash screen */}
         <Route path="/" element={<Splash />} />
+        
+        {/* Admin routes */}
+        {import.meta.env.VITE_ADMIN_ENABLED === 'true' && (
+          <Route path="/admin/*" element={<AppAdminRoutes />} />
+        )}
         
         {/* Onboarding routes with protection */}
         <Route path="/onboarding">
