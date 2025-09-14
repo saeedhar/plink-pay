@@ -10,8 +10,11 @@ export interface KybOption {
   locale: 'en' | 'ar';
 }
 
-// In-memory database for KYB options
-export const kybOptions: KybOption[] = [
+// Storage key for localStorage persistence
+const STORAGE_KEY = 'plink_admin_kyb_options';
+
+// Default seed data
+const defaultKybOptions: KybOption[] = [
   // Purpose of Account options
   {
     id: 'p1',
@@ -145,7 +148,36 @@ export const kybOptions: KybOption[] = [
   }
 ];
 
-// Helper functions for managing the in-memory DB
+// Load options from localStorage or use defaults
+function loadKybOptions(): KybOption[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Validate that it's an array
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load KYB options from localStorage:', error);
+  }
+  return [...defaultKybOptions]; // Return copy of defaults
+}
+
+// Save options to localStorage
+function saveKybOptions(options: KybOption[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+  } catch (error) {
+    console.warn('Failed to save KYB options to localStorage:', error);
+  }
+}
+
+// Initialize with persisted data
+export let kybOptions: KybOption[] = loadKybOptions();
+
+// Helper functions for managing the persistent DB
 export function getKybOptionsByCategory(category: KybCategory, locale: 'en' | 'ar' = 'en'): KybOption[] {
   return kybOptions
     .filter(option => option.category === category && option.locale === locale)
@@ -159,6 +191,10 @@ export function createKybOption(data: Omit<KybOption, 'id'>): KybOption {
     ...data
   };
   kybOptions.push(newOption);
+  
+  // Persist to localStorage
+  saveKybOptions(kybOptions);
+  
   return newOption;
 }
 
@@ -167,4 +203,29 @@ export function getNextOrderForCategory(category: KybCategory, locale: 'en' | 'a
   return categoryOptions.length > 0 
     ? Math.max(...categoryOptions.map(opt => opt.order)) + 1 
     : 1;
+}
+
+// Reset to default data (useful for testing)
+export function resetKybOptions(): void {
+  kybOptions.length = 0; // Clear array
+  kybOptions.push(...defaultKybOptions); // Add defaults
+  saveKybOptions(kybOptions); // Persist
+}
+
+// Clear all data
+export function clearKybOptions(): void {
+  kybOptions.length = 0;
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+// Console helpers for development (only in dev mode)
+if (import.meta.env.DEV) {
+  (window as any).adminDB = {
+    getOptions: () => kybOptions,
+    resetOptions: resetKybOptions,
+    clearOptions: clearKybOptions,
+    addTestOption: (category: KybCategory, label: string) => 
+      createKybOption({ category, label, active: true, locale: 'en', order: getNextOrderForCategory(category) })
+  };
+  console.log('Admin DB helpers available: window.adminDB');
 }

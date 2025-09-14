@@ -28,8 +28,15 @@ function unauthorized() {
 }
 
 export const adminHandlers = [
+  // Test handler to verify MSW is working
+  http.get('/admin/test', () => {
+    console.log('MSW: Test handler called');
+    return HttpResponse.json({ message: 'MSW is working!' });
+  }),
+
   // Admin login
   http.post('/admin/login', async ({ request }) => {
+    console.log('MSW: Intercepted POST /admin/login', request.url);
     try {
       const body = await request.json() as { email: string; password: string };
       
@@ -70,13 +77,18 @@ export const adminHandlers = [
 
   // Get KYB options by category
   http.get('/admin/kyb/options', ({ request }) => {
+    console.log('MSW: Intercepted GET /admin/kyb/options', request.url);
+    
     if (!validateAdminToken(request)) {
+      console.log('MSW: Admin token validation failed');
       return unauthorized();
     }
 
     const url = new URL(request.url);
     const category = url.searchParams.get('category') as KybCategory;
     const locale = (url.searchParams.get('locale') as 'en' | 'ar') || 'en';
+    
+    console.log('MSW: Category:', category, 'Locale:', locale);
 
     if (!category) {
       return HttpResponse.json(

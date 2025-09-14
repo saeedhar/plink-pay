@@ -5,6 +5,8 @@ export async function adminHttp<T = unknown>(url: string, init: RequestInit = {}
   // Get token from sessionStorage
   const token = (sessionStorage.getItem('admin_token') ?? '').trim();
   
+  console.log('AdminHttp: Making request to', url, 'with token:', token ? 'present' : 'missing');
+  
   // Prepare headers
   const headers = new Headers(init.headers);
   
@@ -23,6 +25,8 @@ export async function adminHttp<T = unknown>(url: string, init: RequestInit = {}
     ...init,
     headers
   });
+  
+  console.log('AdminHttp: Response status:', response.status, 'Content-Type:', response.headers.get('Content-Type'));
   
   // Handle non-ok responses
   if (!response.ok) {

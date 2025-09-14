@@ -39,9 +39,12 @@ export function AdminKybOptionsPage() {
     setIsLoading(true);
     setError('');
     try {
+      console.log('Loading options for category:', selectedCategory);
       const response = await kybOptionsService.listOptions(selectedCategory);
+      console.log('Received response:', response);
       setOptions(response.items);
     } catch (err) {
+      console.error('Error loading options:', err);
       setError(err instanceof Error ? err.message : 'Failed to load options');
     } finally {
       setIsLoading(false);
