@@ -1,9 +1,16 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../auth/useAdminAuth';
 
 export function AdminLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAdminAuth();
+
+  const handleSignOut = () => {
+    signOut();
+    // Navigate immediately to login page
+    navigate('/admin/login', { replace: true });
+  };
 
   const isActive = (path: string) => {
     if (path === '/admin' && location.pathname === '/admin') return true;
@@ -25,7 +32,7 @@ export function AdminLayout() {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Welcome, {user?.name || 'Admin'}</span>
               <button 
-                onClick={signOut}
+                onClick={handleSignOut}
                 className="text-sm text-red-600 hover:text-red-800"
               >
                 Sign Out

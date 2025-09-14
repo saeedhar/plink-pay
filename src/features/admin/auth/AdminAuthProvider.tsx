@@ -76,7 +76,11 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
   };
 
   const signOut = (): void => {
-    // Use adminAuthService for consistent cleanup
+    // Clear sessionStorage immediately for security
+    sessionStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(USER_STORAGE_KEY);
+    
+    // Also use adminAuthService for consistent cleanup
     import('../api/adminAuthService').then(({ adminAuthService }) => {
       adminAuthService.signOut();
     });
