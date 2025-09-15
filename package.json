@@ -12,7 +12,8 @@
     "prisma:generate": "prisma generate --schema server/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema server/prisma/schema.prisma --name init_kyb",
     "prisma:seed": "tsx server/prisma/seed.ts",
-    "dev:server": "tsx server/src/index.ts"
+    "dev:server": "tsx server/src/index.ts",
+    "dev:all": "concurrently \"npm:dev:server\" \"npm:dev\""
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",
@@ -33,6 +34,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "4.3.1",
+    "concurrently": "^9.2.1",
     "eslint": "^9.33.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

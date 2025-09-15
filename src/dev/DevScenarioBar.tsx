@@ -4,7 +4,7 @@ import { applyScenarioPatch, resetScenario, type Scenario } from './mockBridge';
 type Item = { label: string; patch: Partial<Scenario> };
 
 export function DevScenarioBar({ items, title }: { items: Item[]; title: string }) {
-  if (import.meta.env.VITE_USE_MOCKS !== 'true') return null;
+  if (import.meta.env.VITE_USE_MOCKS === 'false') return null;
   
   return (
     <div className="fixed z-50 bottom-3 left-3 right-3 mx-auto max-w-screen-sm rounded-xl border px-3 py-2 bg-white/90 shadow">
