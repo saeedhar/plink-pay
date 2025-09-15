@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BiRefresh } from "react-icons/bi";
 import { useOnboarding } from "../../../store/OnboardingContext";
@@ -10,9 +10,10 @@ import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { CustomSelect } from "../components/CustomSelect";
 import { MultiSelect } from "../../../components/ui/MultiSelect";
-import { validateKYBField, validateOtherText, KYB_OPTIONS } from "../../../utils/validators";
+import { validateKYBField, validateOtherText } from "../../../utils/validators";
 import { submitKYB } from "../../../services/onboardingAPI";
 import { DevScenarioBar } from "../../../dev/DevScenarioBar";
+import { fetchAllKybOptions, type PublicKybOption } from "../api/kybPublicService";
 
 export default function KYBPage() {
   const [annualRevenue, setAnnualRevenue] = useState("");
@@ -22,8 +23,40 @@ export default function KYBPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   
+  // API options state
+  const [kybOptions, setKybOptions] = useState<{
+    purposeOfAccount: PublicKybOption[];
+    businessActivity: PublicKybOption[];
+    annualRevenue: PublicKybOption[];
+  }>({
+    purposeOfAccount: [],
+    businessActivity: [],
+    annualRevenue: []
+  });
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
+  
   const navigate = useNavigate();
   const { state, dispatch } = useOnboarding();
+
+  // Fetch KYB options on mount
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        setIsLoadingOptions(true);
+        setOptionsError(null);
+        const options = await fetchAllKybOptions();
+        setKybOptions(options);
+      } catch (error) {
+        console.error('Failed to load KYB options:', error);
+        setOptionsError(error instanceof Error ? error.message : 'Failed to load options');
+      } finally {
+        setIsLoadingOptions(false);
+      }
+    };
+
+    loadOptions();
+  }, []);
 
   // Validation functions
   const validateAnnualRevenue = (value: string): string | undefined => {
@@ -47,6 +80,8 @@ export default function KYBPage() {
 
   const isFormValid = () => {
     return (
+      !isLoadingOptions &&
+      !optionsError &&
       !validateAnnualRevenue(annualRevenue) &&
       !validateBusinessActivity(businessActivity) &&
       !validatePurposeOfAccount(purposeOfAccount) &&
@@ -138,6 +173,38 @@ export default function KYBPage() {
                   </div>
                 </div>
 
+                {/* Loading State */}
+                {isLoadingOptions && (
+                  <div className="flex justify-center py-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-gray-600">Loading options...</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {optionsError && (
+                  <div className="mb-6 rounded-md bg-red-50 p-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-red-700">{optionsError}</p>
+                        <button 
+                          onClick={() => window.location.reload()} 
+                          className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-6 mb-8">
                   {/* Annual Revenue */}
                   <CustomSelect
@@ -151,10 +218,14 @@ export default function KYBPage() {
                     }}
                     options={[
                       { value: "", label: "Select Annual Revenue" },
-                      ...KYB_OPTIONS.annualRevenue
+                      ...kybOptions.annualRevenue.map(option => ({
+                        value: option.id,
+                        label: option.label
+                      }))
                     ]}
                     validation={validateAnnualRevenue}
                     showError={showErrors}
+                    disabled={isLoadingOptions}
                   />
 
                   {/* Business Activity */}
@@ -169,10 +240,14 @@ export default function KYBPage() {
                     }}
                     options={[
                       { value: "", label: "Select Business Activity" },
-                      ...KYB_OPTIONS.businessActivity
+                      ...kybOptions.businessActivity.map(option => ({
+                        value: option.id,
+                        label: option.label
+                      }))
                     ]}
                     validation={validateBusinessActivity}
                     showError={showErrors}
+                    disabled={isLoadingOptions}
                   />
 
                   {/* Purpose of Opening the Account - Multi-Select */}
@@ -189,10 +264,14 @@ export default function KYBPage() {
                         setPurposeOther("");
                       }
                     }}
-                    options={[...KYB_OPTIONS.purposeOfAccount]}
+                    options={kybOptions.purposeOfAccount.map(option => ({
+                      value: option.id,
+                      label: option.label
+                    }))}
                     validation={validatePurposeOfAccount}
                     showError={showErrors}
                     required
+                    disabled={isLoadingOptions}
                   />
 
                   {/* Other Purpose Text Input */}
