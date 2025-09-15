@@ -14,9 +14,6 @@ export interface KybOption {
 
 export interface KybOptionsListResponse {
   items: KybOption[];
-  category: KybCategory;
-  locale: 'en' | 'ar';
-  total: number;
 }
 
 export interface CreateKybOptionRequest {
@@ -41,14 +38,14 @@ export class KybOptionsService {
       locale
     });
 
-    return adminHttp<KybOptionsListResponse>(`/admin/kyb/options?${params}`);
+    return adminHttp<KybOptionsListResponse>(`/api/admin/kyb/options?${params}`);
   }
 
   /**
    * Create a new KYB option
    */
   async createOption(payload: CreateKybOptionRequest): Promise<KybOption> {
-    return adminHttp<KybOption>('/admin/kyb/options', {
+    return adminHttp<KybOption>('/api/admin/kyb/options', {
       method: 'POST',
       body: JSON.stringify(payload)
     });

@@ -24,7 +24,7 @@ export class AdminAuthService {
    * Authenticate admin user and return profile with token
    */
   async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await adminHttp<LoginResponse>('/admin/login', {
+    const response = await adminHttp<LoginResponse>('/api/admin/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     });
@@ -45,7 +45,7 @@ export class AdminAuthService {
    * Get current admin profile (requires valid token)
    */
   async me(): Promise<AdminProfile> {
-    return adminHttp<AdminProfile>('/admin/me');
+    return adminHttp<AdminProfile>('/api/admin/me');
   }
 
   /**
