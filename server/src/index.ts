@@ -16,13 +16,13 @@ const AdminLoginBody = z.object({
 app.post('/api/admin/login', async (req, reply) => {
   const body = AdminLoginBody.parse(req.body);
   const token = 'adm_' + Buffer.from(body.email).toString('base64');
-  return reply.send({ token, role: 'admin', name: 'Admin' });
+  return reply.send({ token, role: 'admin', name: 'Saeed Aburahma' });
 });
 
 app.get('/api/admin/me', async (req, reply) => {
   const auth = (req.headers.authorization ?? '').replace('Bearer ','');
   if (!auth.startsWith('adm_')) return reply.code(401).send({ error: 'UNAUTHORIZED' });
-  return reply.send({ role: 'admin', name: 'Admin' });
+  return reply.send({ role: 'admin', name: 'Saeed Aburahma' });
 });
 
 // --- Admin KYB Options (protected) ---
