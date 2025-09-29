@@ -71,7 +71,7 @@ export function formatPhoneNumber(input: string): string {
 // ==========================================
 
 /**
- * Validates OTP code - 4 digits
+ * Validates OTP code - 6 digits
  */
 export function validateOTP(otp: string): string | null {
   if (!otp.trim()) {
@@ -80,8 +80,8 @@ export function validateOTP(otp: string): string | null {
   
   const cleaned = convertArabicToEnglish(otp).replace(/\D/g, '');
   
-  if (cleaned.length !== 4) {
-    return "Verification code must be 4 digits";
+  if (cleaned.length !== 6) {
+    return "Verification code must be 6 digits";
   }
   
   return null;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BiHide, BiShow, BiCheck } from "react-icons/bi";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { FormField, Input } from "../../../components/ui/FormField";
@@ -17,6 +18,7 @@ export default function PasswordSetup() {
   const [showErrors, setShowErrors] = useState(false);
   
   const { dispatch } = useOnboarding();
+  const navigate = useNavigate();
 
   // Get password requirements status for live checklist
   const requirements = getPasswordRequirements(password);
@@ -34,14 +36,13 @@ export default function PasswordSetup() {
     setIsLoading(true);
 
     try {
-      await setPasswordAPI(password);
+      await setPasswordAPI(state.userId || 'temp_user', password);
       
       // Mark password as set
       dispatch({ type: 'SET_PASSWORD_SUCCESS' });
       
-      // Complete onboarding
-      console.log("Onboarding completed successfully!");
-      // Navigate to success page or dashboard
+      // Navigate to profile creation page
+      navigate('/onboarding/complete');
       
     } catch (error) {
       console.error("Password setup failed:", error);

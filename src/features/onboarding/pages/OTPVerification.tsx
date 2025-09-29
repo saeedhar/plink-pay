@@ -13,7 +13,7 @@ import { verifyOTP, sendOTP } from '../../../services/onboardingAPI';
 import { DevScenarioBar } from '../../../dev/DevScenarioBar';
 
 export default function OTPVerification() {
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(OTP_CONFIG.RESEND_SECONDS);
   const [expiryTime, setExpiryTime] = useState<Date>(
     new Date(Date.now() + OTP_CONFIG.EXPIRY_MINUTES * 60 * 1000)
@@ -67,12 +67,12 @@ export default function OTPVerification() {
     setError('');
 
     // Auto-focus next input
-    if (converted && index < 3) {
+    if (converted && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
 
     // Auto-submit when all fields filled and not expired
-    if (newOtp.every(digit => digit !== '') && newOtp.join('').length === 4 && !isExpired) {
+    if (newOtp.every(digit => digit !== '') && newOtp.join('').length === 6 && !isExpired) {
       handleVerify(newOtp.join(''));
     }
   };
@@ -86,12 +86,12 @@ export default function OTPVerification() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = convertArabicToEnglish(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, 4);
-    if (pastedData.length === 4) {
+    const pastedData = convertArabicToEnglish(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, 6);
+    if (pastedData.length === 6) {
       const newOtp = pastedData.split('');
       setOtp(newOtp);
       setError('');
-      inputRefs.current[3]?.focus();
+      inputRefs.current[5]?.focus();
       if (!isExpired) {
         handleVerify(pastedData);
       }
@@ -114,10 +114,10 @@ export default function OTPVerification() {
     setError('');
 
     try {
-      const result = await verifyOTP('dummy_request_id', otpCode);
+      const result = await verifyOTP(state.data.phone || '', otpCode);
       
       if (result.verified) {
-        dispatch({ type: 'VERIFY_OTP_SUCCESS' });
+        dispatch({ type: 'VERIFY_OTP_SUCCESS', payload: result.token });
         navigate('/onboarding/cr-number');
       }
     } catch (err: any) {
@@ -140,7 +140,7 @@ export default function OTPVerification() {
     setIsExpired(false);
     
     try {
-      const response = await sendOTP(state.data.phone.replace(/\s/g, ''));
+      const response = await sendOTP(state.data.phone.replace(/\s/g, ''), state.businessType || 'freelancer');
       
       // Update expiry time
       setExpiryTime(new Date(response.expiresAt));

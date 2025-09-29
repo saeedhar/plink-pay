@@ -36,26 +36,37 @@ export default function CRNumberEntry() {
   };
 
   const handleNext = async () => {
+    console.log('🚀 CR handleNext called with:', crNumber);
+    
     const validationResult = validateCRNumber(crNumber);
+    console.log('🔍 CR validation result:', validationResult);
+    
     if (validationResult) {
+      console.log('❌ CR validation failed:', validationResult);
       setError(validationResult);
       return;
     }
 
+    console.log('✅ CR validation passed, starting verification...');
     setIsLoading(true);
     setError("");
 
     try {
       // Verify CR via API
       const cleanCR = crNumber.replace(/\D/g, '');
+      console.log('📞 Calling verifyCR with:', cleanCR);
+      
       const result = await verifyCR(cleanCR);
+      console.log('📋 CR verification result:', result);
       
       if (result.valid) {
+        console.log('✅ CR verification successful, navigating...');
         // Mark CR as verified
         dispatch({ type: 'VERIFY_CR_SUCCESS' });
         navigate("/onboarding/id-number");
       }
     } catch (err) {
+      console.log('🚨 CR verification error:', err);
       if (err instanceof CRVerificationError) {
         setShowFailureModal(true);
       } else {

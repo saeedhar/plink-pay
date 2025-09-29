@@ -56,7 +56,7 @@ export default function PhoneNumberEntry() {
         const cleanPhone = phoneNumber.replace(/\s/g, '');
         
         // Send OTP with integrated retry logic
-        await sendOTP(cleanPhone);
+        await sendOTP(cleanPhone, state.businessType || 'freelancer');
         
         // Update FSM to next step
         dispatch({ type: 'NEXT_STEP' });

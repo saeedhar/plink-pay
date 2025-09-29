@@ -16,6 +16,7 @@ import {
   KYBPage,
   PasswordSetup
 } from './features/onboarding/pages';
+import OnboardingComplete from './features/onboarding/pages/OnboardingComplete';
 import GlobalScreeningPage from './features/onboarding/pages/GlobalScreeningPage';
 import { AppAdminRoutes } from './features/admin/AppAdminRoutes';
 
@@ -104,6 +105,14 @@ function AppRoutes() {
             element={
               <RouteGuard requiredStep="password">
                 <PasswordSetup />
+              </RouteGuard>
+            } 
+          />
+          <Route 
+            path="complete" 
+            element={
+              <RouteGuard requiredStep="done">
+                <OnboardingComplete />
               </RouteGuard>
             } 
           />

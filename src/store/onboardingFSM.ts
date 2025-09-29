@@ -22,6 +22,7 @@ export interface OnboardingState {
     businessType?: string;
     phone?: string;
     otpVerified?: boolean;
+    userId?: string; // Add userId field
     crNumber?: string;
     crVerified?: boolean;
     idNumber?: string;
@@ -81,7 +82,7 @@ export const initialState: OnboardingState = {
 export type OnboardingAction = 
   | { type: 'SET_BUSINESS_TYPE'; payload: string }
   | { type: 'SET_PHONE'; payload: string }
-  | { type: 'VERIFY_OTP_SUCCESS' }
+  | { type: 'VERIFY_OTP_SUCCESS'; payload: string } // Add userId payload
   | { type: 'SET_CR_NUMBER'; payload: string }
   | { type: 'VERIFY_CR_SUCCESS' }
   | { type: 'SET_ID_NUMBER'; payload: string }
@@ -129,7 +130,7 @@ export function onboardingReducer(
     case 'VERIFY_OTP_SUCCESS':
       return {
         ...state,
-        data: { ...state.data, otpVerified: true },
+        data: { ...state.data, otpVerified: true, userId: action.payload },
         completedSteps: addCompletedStep(state.completedSteps, 'otp')
       };
 

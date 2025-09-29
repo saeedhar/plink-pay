@@ -33,12 +33,17 @@ export class KybOptionsService {
    * Get KYB options by category
    */
   async listOptions(category: KybCategory, locale: 'en' | 'ar' = 'en'): Promise<KybOptionsListResponse> {
+    const API_BASE_URL = 'http://localhost:8084/api/v1';
     const params = new URLSearchParams({
       category,
       locale
     });
 
-    return adminHttp<KybOptionsListResponse>(`/api/admin/kyb/options?${params}`);
+    const response = await fetch(`${API_BASE_URL}/kyb/options?${params}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch KYB options: ${response.status}`);
+    }
+    return await response.json();
   }
 
   /**

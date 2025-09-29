@@ -124,7 +124,7 @@ export class IDVerificationError extends APIError {
 // API CLIENT CONFIGURATION
 // ==========================================
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8084/api/v1';
 const API_TIMEOUT = 30000; // 30 seconds
 
 async function apiRequest<T>(
@@ -176,20 +176,23 @@ async function apiRequest<T>(
 // OTP SERVICES
 // ==========================================
 
-export async function sendOTP(phoneNumber: string): Promise<OTPSendResponse> {
+export async function sendOTP(phoneNumber: string, businessType: 'freelancer' | 'b2b' = 'freelancer'): Promise<OTPSendResponse> {
   try {
-    const response = await http<{ sessionId: string; expiresAt: number }>('/otp/send', {
+    const response = await apiRequest<{ success: boolean; message: string }>('/auth/send-otp', {
       method: 'POST',
-      body: JSON.stringify({ phone: phoneNumber })
+      body: JSON.stringify({ 
+        phoneNumber: phoneNumber,
+        businessType: businessType
+      })
     });
     
     return {
-      requestId: response.sessionId,
-      expiresAt: new Date(response.expiresAt).toISOString(),
-      attemptsRemaining: 3
+      requestId: `otp_${Date.now()}`,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
+      attemptsRemaining: businessType === 'freelancer' ? 3 : 5
     };
   } catch (error: any) {
-    if (error.message === '409') {
+    if (error.status === 409) {
       throw new DuplicatePhoneError();
     }
     throw new APIError('Failed to send OTP', 'OTP_SEND_FAILED');
@@ -197,21 +200,33 @@ export async function sendOTP(phoneNumber: string): Promise<OTPSendResponse> {
 }
 
 export async function verifyOTP(
-  requestId: string, 
+  phoneNumber: string, 
   code: string
 ): Promise<OTPVerifyResponse> {
   try {
-    const response = await http<{ ok: boolean }>('/otp/verify', {
+    // Clean phone number by removing spaces, same as in sendOTP
+    const cleanPhone = phoneNumber.replace(/\s/g, '');
+    
+    const response = await apiRequest<{ 
+      success: boolean; 
+      userId: string; 
+      nextStep: string; 
+      hasPassword: boolean; 
+      hasPasscode: boolean 
+    }>('/auth/verify-otp', {
       method: 'POST',
-      body: JSON.stringify({ code })
+      body: JSON.stringify({ 
+        phoneNumber: cleanPhone,
+        otp: code
+      })
     });
     
     return {
-      verified: response.ok,
-      token: `token_${Date.now()}`
+      verified: response.success,
+      token: response.userId // Using userId as token for now
     };
   } catch (error: any) {
-    if (error.message === '400') {
+    if (error.status === 400) {
       throw new ValidationError('Invalid verification code');
     }
     throw new APIError('Failed to verify OTP', 'OTP_VERIFY_FAILED');
@@ -227,14 +242,24 @@ export async function checkPhoneDuplicate(phoneNumber: string): Promise<{ isDupl
   
   // Check cache first (valid for 5 minutes)
   return await globalCache.getOrSet(cacheKey, async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Simulate some phone numbers being duplicates
-    const duplicates = ['0501234567', '0509876543'];
-    return {
-      isDuplicate: duplicates.includes(phoneNumber.replace(/\s/g, ''))
-    };
+    try {
+      const response = await apiRequest<{ 
+        phoneE164: string; 
+        unique: boolean; 
+        message: string 
+      }>('/auth/phone-uniqueness', {
+        method: 'POST',
+        body: JSON.stringify({ phoneE164: phoneNumber })
+      });
+      
+      return {
+        isDuplicate: !response.unique
+      };
+    } catch (error: any) {
+      // If API fails, assume it's available (fallback)
+      console.warn('Phone uniqueness check failed, assuming available:', error);
+      return { isDuplicate: false };
+    }
   }, 5 * 60 * 1000);
 }
 
@@ -248,23 +273,43 @@ export async function verifyCR(crNumber: string): Promise<CRVerificationResponse
   // Check cache first (valid for 10 minutes)
   return await verificationCache.getOrSet(cacheKey, async () => {
     try {
-      const response = await http<{ valid: boolean; companyType: string; activityAllowed: boolean }>(`/wathiq/cr/verify?cr=${encodeURIComponent(crNumber)}`);
+      console.log('🔍 Verifying CR:', crNumber);
+      const response = await apiRequest<{ 
+        valid: boolean; 
+        companyName?: string; 
+        companyNameArabic?: string; 
+        issueDate?: string; 
+        expiryDate?: string; 
+        status?: string; 
+        error?: string 
+      }>('/verification/validate-cr', {
+        method: 'POST',
+        body: JSON.stringify({ crNumber })
+      });
       
-      if (!response.valid) {
-        throw new CRVerificationError('CR Number not found in commercial registry');
+      console.log('📋 CR Response:', response);
+      
+      // apiRequest returns { success: true, data: ... }, so we need to access response.data
+      const data = response.data;
+      
+      if (!data.valid) {
+        console.log('❌ CR Invalid:', data.error);
+        throw new CRVerificationError(data.error || 'CR Number not found in commercial registry');
       }
       
+      console.log('✅ CR Valid:', data.companyName);
       return {
-        valid: response.valid,
-        companyName: 'Demo Company Ltd.',
-        registrationDate: '2020-01-15',
-        status: 'active' as const
+        valid: data.valid,
+        companyName: data.companyName || 'Company Name',
+        registrationDate: data.issueDate || data.expiryDate || '2020-01-15',
+        status: (data.status as 'active' | 'inactive' | 'suspended') || 'active'
       };
     } catch (error: any) {
-      if (error.message === '400') {
+      console.log('🚨 CR Verification Error:', error);
+      if (error.status === 400) {
         throw new CRVerificationError('CR Number not found in commercial registry');
       }
-      throw new CRVerificationError('CR verification failed');
+      throw new CRVerificationError(`CR verification failed: ${error.message || error}`);
     }
   }, 10 * 60 * 1000);
 }
@@ -281,25 +326,35 @@ export async function verifyID(
   const cleanPhone = phoneNumber.replace(/\s/g, '');
   
   try {
-    const response = await http<{ valid: boolean }>(`/id/verify?id=${encodeURIComponent(cleanId)}`);
-    
-    if (!response.valid) {
-      throw new IDVerificationError('ID Number not found in national database');
-    }
-    
-    // Check phone-ID match via Tahaquq
-    const tahaquqResponse = await http<{ match: boolean }>('/tahaquq/check', {
+    const response = await apiRequest<{ 
+      valid: boolean; 
+      match?: boolean; 
+      confidence?: number; 
+      riskScore?: number; 
+      decision?: string; 
+      error?: string 
+    }>('/verification/validate-id', {
       method: 'POST',
-      body: JSON.stringify({ phone: cleanPhone, id: cleanId })
+      body: JSON.stringify({ 
+        nationalId: cleanId,
+        phoneE164: cleanPhone
+      })
     });
     
-    if (!tahaquqResponse.match) {
+    // apiRequest returns { success: true, data: ... }, so we need to access response.data
+    const data = response.data;
+    
+    if (!data.valid) {
+      throw new IDVerificationError(data.error || 'ID Number not found in national database');
+    }
+    
+    if (data.match === false) {
       throw new IDMismatchError();
     }
     
     return {
-      valid: response.valid,
-      matchesPhone: tahaquqResponse.match,
+      valid: data.valid,
+      matchesPhone: data.match || false,
       idType: cleanId.startsWith('1') ? 'saudi' : 'iqama',
       expiryDate: '2030-12-31'
     };
@@ -307,7 +362,7 @@ export async function verifyID(
     if (error instanceof IDMismatchError) {
       throw error;
     }
-    if (error.message === '400') {
+    if (error.status === 400) {
       throw new IDVerificationError('ID Number not found in national database');
     }
     throw new IDVerificationError('ID verification failed');
@@ -421,27 +476,75 @@ export async function globalScreening(data: GlobalScreeningRequest): Promise<Glo
 // NAFATH SERVICES
 // ==========================================
 
-export async function initiateNafath(idNumber: string): Promise<NafathInitiateResponse> {
-  const response = await http<{ requestId: string; deepLink: string; expiresAt: number }>('/nafath/initiate', {
+export async function initiateNafath(idNumber: string, phoneNumber: string): Promise<NafathInitiateResponse> {
+  console.log('🚀 Initiating Nafath for ID:', idNumber, 'Phone:', phoneNumber);
+  
+  const response = await apiRequest<{ 
+    sessionId: string; 
+    status: string; 
+    message: string; 
+    redirectUrl?: string 
+  }>('/nafath/initiate', {
     method: 'POST',
-    body: JSON.stringify({ id: idNumber })
+    body: JSON.stringify({ 
+      nationalId: idNumber,
+      phoneE164: phoneNumber
+    })
   });
   
+  console.log('📋 Nafath Initiate Response:', response);
+  
+  // apiRequest returns { success: true, data: ... }, so we need to access response.data
+  const data = response.data;
+  
+  console.log('✅ Nafath Session ID:', data.sessionId);
+  
   return {
-    requestId: response.requestId,
-    expiresAt: new Date(response.expiresAt).toISOString(),
-    nafathUrl: response.deepLink
+    requestId: data.sessionId,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+    nafathUrl: data.redirectUrl || '#'
   };
 }
 
 export async function getNafathStatus(requestId: string): Promise<NafathStatusResponse> {
-  const response = await http<{ status: NafathStatus; requestId: string }>(`/nafath/status?requestId=${encodeURIComponent(requestId)}`);
+  console.log('🔍 Checking Nafath status for session:', requestId);
+  
+  const response = await apiRequest<{ 
+    sessionId: string; 
+    status: string; 
+    nationalId?: string; 
+    fullName?: string; 
+    dateOfBirth?: string; 
+    message?: string 
+  }>(`/nafath/status/${requestId}`);
+  
+  console.log('📋 Nafath Status Response:', response);
+  
+  // apiRequest returns { success: true, data: ... }, so we need to access response.data
+  const data = response.data;
+  
+  console.log('✅ Nafath Status:', data.status);
+  
+  // Map backend status to frontend expected status
+  let mappedStatus: NafathStatus;
+  if (data.status === 'approved') {
+    mappedStatus = 'RECEIVED';
+  } else if (data.status === 'pending') {
+    mappedStatus = 'UNDER_REVIEW';
+  } else if (data.status === 'rejected') {
+    mappedStatus = 'REJECTED';
+  } else if (data.status === 'expired') {
+    mappedStatus = 'FAILED';
+  } else {
+    mappedStatus = data.status as NafathStatus;
+  }
   
   return {
-    status: response.status,
-    requestId: response.requestId,
-    completedAt: response.status === 'RECEIVED' ? new Date().toISOString() : undefined,
-    failureReason: response.status === 'FAILED' || response.status === 'REJECTED' ? 'Request timeout or user declined' : undefined
+    status: mappedStatus,
+    requestId: data.sessionId,
+    completedAt: data.status === 'approved' ? new Date().toISOString() : undefined,
+    failureReason: data.status === 'rejected' || data.status === 'expired' ? 
+      (data.message || 'Request timeout or user declined') : undefined
   };
 }
 
@@ -471,6 +574,70 @@ export async function submitKYB(kybData: {
     nextStep: response.nextStep as 'approved' | 'review' | 'rejected',
     referenceId: `kyb_${Date.now()}`
   };
+}
+
+// ==========================================
+// PROFILE CREATION
+// ==========================================
+
+export interface CreateProfileRequest {
+  userId: string;
+  businessType: 'COMPANY' | 'FREELANCER';
+  businessName?: string;
+  businessNameArabic?: string;
+  crNumber?: string;
+  freelancerLicense?: string;
+  nationalId?: string;
+  phoneE164: string;
+  annualRevenue?: string;
+  businessActivity?: string;
+  accountPurpose?: string;
+}
+
+export interface CreateProfileResponse {
+  profileId: string;
+  status: string;
+  nextStep: string;
+  message: string;
+}
+
+export async function createProfile(request: CreateProfileRequest): Promise<CreateProfileResponse> {
+  console.log('🏗️ Creating profile with data:', request);
+  
+  try {
+    const response = await apiRequest<{
+      profileId: string;
+      status: string;
+      nextStep: string;
+      message: string;
+    }>('/onboarding/create-profile', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+    
+    console.log('✅ Profile creation response:', response);
+    
+    // apiRequest returns { success: true, data: ... }, so we need to access response.data
+    const data = response.data;
+    
+    return {
+      profileId: data.profileId,
+      status: data.status,
+      nextStep: data.nextStep,
+      message: data.message
+    };
+  } catch (error: any) {
+    console.error('❌ Profile creation failed:', error);
+    
+    // If it's a 403 or network error, provide a more helpful message
+    if (error.status === 403) {
+      throw new Error('Profile creation is currently unavailable. Please try again later or contact support.');
+    } else if (error.message?.includes('fetch')) {
+      throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+    }
+    
+    throw error;
+  }
 }
 
 // ==========================================
@@ -540,11 +707,17 @@ export async function getComplianceDecision(
 // PASSWORD SERVICES
 // ==========================================
 
-export async function setPassword(password: string): Promise<{ success: boolean }> {
-  const response = await http<{ ok: boolean }>('/password/set', {
+export async function setPassword(userId: string, password: string): Promise<{ success: boolean }> {
+  const response = await apiRequest<{ success: boolean; message: string }>('/auth/set-password', {
     method: 'POST',
-    body: JSON.stringify({ password })
+    body: JSON.stringify({ 
+      userId: userId,
+      password: password
+    })
   });
   
-  return { success: response.ok };
+  // apiRequest returns { success: true, data: ... }, so we need to access response.data
+  const data = response.data;
+  
+  return { success: data.success };
 }
