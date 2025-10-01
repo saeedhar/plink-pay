@@ -166,10 +166,7 @@ export default function OTPVerification() {
     <>
       <div className="min-h-screen bg-gray-50">
         {/* Stepper */}
-        <Stepper 
-          currentStep={state.currentStep} 
-          completedSteps={state.completedSteps} 
-        />
+       
         
         <div className="flex items-center justify-center min-h-[calc(100vh-120px)] p-4">
           <Modal

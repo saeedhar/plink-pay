@@ -9,64 +9,86 @@ export interface StepSidebarProps {
 export default function StepSidebar({ steps, activeIndex, logoSrc }: StepSidebarProps) {
   return (
     <aside className="relative w-80 text-white overflow-visible">
-      {/* Purple background */}
-      <div className="absolute inset-0 bg-[#2E248F]" />
+      {/* Background with gradient */}
+      <div 
+        className="absolute inset-0"
+        style={{
+          background: 'linear-gradient(160.08deg, #023A66 38.35%, #0475CC 91.81%)'
+        }}
+      />
+      
+      {/* Subtle bubble pattern overlay */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-300 rounded-full blur-2xl"></div>
+        <div className="absolute top-1/4 left-1/4 w-24 h-24 bg-blue-200 rounded-full blur-xl"></div>
+      </div>
 
       {/* Content */}
       <div className="relative z-10 p-8 h-full flex flex-col">
         {/* Logo */}
-        <img src={logoSrc} alt="Plink Pay" className="h-12 mb-12" />
+        <div className="mb-12">
+          <div 
+            className="flex items-center gap-3 mb-2"
+            style={{
+              width: '278px',
+              height: '101px',
+              top: '22px',
+              left: '81px',
+              opacity: 1
+            }}
+          >
+            <img src={logoSrc} alt="Tyaseer Pay" className="h-full w-full object-contain" />
+          </div>
+        </div>
 
         {/* Steps */}
         <div className="relative flex-1">
-          {/* Vertical connector - ends at the last step */}
+          {/* Vertical connector line */}
           <div 
-            className="absolute w-px bg-white/40"
+            className="absolute w-px bg-white/30"
             style={{
-              left: '16px', // Center of the 32px circle (left-4 = 16px)
-              top: '16px',  // Center of first circle
-              height: `${(steps.length - 1) *74}px` // Distance to center of last circle
+              left: '16px',
+              top: '16px',
+              height: `${(steps.length - 1) * 60}px`
             }}
           />
 
-          <div className="space-y-12">
+          <div className="space-y-8">
             {steps.map((step, index) => (
               <div key={index} className="relative flex items-center">
-                {/* Circle positioned to center on the vertical line */}
+                {/* Circle */}
                 <span className={`absolute left-0 w-8 h-8 rounded-full grid place-items-center text-sm font-semibold ${
                   index === activeIndex 
-                    ? 'bg-white text-[#2E248F] border-2 border-white' 
-                    : 'border-2 border-white text-white bg-transparent'
+                    ? 'bg-white text-[#022466] border-2 border-[#022466]' 
+                    : 'border-2 border-[#022466] text-[#022466] bg-white'
                 }`}>
                   {index + 1}
                 </span>
               
-              {index === activeIndex ? (
-                /* Horizontal banner with curved notches on the right */
-                <div className="relative ml-12">
-                  {/* Banner with rounded corners and small curve on right */}
-                  <div 
-                    className="bg-white text-[#2E248F] px-6 py-4 shadow-[0_2px_10px_rgba(0,0,0,0.08)] relative h-[52px] w-[320px] flex items-center overflow-visible"
-                    style={{
-                      borderRadius: '22px 22px 22px 22px',
-                      clipPath: `polygon(
-                        0% 0%, 
-                        88% 0%, 
-                        92% 8%, 
-                        88% 16%, 
-                        96% 50%, 
-                        88% 84%, 
-                        92% 92%, 
-                        88% 100%, 
-                        0% 100%
-                      )`
-                    }}
-                  >
-                    <span className="text-base font-semibold whit   espace-nowrap pr-6">{step}</span>
+                {index === activeIndex ? (
+                  /* Active step banner */
+                  <div className="relative ml-12">
+                    <div 
+                      className="text-white rounded-xl shadow-sm flex items-center"
+                      style={{
+                        width: '210px',
+                        height: '46px',
+                        top: '154px',
+                        left: '89px',
+                        opacity: 1,
+                        paddingTop: '10px',
+                        paddingRight: '13px',
+                        paddingBottom: '10px',
+                        paddingLeft: '13px',
+                        gap: '10px',
+                        backgroundColor: '#00BDFFB2'
+                      }}
+                    >
+                      <span className="text-base font-semibold whitespace-nowrap">{step}</span>
+                    </div>
                   </div>
-                </div>
                 ) : (
-                  <span className="text-base ml-12">{step}</span>
+                  <span className="text-base ml-12 text-white">{step}</span>
                 )}
               </div>
             ))}

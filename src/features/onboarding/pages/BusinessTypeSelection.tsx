@@ -47,13 +47,13 @@ export default function BusinessTypeSelection() {
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-        {/* Stepper */}
-        <Stepper 
-          currentStep={state.currentStep} 
-          completedSteps={state.completedSteps} 
-        />
-        
-        <div className="flex min-h-[calc(100vh-120px)] bg-[#2E248F]">
+      
+        <div 
+          className="flex min-h-screen"
+          style={{
+            background: 'linear-gradient(160.08deg, #023A66 38.35%, #0475CC 91.81%)'
+          }}
+        >
           {/* Sidebar */}
           <StepSidebar 
             steps={[
@@ -69,13 +69,13 @@ export default function BusinessTypeSelection() {
           />
 
       {/* Right content */}
-      <main className="flex-1 bg-white p-12 rounded-tl-[88px] relative">
+      <main className="flex-1 bg-white p-12 rounded-tl-[40px] relative">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <img src={heroLogo} alt="" className="h-12 w-12 mx-auto" />
           </div>
 
-          <h1 className="text-3xl font-bold text-gray-800 text-center mb-12">
+          <h1 className="text-3xl font-bold text-[#022466] text-center mb-12">
             Select Your Business Type
           </h1>
 
@@ -122,9 +122,9 @@ export default function BusinessTypeSelection() {
           <div className="text-center">
             <button
               onClick={handleNext}
-              className={`px-12 py-4 rounded-lg font-semibold transition-all text-lg ${
+              className={`px-12 py-4 rounded-full font-medium transition-all text-lg ${
                 selectedType
-                  ? "bg-[#2E248F] text-white hover:bg-[#1a1a5a] hover:shadow-lg transform hover:-translate-y-0.5"
+                  ? "bg-[#022466] text-white hover:bg-[#022466]/90"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
               disabled={!selectedType}

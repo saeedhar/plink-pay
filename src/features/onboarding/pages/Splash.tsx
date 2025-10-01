@@ -1,88 +1,84 @@
 import Logo from "../../../assets/logo-mark.svg";
-import leftChevrons from "../../../assets/left-chevrons.svg";
 import heroLogoMini from "../../../assets/hero-logo-mini.svg";
+import bubbles from "../../../assets/Bubbles.svg";
+import { Button } from "../../../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 
 export default function Splash() {
   const navigate = useNavigate();
-  const BG_TOP = "70%";
-  const BG_BOTTOM = "40%";
-  const CARD_TOP = "70%";
-  const CARD_BOTTOM = "41.57%";
   
   const handleRegisterClick = () => {
     navigate("/onboarding/business-type");
   };
 
+  const handleLoginClick = () => {
+    navigate("/login");
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center relative">
-
-      {/* FULL-PAGE BACKGROUND GRAY SHAPE (behind everything) */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-      <div
-  className="absolute inset-0 -z-10 bg-[#D9D9D9]"
-  style={{ clipPath: `polygon(${BG_TOP} 0, 100% 0, 100% 100%, ${BG_BOTTOM} 100%)` }}
-/>
-</div>
-
-      {/* Background chevrons - top left */}
-      <div className="absolute top-0 left-0 z-0">
-        <img src={leftChevrons} alt="" className="h-80 w-60" />
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background with gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-blue-100 to-white">
+        {/* Gradient overlays for depth */}
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#00BDFF]/20 via-transparent to-[#022466]/10"></div>
+        <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-gradient-to-tl from-[#00BDFF]/30 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute top-0 left-0 w-1/3 h-1/3 bg-gradient-to-br from-[#022466]/20 to-transparent rounded-full blur-3xl"></div>
       </div>
 
-      {/* MAIN CARD */}
-      <div className="relative w-[1300px] max-w-[95vw] h-[600px] shadow-[0_24px_60px_-20px_rgba(23,23,23,0.25)] overflow-hidden z-10 bg-white rounded-sm">
+      {/* Bubbles in bottom right */}
+      <div className="absolute bottom-0 right-0 z-10">
+        <img src={bubbles}  />
+      </div>
 
-        {/* RIGHT GRAY SHAPE INSIDE CARD (same cut as background) */}
-        <div
-  className="absolute inset-0 bg-[#D9D9D9]"
-  style={{ clipPath: `polygon(${CARD_TOP} 0, 100% 0, 100% 100%, ${CARD_BOTTOM} 100%)` }}
-/>
-
-        {/* CONTENT */}
-        <div className="relative z-10 h-full flex">
-          {/* LEFT SECTION */}
-          <div className="w-[65%] h-full flex items-center justify-center">
-            <div className="text-center max-w-[480px] px-8">
-              <div className="mb-6">
-                <img src={heroLogoMini} alt="" className="h-10 w-10 mx-auto" />
+      {/* Main content */}
+      <div className="relative z-20 min-h-screen flex items-center justify-center">
+        <div className="max-w-6xl mx-auto px-8 flex items-center">
+          {/* Left side - Card with content */}
+          <div className="flex-1 max-w-2xl">
+            <div className="bg-white/20 backdrop-blur-sm rounded-3xl p-12 border border-blue-200/30 shadow-2xl">
+              {/* Hero logo mini */}
+              <div className="text-center mb-8">
+                <img src={heroLogoMini} alt="" className="h-12 w-12 mx-auto" />
               </div>
 
-              <h1 className="font-extrabold text-4xl leading-tight mb-4">
-                <span className="block text-[#E83E99]">Create Collects,</span>
-                <span className="block text-[#2E248F]">Timeless Artworks</span>
+              {/* Heading */}
+              <h1 className="text-4xl font-bold text-[#022466] text-center mb-6">
+                Create Collects, Timeless Artworks
               </h1>
 
-              <p className="text-[#514F5B] text-lg mb-8 max-w-[400px] mx-auto">
+              {/* Description */}
+              <p className="text-lg text-[#022466]/80 text-center mb-10">
                 Browse and build your collection of the world's most digital art.
               </p>
 
-              <div className="space-y-4 mb-6">
-                <button
-                  type="button"
-                  onClick={handleRegisterClick}
-                  className="w-[320px] h-12 rounded-full bg-[#2E248F] text-white font-medium shadow-lg hover:bg-[#1a1a5a] transition-colors"
-                >
+              {/* Buttons */}
+              <div className="space-y-4 flex flex-col items-center">
+                <Button onClick={handleRegisterClick}>
                   Register
-                </button>
-                <button
-                  type="button"
-                  className="w-[320px] h-12 rounded-full bg-[#2E248F] text-white font-medium shadow-lg hover:bg-[#1a1a5a] transition-colors"
-                >
+                </Button>
+                <Button onClick={handleLoginClick}>
                   Login
-                </button>
+                </Button>
               </div>
-
-              <div className="w-24 h-1 bg-[#D1D5DB] rounded-full mx-auto"></div>
             </div>
           </div>
 
-          {/* RIGHT SECTION */}
-          <div className="w-[35%] h-full flex items-center justify-center">
-            <img src={Logo} alt="Plink" className="h-80 w-80" />
+          {/* Right side - Logo */}
+          <div className="flex-1 flex items-center justify-center">
+           
+              <div className="flex items-center justify-center mb-4">
+                <img src={Logo} alt=""  className="text-center"
+              style={{
+                width: '448px',
+                height: '162.51px',
+                top: '431px',
+                left: '885px',
+                opacity: 1
+              }} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }

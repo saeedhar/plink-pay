@@ -177,13 +177,14 @@ export default function IDNumberEntry() {
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-        {/* Stepper */}
-        <Stepper 
-          currentStep={state.currentStep} 
-          completedSteps={state.completedSteps} 
-        />
+
         
-        <div className="flex min-h-[calc(100vh-120px)] bg-[#2E248F]">
+        <div 
+          className="flex min-h-screen"
+          style={{
+            background: 'linear-gradient(160.08deg, #023A66 38.35%, #0475CC 91.81%)'
+          }}
+        >          {/* Sidebar */}
           {/* Sidebar */}
           <StepSidebar 
             steps={[
@@ -199,7 +200,7 @@ export default function IDNumberEntry() {
           />
 
           {/* Right content */}
-          <main className="flex-1 bg-white rounded-tl-[88px] relative flex flex-col">
+          <main className="flex-1 bg-white rounded-tl-[40px] relative flex flex-col">
             <div className="text-center pt-12 pb-8">
               <img src={HeroLogo} alt="" className="h-12 w-12 mx-auto" />
             </div>

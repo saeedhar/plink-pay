@@ -18,6 +18,8 @@ import {
 } from './features/onboarding/pages';
 import OnboardingComplete from './features/onboarding/pages/OnboardingComplete';
 import GlobalScreeningPage from './features/onboarding/pages/GlobalScreeningPage';
+import LoginPage from './features/login/pages/LoginPage';
+import OTPVerificationPage from './features/auth/pages/OTPVerificationPage';
 import { AppAdminRoutes } from './features/admin/AppAdminRoutes';
 
 function AppRoutes() {
@@ -28,6 +30,10 @@ function AppRoutes() {
       <Routes>
         {/* Main route - Splash screen */}
         <Route path="/" element={<Splash />} />
+        
+        {/* Auth routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/otp-verification" element={<OTPVerificationPage />} />
         
         {/* Admin routes */}
         {import.meta.env.VITE_ADMIN_ENABLED === 'true' && (

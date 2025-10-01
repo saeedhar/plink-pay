@@ -69,13 +69,9 @@ export default function GlobalScreeningPage() {
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-        {/* Stepper */}
-        <Stepper 
-          currentStep={state.currentStep} 
-          completedSteps={state.completedSteps} 
-        />
+
         
-        <div className="flex min-h-[calc(100vh-120px)] bg-[#2E248F]">
+        <div className="flex min-h-screen bg-[#2E248F]">
           {/* Sidebar */}
           <StepSidebar 
             steps={[
@@ -91,7 +87,7 @@ export default function GlobalScreeningPage() {
           />
 
           {/* Right content */}
-          <main className="flex-1 bg-white rounded-tl-[88px] relative flex items-center justify-center">
+          <main className="flex-1 bg-white rounded-tl-[40px] relative flex items-center justify-center">
             <div className="text-center">
               <img src={HeroLogo} alt="" className="h-16 w-16 mx-auto mb-4 opacity-20" />
               <p className="text-gray-400">
