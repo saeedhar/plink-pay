@@ -116,11 +116,19 @@ export default function OTPVerification() {
     try {
       const result = await verifyOTP(state.data.phone || '', otpCode);
       
+      console.log('🔍 OTP Verification Result:', result);
+      console.log('🔍 User ID (token):', result.token);
+      
       if (result.verified) {
+        console.log('✅ Dispatching VERIFY_OTP_SUCCESS with userId:', result.token);
         dispatch({ type: 'VERIFY_OTP_SUCCESS', payload: result.token });
+        
+        console.log('🔍 State after dispatch should have userId:', result.token);
+        
         navigate('/onboarding/cr-number');
       }
     } catch (err: any) {
+      console.error('❌ OTP verification error:', err);
       setError(err.message || 'Invalid verification code. Please try again.');
     } finally {
       setIsVerifying(false);

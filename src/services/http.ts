@@ -3,8 +3,8 @@ import { getScenarioHeader } from '../dev/mockBridge';
 export async function http<T=unknown>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   
-  // Use real backend URL unless explicitly using mocks
-  const baseUrl = import.meta.env.VITE_USE_MOCKS === 'true' ? '' : 'http://localhost:8084/api/v1';
+  // Use empty string to use Vite proxy, or full URL if VITE_USE_MOCKS is true
+  const baseUrl = import.meta.env.VITE_USE_MOCKS === 'true' ? '' : '';
   const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
   
   if (import.meta.env.VITE_USE_MOCKS === 'true') {

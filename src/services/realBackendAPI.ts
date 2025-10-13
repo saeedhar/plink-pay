@@ -1,7 +1,7 @@
 // Real Backend API Integration for Plink
 // This replaces the mock services with actual backend API calls
 
-const API_BASE_URL = 'http://192.168.100.174:8080/api/v1';
+import { apiUrl } from '../lib/api';
 
 // ==========================================
 // TYPE DEFINITIONS (Matching Backend)
@@ -171,12 +171,35 @@ export interface KybOptionsResponse {
   items: KybOption[];
 }
 
+export interface ForgotPasswordRequest {
+  phoneOrEmail: string;
+  nationalId?: string;
+  dateOfBirth?: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+  resetToken: string;
+}
+
+export interface ResetPasswordRequest {
+  resetToken: string;
+  otp: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
 // ==========================================
 // AUTHENTICATION APIs
 // ==========================================
 
 export async function sendOtp(request: SendOtpRequest): Promise<SendOtpResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+  const response = await fetch(apiUrl('/api/v1/auth/send-otp'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -192,7 +215,7 @@ export async function sendOtp(request: SendOtpRequest): Promise<SendOtpResponse>
 }
 
 export async function verifyOtp(request: VerifyOtpRequest): Promise<VerifyOtpResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+  const response = await fetch(apiUrl('/api/v1/auth/verify-otp'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -208,7 +231,7 @@ export async function verifyOtp(request: VerifyOtpRequest): Promise<VerifyOtpRes
 }
 
 export async function setPassword(request: SetPasswordRequest): Promise<SetPasswordResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/set-password`, {
+  const response = await fetch(apiUrl('/api/v1/auth/set-password'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -224,7 +247,7 @@ export async function setPassword(request: SetPasswordRequest): Promise<SetPassw
 }
 
 export async function setPasscode(request: SetPasscodeRequest): Promise<SetPasscodeResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/set-passcode`, {
+  const response = await fetch(apiUrl('/api/v1/auth/set-passcode'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -240,7 +263,7 @@ export async function setPasscode(request: SetPasscodeRequest): Promise<SetPassc
 }
 
 export async function loginWithPassword(request: LoginPasswordRequest): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/login/password`, {
+  const response = await fetch(apiUrl('/api/v1/auth/login/password'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -256,7 +279,7 @@ export async function loginWithPassword(request: LoginPasswordRequest): Promise<
 }
 
 export async function checkPhoneUniqueness(request: PhoneUniquenessRequest): Promise<PhoneUniquenessResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/check-phone-uniqueness`, {
+  const response = await fetch(apiUrl('/api/v1/auth/check-phone-uniqueness'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -271,12 +294,44 @@ export async function checkPhoneUniqueness(request: PhoneUniquenessRequest): Pro
   return await response.json();
 }
 
+export async function forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+  const response = await fetch(apiUrl('/api/v1/auth/forgot-password'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to request password reset: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+export async function resetPassword(request: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+  const response = await fetch(apiUrl('/api/v1/auth/reset-password'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to reset password: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
 // ==========================================
 // VERIFICATION APIs
 // ==========================================
 
 export async function validateCrNumber(request: ValidateCrRequest): Promise<ValidateCrResponse> {
-  const response = await fetch(`${API_BASE_URL}/verification/validate-cr`, {
+  const response = await fetch(apiUrl('/api/v1/verification/validate-cr'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -292,7 +347,7 @@ export async function validateCrNumber(request: ValidateCrRequest): Promise<Vali
 }
 
 export async function validateFreelancerLicense(request: ValidateFreelancerRequest): Promise<ValidateFreelancerResponse> {
-  const response = await fetch(`${API_BASE_URL}/verification/validate-freelancer-license`, {
+  const response = await fetch(apiUrl('/api/v1/verification/validate-freelancer-license'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -308,7 +363,7 @@ export async function validateFreelancerLicense(request: ValidateFreelancerReque
 }
 
 export async function validateIdNumber(request: ValidateIdRequest): Promise<ValidateIdResponse> {
-  const response = await fetch(`${API_BASE_URL}/verification/validate-id`, {
+  const response = await fetch(apiUrl('/api/v1/verification/validate-id'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -328,7 +383,7 @@ export async function validateIdNumber(request: ValidateIdRequest): Promise<Vali
 // ==========================================
 
 export async function initiateNafath(request: NafathInitiateRequest): Promise<NafathInitiateResponse> {
-  const response = await fetch(`${API_BASE_URL}/nafath/initiate`, {
+  const response = await fetch(apiUrl('/api/v1/nafath/initiate'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -344,7 +399,7 @@ export async function initiateNafath(request: NafathInitiateRequest): Promise<Na
 }
 
 export async function getNafathStatus(sessionId: string): Promise<NafathStatusResponse> {
-  const response = await fetch(`${API_BASE_URL}/nafath/status/${sessionId}`, {
+  const response = await fetch(apiUrl(`/api/v1/nafath/status/${sessionId}`), {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -363,7 +418,7 @@ export async function getNafathStatus(sessionId: string): Promise<NafathStatusRe
 // ==========================================
 
 export async function createProfile(request: CreateProfileRequest): Promise<CreateProfileResponse> {
-  const response = await fetch(`${API_BASE_URL}/onboarding/profile`, {
+  const response = await fetch(apiUrl('/api/v1/onboarding/profile'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -383,7 +438,7 @@ export async function createProfile(request: CreateProfileRequest): Promise<Crea
 // ==========================================
 
 export async function getKybOptions(category: string, locale: string = 'en'): Promise<KybOptionsResponse> {
-  const response = await fetch(`${API_BASE_URL}/kyb/options?category=${category}&locale=${locale}`, {
+  const response = await fetch(apiUrl(`/api/v1/kyb/options?category=${category}&locale=${locale}`), {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

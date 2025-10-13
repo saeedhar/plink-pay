@@ -1,3 +1,5 @@
+import { apiUrl } from '../../../lib/api';
+
 export type PublicKybOption = { 
   id: string; 
   label: string; 
@@ -15,8 +17,7 @@ export async function fetchKybOptions(
   category: KybCategory, 
   locale = 'en'
 ): Promise<PublicKybOption[]> {
-  const API_BASE_URL = 'http://localhost:8084/api/v1';
-  const res = await fetch(`${API_BASE_URL}/kyb/options?category=${category}&locale=${locale}`);
+  const res = await fetch(apiUrl(`/api/v1/kyb/options?category=${category}&locale=${locale}`));
   
   if (!res.ok) {
     throw new Error(`Failed to fetch KYB options: ${res.status}`);

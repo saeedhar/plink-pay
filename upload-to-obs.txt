@@ -1,0 +1,24 @@
+INSTRUCTIONS TO FIX DOWNLOAD ISSUE:
+
+PROBLEM: Files have "ContentEncoding: br" metadata causing downloads
+FIX: Remove that metadata
+
+IN HUAWEI CLOUD CONSOLE:
+
+1. Go to OBS → development-team bucket
+2. For EACH file with ContentEncoding:
+   - Click file → Metadata tab
+   - Find "ContentEncoding: br"
+   - Click "Delete" or "Edit"
+   - Remove the ContentEncoding entry
+   - Save
+
+3. OR easier: Delete all and re-upload from dist/ folder
+   - Make sure to NOT add any custom metadata
+   - Use default upload settings
+
+Files to fix:
+- index.html (remove ContentEncoding: br)
+- All files in assets/ folder
+
+After fixing, refresh browser and it should display instead of download!

@@ -17,7 +17,7 @@ export default function PasswordSetup() {
   const [isLoading, setIsLoading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   
-  const { dispatch } = useOnboarding();
+  const { state, dispatch } = useOnboarding();
   const navigate = useNavigate();
 
   // Get password requirements status for live checklist
@@ -36,7 +36,20 @@ export default function PasswordSetup() {
     setIsLoading(true);
 
     try {
-      await setPasswordAPI(state.userId || 'temp_user', password);
+      // Use state.data.userId (correct path in OnboardingState)
+      console.log('🔍 Current state:', state);
+      console.log('🔍 State.data:', state.data);
+      console.log('🔍 State.data.userId:', state.data.userId);
+      
+      const userId = state.data.userId;
+      
+      if (!userId) {
+        console.error("❌ No user ID found in state:", state);
+        throw new Error("User ID not found. Please restart the onboarding process.");
+      }
+      
+      console.log('✅ Setting password for user:', userId);
+      await setPasswordAPI(userId, password);
       
       // Mark password as set
       dispatch({ type: 'SET_PASSWORD_SUCCESS' });

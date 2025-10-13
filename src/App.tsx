@@ -20,6 +20,9 @@ import OnboardingComplete from './features/onboarding/pages/OnboardingComplete';
 import GlobalScreeningPage from './features/onboarding/pages/GlobalScreeningPage';
 import LoginPage from './features/login/pages/LoginPage';
 import OTPVerificationPage from './features/auth/pages/OTPVerificationPage';
+import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
+import ForgotPasswordOTPPage from './features/auth/pages/ForgotPasswordOTPPage';
+import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 import { AppAdminRoutes } from './features/admin/AppAdminRoutes';
 
 function AppRoutes() {
@@ -34,6 +37,11 @@ function AppRoutes() {
         {/* Auth routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/otp-verification" element={<OTPVerificationPage />} />
+        
+        {/* Forgot Password routes */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/forgot-password/otp" element={<ForgotPasswordOTPPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         
         {/* Admin routes */}
         {import.meta.env.VITE_ADMIN_ENABLED === 'true' && (

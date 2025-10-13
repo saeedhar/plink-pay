@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
-import { verifyOtp, sendOtp } from '../../../services/realBackendAPI';
-import type { VerifyOtpRequest, SendOtpRequest } from '../../../services/realBackendAPI';
+import { forgotPassword } from '../../../services/realBackendAPI';
+import type { ForgotPasswordRequest } from '../../../services/realBackendAPI';
 
-export default function OTPVerificationPage() {
+export default function ForgotPasswordOTPPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -13,21 +13,24 @@ export default function OTPVerificationPage() {
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [businessType, setBusinessType] = useState<'freelancer' | 'b2b'>('freelancer');
+  const [resetToken, setResetToken] = useState('');
+  const [phoneOrEmail, setPhoneOrEmail] = useState('');
 
-  // Get phone number from navigation state
+  // Get data from navigation state
   useEffect(() => {
-    const state = location.state as { phoneNumber?: string; businessType?: 'freelancer' | 'b2b' };
-    if (state?.phoneNumber) {
-      setPhoneNumber(state.phoneNumber);
+    const state = location.state as { 
+      resetToken?: string; 
+      phoneOrEmail?: string;
+      message?: string;
+    };
+    
+    if (state?.resetToken && state?.phoneOrEmail) {
+      setResetToken(state.resetToken);
+      setPhoneOrEmail(state.phoneOrEmail);
     } else {
-      // If no phone number, redirect to login
-      console.warn('No phone number provided, redirecting to login');
-      navigate('/login');
-    }
-    if (state?.businessType) {
-      setBusinessType(state.businessType);
+      // If no data, redirect to forgot password
+      console.warn('No reset token provided, redirecting to forgot password');
+      navigate('/forgot-password');
     }
   }, [location, navigate]);
 
@@ -70,8 +73,9 @@ export default function OTPVerificationPage() {
     e.preventDefault();
     const otpCode = otp.join('');
     
-    if (!phoneNumber) {
-      setError('Phone number not found. Please go back and try again.');
+    if (!resetToken) {
+      setError('Reset token not found. Please try again.');
+      navigate('/forgot-password');
       return;
     }
     
@@ -84,62 +88,24 @@ export default function OTPVerificationPage() {
     setError('');
     
     try {
-      const request: VerifyOtpRequest = {
-        phoneNumber: phoneNumber,
-        otp: otpCode
-      };
-      
-      const response = await verifyOtp(request);
-      
-      if (response.success) {
-        console.log('✅ OTP verified successfully. User ID:', response.userId);
-        
-        // Store user ID
-        localStorage.setItem('userId', response.userId);
-        
-        // Route based on nextStep from backend
-        if (response.nextStep === 'set_credentials') {
-          // User needs to set credentials
-          if (!response.hasPassword) {
-            console.log('→ Routing to set password');
-            navigate('/set-password', { state: { userId: response.userId } });
-          } else if (!response.hasPasscode) {
-            console.log('→ Routing to set passcode');
-            navigate('/set-passcode', { state: { userId: response.userId } });
-          } else {
-            // Already has both, go to dashboard
-            console.log('→ Routing to dashboard (has credentials)');
-            navigate('/dashboard');
-          }
-        } else if (response.nextStep === 'login') {
-          // User has completed onboarding, go to dashboard
-          console.log('→ Routing to dashboard (login)');
-          navigate('/dashboard');
-        } else {
-          // Default to dashboard
-          console.log('→ Routing to dashboard (default)');
-          navigate('/dashboard');
+      // Navigate to reset password with token and OTP
+      navigate('/reset-password', {
+        state: {
+          resetToken: resetToken,
+          otp: otpCode
         }
-      } else {
-        setError('Verification failed. Please try again.');
-      }
+      });
     } catch (error: any) {
       console.error('❌ OTP verification error:', error);
-      if (error.message.includes('400') || error.message.includes('Invalid')) {
-        setError('Invalid verification code. Please try again.');
-      } else if (error.message.includes('Network') || error.message.includes('fetch')) {
-        setError('Unable to connect to server. Please check your connection.');
-      } else {
-        setError(error.message || 'Verification failed. Please try again.');
-      }
+      setError('Verification failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleResend = async () => {
-    if (!phoneNumber) {
-      setError('Phone number not found. Please go back and try again.');
+    if (!phoneOrEmail) {
+      setError('Phone/Email not found. Please go back and try again.');
       return;
     }
     
@@ -147,33 +113,35 @@ export default function OTPVerificationPage() {
     setError('');
     
     try {
-      const request: SendOtpRequest = {
-        phoneNumber: phoneNumber,
-        businessType: businessType
+      const request: ForgotPasswordRequest = {
+        phoneOrEmail: phoneOrEmail
       };
       
-      await sendOtp(request);
+      const response = await forgotPassword(request);
       
-      // Reset timer and clear OTP fields
-      setTimeLeft(30);
-      setIsResendDisabled(true);
-      setOtp(['', '', '', '', '', '']);
-      
-      // Focus first input
-      const firstInput = document.getElementById('otp-0');
-      firstInput?.focus();
-      
-      console.log('✅ OTP resent successfully');
+      if (response.success) {
+        // Update reset token
+        setResetToken(response.resetToken);
+        
+        // Reset timer and clear OTP fields
+        setTimeLeft(30);
+        setIsResendDisabled(true);
+        setOtp(['', '', '', '', '', '']);
+        
+        // Focus first input
+        const firstInput = document.getElementById('otp-0');
+        firstInput?.focus();
+        
+        console.log('✅ OTP resent successfully');
+      } else {
+        setError('Failed to resend OTP. Please try again.');
+      }
     } catch (error: any) {
       console.error('❌ Resend OTP error:', error);
       setError('Failed to resend OTP. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleChangeNumber = () => {
-    navigate('/login');
   };
 
   const formatTime = (seconds: number) => {
@@ -187,7 +155,9 @@ export default function OTPVerificationPage() {
       {/* Background with gradient */}
       <div 
         className="absolute inset-0"
-       
+        style={{
+          background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
+        }}
       />
 
       {/* Main content */}
@@ -203,11 +173,13 @@ export default function OTPVerificationPage() {
           {/* OTP Card */}
           <div 
             className="backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-blue-200/50 relative"
-            
+            style={{
+              background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
+            }}
           >
             {/* Back Button */}
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/forgot-password')}
               className="absolute top-6 left-6 text-[#022466] hover:text-[#0475CC] transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,9 +191,11 @@ export default function OTPVerificationPage() {
             <form onSubmit={handleVerify} className="pt-8">
               {/* Title */}
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-[#022466] mb-2">Mobile Number</h2>
-                <h3 className="text-xl font-bold text-[#022466] mb-2">OTP Verification</h3>
-                <p className="text-gray-600">Enter your OTP code</p>
+                <h2 className="text-2xl font-bold text-[#022466] mb-2">Verify OTP</h2>
+                <p className="text-gray-600">
+                  Enter the 6-digit code sent to
+                </p>
+                <p className="text-[#022466] font-medium">{phoneOrEmail}</p>
               </div>
 
               {/* OTP Input Fields */}
@@ -267,9 +241,9 @@ export default function OTPVerificationPage() {
                   <button
                     type="button"
                     onClick={handleResend}
-                    disabled={isResendDisabled}
+                    disabled={isResendDisabled || isLoading}
                     className={`font-medium ${
-                      isResendDisabled 
+                      isResendDisabled || isLoading
                         ? 'text-gray-400 cursor-not-allowed' 
                         : 'text-[#0475CC] hover:text-[#022466]'
                     }`}
@@ -277,13 +251,6 @@ export default function OTPVerificationPage() {
                     Resend in {formatTime(timeLeft)}
                   </button>
                 </p>
-                <button
-                  type="button"
-                  onClick={handleChangeNumber}
-                  className="text-[#0475CC] hover:text-[#022466] font-medium transition-colors"
-                >
-                  Change Mobile Number?
-                </button>
               </div>
 
               {/* Action Buttons */}
@@ -303,22 +270,10 @@ export default function OTPVerificationPage() {
                         Verifying...
                       </span>
                     ) : (
-                      'Verify'
+                      'Continue'
                     )}
                   </Button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={isResendDisabled || isLoading}
-                  className={`w-full py-3 px-4 rounded-full border-2 border-[#022466] font-medium transition-all ${
-                    isResendDisabled || isLoading
-                      ? 'text-gray-400 border-gray-300 cursor-not-allowed'
-                      : 'text-[#022466] hover:bg-[#022466] hover:text-white'
-                  }`}
-                >
-                  {isLoading ? 'Sending...' : 'Resend'}
-                </button>
               </div>
             </form>
           </div>
@@ -327,3 +282,4 @@ export default function OTPVerificationPage() {
     </div>
   );
 }
+

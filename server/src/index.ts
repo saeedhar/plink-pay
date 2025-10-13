@@ -5,7 +5,34 @@ import cors from '@fastify/cors';
 import { z } from 'zod';
 
 const app = Fastify({ logger: true });
-await app.register(cors, { origin: true });
+
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
+// Optional: log what we allow on startup
+app.log.info({ allowedOrigins }, 'CORS allowed origins');
+
+await app.register(cors, {
+  // Accept requests from allowed list; allow non-browser (no Origin header)
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // curl/postman/no Origin
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`), false);
+  },
+
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+
+  // Allow common headers used by your app
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+
+  // If you use tokens/cookies from the browser, keep this true
+  credentials: true,
+
+  // Cache preflight responses for 1 day
+  maxAge: 86400
+});
 
 // --- Admin auth (simple) ---
 const AdminLoginBody = z.object({

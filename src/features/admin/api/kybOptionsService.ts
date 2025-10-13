@@ -1,4 +1,5 @@
 import { adminHttp } from './adminHttp';
+import { apiUrl } from '../../../lib/api';
 
 export type KybCategory = 'purpose_of_account' | 'business_activity' | 'annual_revenue';
 
@@ -33,13 +34,12 @@ export class KybOptionsService {
    * Get KYB options by category
    */
   async listOptions(category: KybCategory, locale: 'en' | 'ar' = 'en'): Promise<KybOptionsListResponse> {
-    const API_BASE_URL = 'http://localhost:8084/api/v1';
     const params = new URLSearchParams({
       category,
       locale
     });
 
-    const response = await fetch(`${API_BASE_URL}/kyb/options?${params}`);
+    const response = await fetch(apiUrl(`/api/v1/kyb/options?${params}`));
     if (!response.ok) {
       throw new Error(`Failed to fetch KYB options: ${response.status}`);
     }

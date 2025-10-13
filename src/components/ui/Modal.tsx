@@ -259,6 +259,7 @@ export function ConfirmModal({
 export interface AlertModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onConfirm?: () => void;
   title: string;
   message: string;
   buttonLabel?: string;
@@ -270,6 +271,7 @@ export interface AlertModalProps {
 export function AlertModal({
   isOpen,
   onClose,
+  onConfirm,
   title,
   message,
   buttonLabel = 'OK',
@@ -277,6 +279,14 @@ export function AlertModal({
   icon,
   children
 }: AlertModalProps) {
+  const handleButtonClick = () => {
+    if (onConfirm) {
+      onConfirm();
+    } else {
+      onClose();
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -285,7 +295,7 @@ export function AlertModal({
       icon={icon}
       primaryButton={{
         label: buttonLabel,
-        onClick: onClose,
+        onClick: handleButtonClick,
         variant: variant === 'danger' ? 'danger' : 'primary'
       }}
       size="sm"
