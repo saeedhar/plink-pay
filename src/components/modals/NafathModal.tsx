@@ -19,36 +19,52 @@ export function NafathModal() {
   // Redirection Modal
   if (currentStatus === 'REDIRECTION') {
     return (
-      <AlertModal
-        isOpen={true}
-        onClose={() => {}} // No close for this modal
-        title="Nafath Redirection"
-        message=""
-        buttonLabel=""
-        variant="primary"
-      >
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-[#2E248F] rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl font-bold">77</span>
-          </div>
-          <h3 className="text-2xl font-bold text-[#CE2E81] mb-4">Nafath Redirection</h3>
-          <p className="text-gray-600 mb-4">
-            Go to Nafath portal to verify your registration
-          </p>
-          {timeRemaining && (
-            <p className="text-[#CE2E81] font-medium mb-6">
-              Code will expire in {timeRemaining}
-            </p>
-          )}
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-xl relative">
+          {/* Close Button */}
           <button
-            onClick={handleGoToNafath}
-            disabled={isInitializing}
-            className="bg-[#2E248F] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#1a1a5a] transition-colors"
+            onClick={() => {}}
+            className="absolute top-4 right-4 text-black hover:text-gray-600 transition-colors"
           >
-            {isInitializing ? 'Initializing...' : 'Go to Nafath'}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
+
+          <div className="text-center space-y-6">
+            {/* Circular Badge with Number */}
+            <div className="w-20 h-20 bg-[#023B67] rounded-full flex items-center justify-center mx-auto">
+              <span className="text-white text-3xl font-bold">77</span>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-[#00BDFF]">
+              Nafath Redirection
+            </h2>
+
+            {/* Instruction Text */}
+            <p className="text-gray-600 text-base">
+              Go to Nafath portal to verify your registration
+            </p>
+
+            {/* Timer */}
+            {timeRemaining && (
+              <p className="text-[#00BDFF] text-base font-medium">
+                Code will Expired in {timeRemaining}
+              </p>
+            )}
+
+            {/* Button */}
+            <button
+              onClick={handleGoToNafath}
+              disabled={isInitializing}
+              className="w-full bg-[#023B67] text-white py-4 px-8 rounded-2xl font-bold text-lg hover:bg-[#023B67]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isInitializing ? 'Initializing...' : 'Go to Nafath'}
+            </button>
+          </div>
         </div>
-      </AlertModal>
+      </div>
     );
   }
 
@@ -83,38 +99,92 @@ export function NafathModal() {
   // Request Under Review Modal
   if (currentStatus === 'UNDER_REVIEW') {
     return (
-      <AlertModal
-        isOpen={true}
-        onClose={handleDone}
-        title="Request Under Review"
-        message="Your request has been received and is under review for compliance. We'll notify you once the process is complete."
-        buttonLabel="Done"
-        variant="info"
-        icon={
-          <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        }
-      />
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-xl relative">
+          {/* Close Button */}
+          <button
+            onClick={handleDone}
+            className="absolute top-4 right-4 text-black hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div className="text-center space-y-6">
+            {/* Review Icon */}
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-gray-800">
+              Request Under Review
+            </h2>
+
+            {/* Description */}
+            <p className="text-gray-600 text-base leading-relaxed">
+              Your request has been received and is under review for compliance. We'll notify you once the process is complete.
+            </p>
+
+            {/* Done Button */}
+            <button
+              onClick={handleDone}
+              className="w-full bg-[#023B67] text-white py-4 px-8 rounded-2xl font-bold text-lg hover:bg-[#023B67]/90 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
-  // Request Received Modal
+  // Request Successfully Submitted Modal
   if (currentStatus === 'RECEIVED') {
     return (
-      <AlertModal
-        isOpen={true}
-        onClose={handleDone}
-        title="Request Received"
-        message="Thank you! Your request has been successfully submitted and is currently under compliance review. You will be notified through alerts once the process is complete."
-        buttonLabel="Done"
-        variant="success"
-        icon={
-          <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        }
-      />
+      <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-xl relative">
+          {/* Close Button */}
+          <button
+            onClick={handleDone}
+            className="absolute top-4 right-4 text-black hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div className="text-center space-y-6">
+            {/* Success Icon */}
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-gray-800">
+              Request Successfully Submitted
+            </h2>
+
+            {/* Description */}
+            <p className="text-gray-600 text-base leading-relaxed">
+              Thank you! Your request has been successfully submitted and is currently under compliance review. You will be notified through alerts once the process is complete.
+            </p>
+
+            {/* Done Button */}
+            <button
+              onClick={handleDone}
+              className="w-full bg-[#023B67] text-white py-4 px-8 rounded-2xl font-bold text-lg hover:bg-[#023B67]/90 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 

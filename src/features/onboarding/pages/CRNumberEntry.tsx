@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
-import { FormField, Input } from "../../../components/ui/FormField";
+import { SignupInput } from "../../../components/ui/SignupInput";
+import { SignupButton } from "../../../components/ui/SignupButton";
 import { AlertModal } from "../../../components/ui/Modal";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import CRIcon from "../../../assets/CR-Num.svg";
@@ -17,15 +18,20 @@ export default function CRNumberEntry() {
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [showFailureModal, setShowFailureModal] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   
   const navigate = useNavigate();
   const { state, dispatch } = useOnboarding();
 
-  // Real-time validation
+  // Real-time validation - only show errors after user interaction
   const validationError = validateCRNumber(crNumber);
+  const shouldShowValidationError = hasUserInteracted && validationError;
   const isValid = !validationError && crNumber.length > 0;
 
   const handleCRChange = (value: string) => {
+    // Mark that user has interacted
+    setHasUserInteracted(true);
+    
     // Format as user types and convert Arabic numerals
     const formatted = formatCRNumber(value);
     setCrNumber(formatted);
@@ -120,8 +126,8 @@ export default function CRNumberEntry() {
                   Enter your CR Number
                 </p>
 
-                {/* Inline error display as shown in Figma */}
-                {(error || validationError) && (
+                {/* Inline error display as shown in Figma - only show after user interaction */}
+                {(error || shouldShowValidationError) && (
                   <div className="mb-4 text-center">
                     <p className="text-red-500 text-sm font-medium">
                       The CR you entered is incorrect<br />
@@ -131,49 +137,33 @@ export default function CRNumberEntry() {
                 )}
 
                 <div className="mb-8">
-                  <FormField
+                  <SignupInput
                     id="crNumber"
                     label="CR Number"
-                    error={error || validationError || undefined}
-                  >
-                    <Input
-                      id="crNumber"
-                      type="text"
-                      placeholder="Enter your CR Number"
-                      value={crNumber}
-                      onChange={(e) => handleCRChange(e.target.value)}
-                      hasError={!!(error || validationError)}
-                      maxLength={12} // Formatted length
-                      autoComplete="off"
-                      leftIcon={
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      }
-                    />
-                  </FormField>
+                    placeholder="Enter your CR Number"
+                    value={crNumber}
+                    onChange={(e) => handleCRChange(e.target.value)}
+                    hasError={!!(error || shouldShowValidationError)}
+                    maxLength={12}
+                    autoComplete="off"
+                    error={error || shouldShowValidationError || undefined}
+                    addLeftPadding={false}
+                    leftIcon={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    }
+                  />
                 </div>
 
-                <div className="text-center">
-                  <button
-                    onClick={handleNext}
-                    disabled={!isValid || isLoading}
-                    className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
-                      !isValid || isLoading
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
-                    }`}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Verifying...
-                      </div>
-                    ) : (
-                      'Next'
-                    )}
-                  </button>
-                </div>
+                <SignupButton
+                  onClick={handleNext}
+                  disabled={!isValid}
+                  isLoading={isLoading}
+                  loadingText="Verifying..."
+                >
+                  Next
+                </SignupButton>
               </div>
             </div>
           </main>
@@ -193,14 +183,6 @@ export default function CRNumberEntry() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
           </svg>
         }
-      />
-      
-      <DevScenarioBar
-        title="CR Scenarios"
-        items={[
-          { label: 'CR invalid', patch: { crValid: false } },
-          { label: 'CR valid',   patch: { crValid: true }  },
-        ]}
       />
     </>
   );

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
-import { FormField, Input } from "../../../components/ui/FormField";
+import { SignupInput } from "../../../components/ui/SignupInput";
+import { SignupButton } from "../../../components/ui/SignupButton";
 import { AlertModal } from "../../../components/ui/Modal";
 import { useOnboardingNavigation } from "../../../hooks/useOnboardingNavigation";
 import { useLoadingState } from "../../../hooks/useLoadingState";
@@ -117,48 +118,29 @@ export default function PhoneNumberEntry() {
                 </p>
 
                 <div className="mb-8">
-                  <FormField
+                  <SignupInput
                     id="phone"
                     label="Phone Number"
+                    placeholder="05X XXX XXXX"
+                    value={phoneNumber}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    hasError={!!(error || validationError)}
+                    maxLength={12}
+                    autoComplete="tel"
                     helper="Must start with 05 and be exactly 10 digits"
                     required
-                  >
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="05X XXX XXXX"
-                      value={phoneNumber}
-                      onChange={(e) => handlePhoneChange(e.target.value)}
-                      hasError={!!(error || validationError)}
-                      maxLength={12} // Formatted length
-                      autoComplete="tel"
-                      leftIcon={<span className="text-black font-medium">+966</span>}
-                      className="pl-16"
-                      style={{ borderRadius: '20px', borderColor: '#023B67' }}
-                    />
-                  </FormField>
+                    leftIcon={<span className="text-black font-medium">+966</span>}
+                  />
                 </div>
 
-                <div className="text-center">
-                  <button
-                    onClick={handleNext}
-                    disabled={!isValid || isLoading}
-                    className={`px-12 py-3 rounded-2xl font-semibold transition-colors text-lg w-full ${
-                      !isValid || isLoading
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-[#023B67] text-white hover:bg-[#023B67]/90"
-                    }`}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Sending...
-                      </div>
-                    ) : (
-                      'Next'
-                    )}
-                  </button>
-                </div>
+                <SignupButton
+                  onClick={handleNext}
+                  disabled={!isValid}
+                  isLoading={isLoading}
+                  loadingText="Sending..."
+                >
+                  Next
+                </SignupButton>
               </div>
             </div>
         </main>
@@ -174,20 +156,48 @@ export default function PhoneNumberEntry() {
     </div>
 
       {/* Duplicate Phone Modal */}
-      <AlertModal
-        isOpen={showDuplicateModal}
-        onClose={() => setShowDuplicateModal(false)}
-        title="Already Registered"
-        message="This phone number is already registered. Please login to access your account."
-        buttonLabel="Go to Login"
-        variant="primary"
-        onConfirm={() => navigate('/login')}
-        icon={
-          <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        }
-      />
+      {showDuplicateModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-xl relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowDuplicateModal(false)}
+              className="absolute top-4 right-4 text-black hover:text-gray-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="text-center space-y-6">
+              {/* Warning Icon */}
+              <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                <svg className="w-10 h-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+
+              {/* Title */}
+              <h2 className="text-2xl font-bold text-gray-800">
+                Already Registered
+              </h2>
+
+              {/* Description */}
+              <p className="text-gray-600 text-base leading-relaxed">
+                This phone number is already registered. Please login to access your account.
+              </p>
+
+              {/* Go to Login Button */}
+              <button
+                onClick={() => navigate('/login')}
+                className="w-full bg-[#023B67] text-white py-4 px-8 rounded-2xl font-bold text-lg hover:bg-[#023B67]/90 transition-colors"
+              >
+                Go to Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

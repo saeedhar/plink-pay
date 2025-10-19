@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BiHide, BiShow, BiCheck } from "react-icons/bi";
 import { useOnboarding } from "../../../store/OnboardingContext";
-import { FormField, Input } from "../../../components/ui/FormField";
+import { SignupInput } from "../../../components/ui/SignupInput";
+import { SignupButton } from "../../../components/ui/SignupButton";
+import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import PasswordIcon from "../../../assets/password.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
-import RightSectionImage from "../../../assets/right-section-password.png";
+import StepSidebar from "../components/StepSidebar";
 import { validatePassword, validatePasswordConfirmation, getPasswordRequirements } from "../../../utils/validators";
 import { setPassword as setPasswordAPI } from "../../../services/onboardingAPI";
 
@@ -26,6 +28,22 @@ export default function PasswordSetup() {
   const confirmPasswordError = validatePasswordConfirmation(password, confirmPassword);
   
   const isFormValid = !passwordError && !confirmPasswordError && password.length > 0 && confirmPassword.length > 0;
+  
+  // Debug logging
+  console.log('🔍 Password validation debug:');
+  console.log('Password:', password);
+  console.log('Confirm Password:', confirmPassword);
+  console.log('Password Error:', passwordError);
+  console.log('Confirm Password Error:', confirmPasswordError);
+  console.log('Requirements:', requirements);
+  console.log('Is Form Valid:', isFormValid);
+
+  const handleReset = () => {
+    // Reset the onboarding state to the beginning
+    dispatch({ type: 'RESET_STATE' });
+    // Navigate to the first step
+    navigate('/onboarding/business-type');
+  };
 
   const handleNext = async () => {
     if (!isFormValid) {
@@ -54,8 +72,8 @@ export default function PasswordSetup() {
       // Mark password as set
       dispatch({ type: 'SET_PASSWORD_SUCCESS' });
       
-      // Navigate to profile creation page
-      navigate('/onboarding/complete');
+      // Navigate directly to login page
+      navigate('/login');
       
     } catch (error) {
       console.error("Password setup failed:", error);
@@ -73,37 +91,56 @@ export default function PasswordSetup() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left Section */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <img src={HeroLogo} alt="" className="h-12 w-12 mx-auto mb-6" />
-            
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <img src={PasswordIcon} alt="" className="h-12 w-12" />
-              <h1 className="text-4xl font-bold text-gray-800">
-                Set Your Password
-              </h1>
-            </div>
-            
-            <p className="text-gray-600 mb-8">
-              Create a strong password to<br />
-              secure your account.
-            </p>
+    <div className="min-h-screen bg-gray-50">
+      <div 
+        className="flex min-h-screen"
+        style={{
+          background: 'linear-gradient(160.08deg, #023A66 38.35%, #0475CC 91.81%)'
+        }}
+      >
+         {/* Sidebar */}
+         <StepSidebar 
+           steps={[
+             "Select Your Business Type",
+             "phone number", 
+             "CR Number",
+             "ID Number",
+             "Nafath",
+             "KYB"
+           ]} 
+           activeIndex={-1} 
+           logoSrc={WhiteLogo}
+           showReloadButton={true}
+           onReload={handleReset}
+         />
+
+        {/* Right content */}
+        <main className="flex-1 bg-white rounded-tl-[40px] relative flex flex-col">
+          <div className="text-center pt-12 pb-8">
+            <img src={HeroLogo} alt="" className="h-12 w-12 mx-auto" />
           </div>
 
-          <div className="space-y-6 mb-8">
-            {/* Password Field */}
-            <FormField
-              id="password"
-              label="Password"
-              error={showErrors ? (passwordError || undefined) : undefined}
-            >
-              <div className="relative">
-                <Input
+          <div className="flex-1 flex items-start justify-center pt-16">
+            <div className="max-w-md w-full px-8">
+              {/* Header Section */}
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-4 mb-4">
+                  <img src={PasswordIcon} alt="" className="h-12 w-12" />
+                  <h1 className="text-4xl font-bold text-gray-800">
+                    Set Your Password
+                  </h1>
+                </div>
+                <p className="text-gray-600">
+                  Create a strong password to secure your account.
+                </p>
+              </div>
+
+              {/* Password Form */}
+              <div className="space-y-6 mb-8">
+                {/* Password Field */}
+                <SignupInput
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  label="Password"
                   placeholder="Create Your Password"
                   value={password}
                   onChange={(e) => {
@@ -112,27 +149,24 @@ export default function PasswordSetup() {
                   }}
                   hasError={!!(showErrors && passwordError)}
                   autoComplete="new-password"
+                  type={showPassword ? "text" : "password"}
+                   error={showErrors ? passwordError || undefined : undefined}
+                  addLeftPadding={false}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <BiHide size={20} /> : <BiShow size={20} />}
+                    </button>
+                  }
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? <BiHide className="w-5 h-5" /> : <BiShow className="w-5 h-5" />}
-                </button>
-              </div>
-            </FormField>
 
-            {/* Confirm Password Field */}
-            <FormField
-              id="confirmPassword"
-              label="Confirm Password"
-              error={showErrors ? (confirmPasswordError || undefined) : undefined}
-            >
-              <div className="relative">
-                <Input
+                {/* Confirm Password Field */}
+                <SignupInput
                   id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
+                  label="Confirm Password"
                   placeholder="Confirm Your Password"
                   value={confirmPassword}
                   onChange={(e) => {
@@ -141,62 +175,46 @@ export default function PasswordSetup() {
                   }}
                   hasError={!!(showErrors && confirmPasswordError)}
                   autoComplete="new-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                   error={showErrors ? confirmPasswordError || undefined : undefined}
+                  addLeftPadding={false}
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      {showConfirmPassword ? <BiHide size={20} /> : <BiShow size={20} />}
+                    </button>
+                  }
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showConfirmPassword ? <BiHide className="w-5 h-5" /> : <BiShow className="w-5 h-5" />}
-                </button>
               </div>
-            </FormField>
 
-            {/* Live Password Requirements Checklist */}
-            <div className="bg-gray-50 p-4 rounded-lg border">
-              <p className="text-sm font-medium text-gray-700 mb-3">Your password should contain at least:</p>
-              <div className="space-y-2">
-                <RequirementItem met={requirements.minLength} text="8 characters" />
-                <RequirementItem met={requirements.hasLetters} text="One uppercase letter" />
-                <RequirementItem met={requirements.hasLetters} text="One lowercase letter" />
-                <RequirementItem met={requirements.hasNumbers} text="One number" />
-                <RequirementItem met={requirements.hasSymbols} text="One special character (!@#$...)" />
+              {/* Password Requirements */}
+              <div className="mb-8 p-4 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">
+                  Your password should contain at least:
+                </h3>
+                <div className="space-y-2">
+                  <RequirementItem met={requirements.minLength} text="8 characters" />
+                  <RequirementItem met={requirements.hasLetters} text="One letter (uppercase or lowercase)" />
+                  <RequirementItem met={requirements.hasNumbers} text="One number" />
+                  <RequirementItem met={requirements.hasSymbols} text="One special character (!@#$..)" />
+                </div>
               </div>
+
+              {/* Submit Button */}
+              <SignupButton
+                onClick={handleNext}
+                disabled={!isFormValid}
+                isLoading={isLoading}
+                loadingText="Setting Password..."
+              >
+                Next
+              </SignupButton>
             </div>
           </div>
-
-          <div className="text-center">
-            <button
-              onClick={handleNext}
-              disabled={!isFormValid || isLoading}
-              className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
-                !isFormValid || isLoading
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
-              }`}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Setting up...
-                </div>
-              ) : (
-                'Next'
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Section with Illustration */}
-      <div className="flex-1 bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center p-8">
-        <div className="max-w-lg">
-          <img 
-            src={RightSectionImage} 
-            alt="Password Security Illustration" 
-            className="w-full h-auto object-contain"
-          />
-        </div>
+        </main>
       </div>
     </div>
   );

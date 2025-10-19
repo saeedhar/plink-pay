@@ -4,6 +4,7 @@ import { BiRefresh } from "react-icons/bi";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
 import { FormField, Input } from "../../../components/ui/FormField";
+import { SignupButton } from "../../../components/ui/SignupButton";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import KYBIcon from "../../../assets/KYB.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
@@ -156,20 +157,16 @@ export default function KYBPage() {
             
             <div className="flex-1 flex items-start justify-center pt-16">
               <div className="max-w-md w-full px-8">
-                <div className="flex items-center justify-center gap-4 mb-6">
-                  <img src={KYBIcon} alt="" className="h-12 w-12" />
-                  <h1 className="text-4xl font-bold text-gray-800">
-                    KYB
-                  </h1>
-                </div>
-                
-                <div className="text-center mb-12">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                    <BiRefresh className="w-5 h-5 text-blue-500" />
-                    <p className="text-sm text-blue-700 font-medium">
-                      To meet regulations, please provide your business details for verification.
-                    </p>
+                <div className="text-center mb-6">
+                  <div className="flex items-center justify-center gap-4 mb-4">
+                    <img src={KYBIcon} alt="" className="h-12 w-12" />
+                    <h1 className="text-2xl font-bold text-gray-800">
+                      Business Verification <span className="text-[#00BDFF]">(KYB)</span>
+                    </h1>
                   </div>
+                  <p className="text-gray-600">
+                    To meet regulations, please provide your business details for verification.
+                  </p>
                 </div>
 
                 {/* Loading State */}
@@ -296,39 +293,27 @@ export default function KYBPage() {
                   )}
                 </div>
 
-                <div className="text-center">
-                  <button
-                    onClick={handleNext}
-                    disabled={!isFormValid() || isLoading}
-                    className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
-                      !isFormValid() || isLoading
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
-                    }`}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Submitting...
-                      </div>
-                    ) : (
-                      'Next'
-                    )}
-                  </button>
-                </div>
+                <SignupButton
+                  onClick={handleNext}
+                  disabled={!isFormValid()}
+                  isLoading={isLoading}
+                  loadingText="Submitting..."
+                >
+                  Next
+                </SignupButton>
               </div>
             </div>
           </main>
         </div>
       </div>
       
-      <DevScenarioBar
+      {/* <DevScenarioBar
         title="KYB Scenarios"
         items={[
           { label: 'High Risk', patch: { globalHit: true } },
           { label: 'Low Risk',  patch: { globalHit: false } },
         ]}
-      />
+      /> */}
     </>
   );
 }

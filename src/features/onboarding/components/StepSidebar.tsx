@@ -1,12 +1,15 @@
 import React from "react";
+import { BiRefresh } from "react-icons/bi";
 
 export interface StepSidebarProps {
   steps: string[];
   activeIndex: number; // 0-based
   logoSrc: string;
+  showReloadButton?: boolean;
+  onReload?: () => void;
 }
 
-export default function StepSidebar({ steps, activeIndex, logoSrc }: StepSidebarProps) {
+export default function StepSidebar({ steps, activeIndex, logoSrc, showReloadButton = false, onReload }: StepSidebarProps) {
   return (
     <aside className="relative w-80 text-white overflow-visible">
       {/* Background with gradient */}
@@ -97,6 +100,19 @@ export default function StepSidebar({ steps, activeIndex, logoSrc }: StepSidebar
             ))}
           </div>
         </div>
+
+        {/* Reload Button - Only show on password setup screen */}
+        {showReloadButton && (
+          <div className="flex justify-center pb-16">
+            <button
+              onClick={onReload}
+              className="w-16 h-16 rounded-full flex items-center justify-center hover:bg-white/10 transition-all duration-200"
+              title="Reset to beginning"
+            >
+              <BiRefresh className="w-80 h-80 text-white" />
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

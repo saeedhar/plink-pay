@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
-import { FormField, Input } from "../../../components/ui/FormField";
+import { SignupInput } from "../../../components/ui/SignupInput";
+import { SignupButton } from "../../../components/ui/SignupButton";
 import { AlertModal } from "../../../components/ui/Modal";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
+import IDIcon from "../../../assets/IDNum.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import { validateSaudiId, formatIdNumber, getIdType } from "../../../utils/validators";
@@ -18,6 +20,7 @@ export default function IDNumberEntry() {
   const [showVerificationFailedModal, setShowVerificationFailedModal] = useState(false);
   const [showMismatchModal, setShowMismatchModal] = useState(false);
   const [mockScenario, setMockScenario] = useState<any>({});
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   
   const navigate = useNavigate();
   const { state, dispatch } = useOnboarding();
@@ -44,7 +47,7 @@ export default function IDNumberEntry() {
   // Debug logging
   console.log('IDNumberEntry - mockScenario:', mockScenario);
   
-  // Real-time validation - respect mock scenario for idValid
+  // Real-time validation - respect mock scenario for idValid, only show errors after user interaction
   let validationError: string | null = null;
   
   if (mockScenario.idValid === false) {
@@ -56,12 +59,16 @@ export default function IDNumberEntry() {
     validationError = validateSaudiId(idNumber);
   }
   
+  const shouldShowValidationError = hasUserInteracted && validationError;
   const isValid = !validationError && (idNumber.length > 0 || mockScenario.idValid === true);
 
   // Get the ID type for display
   const idType = getIdType(idNumber.replace(/\s/g, ''));
 
   const handleIdChange = (value: string) => {
+    // Mark that user has interacted
+    setHasUserInteracted(true);
+    
     // Format as user types and convert Arabic numerals
     const formatted = formatIdNumber(value);
     setIdNumber(formatted);
@@ -207,9 +214,12 @@ export default function IDNumberEntry() {
 
             <div className="flex-1 flex items-start justify-center pt-16">
               <div className="max-w-md w-full px-8">
-                <h1 className="text-4xl font-bold text-gray-800 text-center mb-6">
-                  ID Number
-                </h1>
+                <div className="flex items-center justify-center gap-4 mb-6">
+                  <img src={IDIcon} alt="" className="h-12 w-12" />
+                  <h1 className="text-4xl font-bold text-gray-800">
+                    ID Number
+                  </h1>
+                </div>
 
                 <p className="text-gray-600 text-center mb-12">
                   Enter the ID number of the<br />
@@ -217,8 +227,8 @@ export default function IDNumberEntry() {
                   person.
                 </p>
 
-                {/* Inline error display as shown in Figma */}
-                {(error || validationError) && (
+                {/* Inline error display as shown in Figma - only show after user interaction */}
+                {(error || shouldShowValidationError) && (
                   <div className="mb-4 text-center">
                     <p className="text-red-500 text-sm font-medium">
                       Invalid ID Number. Please enter a valid format.
@@ -241,49 +251,31 @@ export default function IDNumberEntry() {
                 )}
 
                 <div className="mb-8">
-                  <FormField
+                  <SignupInput
                     id="idNumber"
                     label="ID Number"
-                    error={error || validationError}
-                  >
-                    <Input
-                      id="idNumber"
-                      type="text"
-                      placeholder="Enter ID Number"
-                      value={idNumber}
-                      onChange={(e) => handleIdChange(e.target.value)}
-                      hasError={!!(error || validationError)}
-                      maxLength={12} // Formatted length
-                      autoComplete="off"
-                      leftIcon={
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                        </svg>
-                      }
-                    />
-                  </FormField>
+                    placeholder="Enter ID Number"
+                    value={idNumber}
+                    onChange={(e) => handleIdChange(e.target.value)}
+                    hasError={!!(error || shouldShowValidationError)}
+                    maxLength={12}
+                    autoComplete="off"
+                    error={error || shouldShowValidationError || undefined}
+                    addLeftPadding={false}
+                    leftIcon={
+                      <img src={IDIcon} alt="" className="w-5 h-5" />
+                    }
+                  />
                 </div>
 
-                <div className="text-center">
-                  <button
-                    onClick={handleNext}
-                    disabled={!isValid || isLoading}
-                    className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
-                      !isValid || isLoading
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
-                    }`}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Verifying...
-                      </div>
-                    ) : (
-                      'Next'
-                    )}
-                  </button>
-                </div>
+                <SignupButton
+                  onClick={handleNext}
+                  disabled={!isValid}
+                  isLoading={isLoading}
+                  loadingText="Verifying..."
+                >
+                  Next
+                </SignupButton>
               </div>
             </div>
           </main>
@@ -320,14 +312,14 @@ export default function IDNumberEntry() {
         }
       />
       
-      <DevScenarioBar
+      {/* <DevScenarioBar
         title="ID/Tahaquq Scenarios"
         items={[
           { label: 'Invalid ID format', patch: { idValid: false } },
           { label: 'Phone↔ID mismatch', patch: { idPhoneMismatch: true } },
           { label: 'All good',          patch: { idValid: true, idPhoneMismatch: false } },
         ]}
-      />
+      /> */}
     </>
   );
 }

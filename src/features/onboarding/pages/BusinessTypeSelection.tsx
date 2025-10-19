@@ -4,7 +4,7 @@ import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
 import { Modal } from "../../../components/ui/Modal";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
-import heroLogo from "../../../assets/hero-logo2.svg";
+import heroLogo from "../../../assets/hero-logo-mini.svg";
 import WarningIcon from "../../../assets/warning.svg";
 // icons
 import SoleProprietorshipIcon from "../../../assets/select your buisness type assets/Vector.svg";
