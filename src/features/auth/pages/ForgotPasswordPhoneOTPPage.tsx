@@ -5,7 +5,7 @@ import logo from '../../../assets/logo-mark.svg';
 import { forgotPassword } from '../../../services/realBackendAPI';
 import type { ForgotPasswordRequest } from '../../../services/realBackendAPI';
 
-export default function ForgotPasswordOTPPage() {
+export default function ForgotPasswordPhoneOTPPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -14,24 +14,26 @@ export default function ForgotPasswordOTPPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [resetToken, setResetToken] = useState('');
-  const [phoneOrEmail, setPhoneOrEmail] = useState('');
+  const [idUnn, setIdUnn] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   // Get data from navigation state
   useEffect(() => {
     const state = location.state as { 
       resetToken?: string; 
       idUnn?: string;
-      dateOfBirth?: string;
+      phoneNumber?: string;
       message?: string;
     };
     
-    if (state?.resetToken && state?.idUnn) {
+    if (state?.resetToken && state?.idUnn && state?.phoneNumber) {
       setResetToken(state.resetToken);
-      setPhoneOrEmail(state.idUnn); // Use ID/UNN as identifier
+      setIdUnn(state.idUnn);
+      setPhoneNumber(state.phoneNumber);
     } else {
       // If no data, redirect to forgot password
       console.warn('No reset token provided, redirecting to forgot password');
-      navigate('/forgot-password/id-bod');
+      navigate('/forgot-password/phone');
     }
   }, [location, navigate]);
 
@@ -76,7 +78,7 @@ export default function ForgotPasswordOTPPage() {
     
     if (!resetToken) {
       setError('Reset token not found. Please try again.');
-      navigate('/forgot-password/id-bod');
+      navigate('/forgot-password/phone');
       return;
     }
     
@@ -89,11 +91,13 @@ export default function ForgotPasswordOTPPage() {
     setError('');
     
     try {
-      // Navigate to reset password with token and OTP
-      navigate('/reset-password', {
+      // Navigate to set password with token and OTP
+      navigate('/forgot-password/phone/set-password', {
         state: {
           resetToken: resetToken,
-          otp: otpCode
+          otp: otpCode,
+          idUnn: idUnn,
+          phoneNumber: phoneNumber
         }
       });
     } catch (error: any) {
@@ -105,8 +109,8 @@ export default function ForgotPasswordOTPPage() {
   };
 
   const handleResend = async () => {
-    if (!phoneOrEmail) {
-      setError('ID/UNN not found. Please go back and try again.');
+    if (!idUnn || !phoneNumber) {
+      setError('ID/UNN or Phone not found. Please go back and try again.');
       return;
     }
     
@@ -115,8 +119,8 @@ export default function ForgotPasswordOTPPage() {
     
     try {
       const request: ForgotPasswordRequest = {
-        idUnn: phoneOrEmail,
-        dateOfBirth: '' // We'll need to get this from state
+        idUnn: idUnn,
+        phoneNumber: phoneNumber
       };
       
       const response = await forgotPassword(request);
@@ -229,7 +233,7 @@ export default function ForgotPasswordOTPPage() {
           >
             {/* Back Button */}
             <button
-              onClick={() => navigate('/forgot-password/id-bod')}
+              onClick={() => navigate('/forgot-password/phone')}
               className="absolute top-6 left-6 text-[#022466] hover:text-[#0475CC] transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,7 +308,7 @@ export default function ForgotPasswordOTPPage() {
                 <p className="text-gray-600">
                   <button
                     type="button"
-                    onClick={() => navigate('/forgot-password')}
+                    onClick={() => navigate('/forgot-password/phone')}
                     className="text-[#0475CC] hover:text-[#022466] font-medium"
                   >
                     Change Mobile Number?
@@ -354,4 +358,3 @@ export default function ForgotPasswordOTPPage() {
     </div>
   );
 }
-

@@ -5,11 +5,11 @@ import logo from '../../../assets/logo-mark.svg';
 import { forgotPassword } from '../../../services/realBackendAPI';
 import type { ForgotPasswordRequest } from '../../../services/realBackendAPI';
 
-export default function ForgotPasswordPage() {
+export default function ForgotPasswordPhonePage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     idUnn: '',
-    dateOfBirth: ''
+    phoneNumber: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,8 +27,8 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.idUnn || !formData.dateOfBirth) {
-      setError('Please enter both ID/UNN and Date of Birth');
+    if (!formData.idUnn || !formData.phoneNumber) {
+      setError('Please enter both ID/UNN and Phone Number');
       return;
     }
     
@@ -36,9 +36,19 @@ export default function ForgotPasswordPage() {
     setError('');
     
     try {
+      // Normalize phone to E164 format
+      let phoneNumber = formData.phoneNumber.trim().replace(/[\s\-]/g, '');
+      
+      // Add +966 if not present
+      if (!phoneNumber.startsWith('+')) {
+        phoneNumber = phoneNumber.startsWith('966') 
+          ? `+${phoneNumber}` 
+          : `+966${phoneNumber.replace(/^0/, '')}`;
+      }
+      
       const request: ForgotPasswordRequest = {
         idUnn: formData.idUnn,
-        dateOfBirth: formData.dateOfBirth
+        phoneNumber: phoneNumber
       };
       
       const response = await forgotPassword(request);
@@ -47,11 +57,11 @@ export default function ForgotPasswordPage() {
         console.log('✅ Identity verified, OTP sent successfully');
         
         // Navigate to OTP verification with reset token
-        navigate('/forgot-password/id-bod/otp', {
+        navigate('/forgot-password/phone/otp', {
           state: {
             resetToken: response.resetToken,
             idUnn: formData.idUnn,
-            dateOfBirth: formData.dateOfBirth,
+            phoneNumber: phoneNumber,
             message: response.message
           }
         });
@@ -61,7 +71,7 @@ export default function ForgotPasswordPage() {
     } catch (error: any) {
       console.error('❌ Identity verification error:', error);
       if (error.message.includes('404')) {
-        setError('Account not found. Please check your ID/UNN and Date of Birth.');
+        setError('Account not found. Please check your ID/UNN and Phone Number.');
       } else if (error.message.includes('Network') || error.message.includes('fetch')) {
         setError('Unable to connect to server. Please check your connection.');
       } else {
@@ -147,7 +157,7 @@ export default function ForgotPasswordPage() {
           >
             {/* Back Button */}
             <button
-              onClick={() => navigate('/forgot-password')}
+              onClick={() => navigate('/login')}
               className="absolute top-6 left-6 text-[#022466] hover:text-[#0475CC] transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,7 +180,7 @@ export default function ForgotPasswordPage() {
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-[#022466] mb-2">Verify Identity</h2>
                 <p className="text-gray-600">
-                  If you enter your ID, please provide your Date of Birth.
+                  If you enter your ID, please provide your Phone Number.
                 </p>
               </div>
 
@@ -204,28 +214,22 @@ export default function ForgotPasswordPage() {
                 />
               </div>
 
-              {/* Date of Birth Field */}
+              {/* Phone Number Field */}
               <div className="mb-6">
-                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
-                  Birth Of Date
+                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
                 </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    id="dateOfBirth"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
-                    required
-                    disabled={isLoading}
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                </div>
+                <input
+                  type="tel"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  placeholder="+966 05555555555555555"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
+                  required
+                  disabled={isLoading}
+                />
               </div>
 
               {/* Submit Button */}
@@ -233,7 +237,7 @@ export default function ForgotPasswordPage() {
                 <Button 
                   type="submit" 
                   className="w-full max-w-xs" 
-                  disabled={isLoading || !formData.idUnn || !formData.dateOfBirth}
+                  disabled={isLoading || !formData.idUnn || !formData.phoneNumber}
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
@@ -266,4 +270,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-

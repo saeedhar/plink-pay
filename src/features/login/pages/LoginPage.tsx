@@ -55,18 +55,46 @@ export default function LoginPage() {
         }
       });
       
-      // Store tokens securely
+      // Check if 2FA (OTP) is required
+      if (response.needsOtp) {
+        console.log('✅ Password verified. OTP sent for 2FA.');
+        // Navigate to OTP verification with user info
+        navigate('/login/verify-otp', {
+          state: {
+            userId: response.userId,
+            phoneOrEmail: emailOrPhone,
+            password: formData.password, // Include password for resend OTP
+            message: response.message
+          }
+        });
+        return;
+      }
+      
+      // Direct login (no 2FA) - Store tokens
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
       localStorage.setItem('userId', response.userId);
       
-      console.log('Login successful:', response.userId);
+      console.log('✅ Login successful:', response.userId);
       
-      // Navigate to dashboard or appropriate page
+      // Navigate to dashboard
       navigate('/dashboard');
       
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Check if account is locked
+      if (error.message.includes('locked') || error.message.includes('call center')) {
+        navigate('/account-locked', {
+          state: {
+            lockType: error.message.includes('call center') ? 'hard' : 'soft',
+            lockReason: error.message,
+            unlockMethod: error.message.includes('call center') ? 'call_center' : 'forgot_password'
+          }
+        });
+        return;
+      }
+      
       if (error.message.includes('401') || error.message.includes('403')) {
         setError('Invalid phone/email or password. Please try again.');
       } else if (error.message.includes('Network') || error.message.includes('fetch')) {
@@ -136,10 +164,10 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Phone/Email Field */}
+              {/* ID/UNN Field */}
               <div className="mb-6">
                 <label htmlFor="idUnn" className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number or Email
+                  ID/UNN
                 </label>
                 <input
                   type="text"
@@ -147,7 +175,7 @@ export default function LoginPage() {
                   name="idUnn"
                   value={formData.idUnn}
                   onChange={handleInputChange}
-                  placeholder="050 123 4567 or email@example.com"
+                  placeholder="Enter your registered ID or UNN"
                   className="w-full px-4 py-2 rounded-xl border border-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
                   required
                 />

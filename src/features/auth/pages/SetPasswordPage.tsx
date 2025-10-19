@@ -5,7 +5,7 @@ import logo from '../../../assets/logo-mark.svg';
 import { resetPassword } from '../../../services/realBackendAPI';
 import type { ResetPasswordRequest } from '../../../services/realBackendAPI';
 
-export default function ResetPasswordPage() {
+export default function SetPasswordPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [formData, setFormData] = useState({
@@ -18,13 +18,14 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [otp, setOtp] = useState('');
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
 
   // Get data from navigation state
   useEffect(() => {
     const state = location.state as { 
       resetToken?: string; 
       otp?: string;
+      idUnn?: string;
+      phoneNumber?: string;
     };
     
     if (state?.resetToken && state?.otp) {
@@ -33,24 +34,9 @@ export default function ResetPasswordPage() {
     } else {
       // If no data, redirect to forgot password
       console.warn('No reset token or OTP provided, redirecting to forgot password');
-      navigate('/forgot-password');
+      navigate('/forgot-password/phone');
     }
   }, [location, navigate]);
-
-  const calculatePasswordStrength = (password: string): 'weak' | 'medium' | 'strong' => {
-    let strength = 0;
-    
-    if (password.length >= 8) strength++;
-    if (password.length >= 12) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[0-9]/.test(password)) strength++;
-    if (/[^a-zA-Z0-9]/.test(password)) strength++;
-    
-    if (strength <= 2) return 'weak';
-    if (strength <= 4) return 'medium';
-    return 'strong';
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -58,11 +44,6 @@ export default function ResetPasswordPage() {
       ...prev,
       [name]: value
     }));
-    
-    // Update password strength
-    if (name === 'password') {
-      setPasswordStrength(calculatePasswordStrength(value));
-    }
     
     // Clear error when user types
     if (error) setError('');
@@ -112,7 +93,7 @@ export default function ResetPasswordPage() {
     
     if (!resetToken || !otp) {
       setError('Reset token or OTP not found. Please try again.');
-      navigate('/forgot-password');
+      navigate('/forgot-password/phone');
       return;
     }
     
@@ -151,24 +132,6 @@ export default function ResetPasswordPage() {
       }
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getStrengthColor = (strength: string) => {
-    switch (strength) {
-      case 'weak': return 'bg-red-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'strong': return 'bg-green-500';
-      default: return 'bg-gray-300';
-    }
-  };
-
-  const getStrengthWidth = (strength: string) => {
-    switch (strength) {
-      case 'weak': return 'w-1/3';
-      case 'medium': return 'w-2/3';
-      case 'strong': return 'w-full';
-      default: return 'w-0';
     }
   };
 
@@ -249,13 +212,28 @@ export default function ResetPasswordPage() {
               background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
             }}
           >
+            {/* Back Button */}
+            <button
+              onClick={() => navigate('/forgot-password/phone/otp')}
+              className="absolute top-6 left-6 text-[#022466] hover:text-[#0475CC] transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
             {/* Form */}
-            <form onSubmit={handleSubmit} className="pt-4">
-              {/* Title */}
+            <form onSubmit={handleSubmit} className="pt-8">
+              {/* Title with Icon */}
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-[#022466] mb-2">New Password</h2>
+                <div className="flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-[#022466] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <h2 className="text-2xl font-bold text-[#022466]">Set Your Password</h2>
+                </div>
                 <p className="text-gray-600">
-                  Create a new strong password
+                  Create a strong password to secure your account.
                 </p>
               </div>
 
@@ -271,10 +249,10 @@ export default function ResetPasswordPage() {
                 </div>
               )}
 
-              {/* New Password Field */}
+              {/* Create Password Field */}
               <div className="mb-4">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  New Password
+                  Create Your Password
                 </label>
                 <div className="relative">
                   <input
@@ -283,7 +261,7 @@ export default function ResetPasswordPage() {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder="Create new password"
+                    placeholder="Create Your Password"
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all pr-12"
                     required
                     disabled={isLoading}
@@ -305,28 +283,12 @@ export default function ResetPasswordPage() {
                     )}
                   </button>
                 </div>
-                
-                {/* Password Strength Indicator */}
-                {formData.password && (
-                  <div className="mt-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-300 ${getStrengthColor(passwordStrength)} ${getStrengthWidth(passwordStrength)}`}
-                        />
-                      </div>
-                      <span className="text-xs font-medium capitalize text-gray-700">
-                        {passwordStrength}
-                      </span>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Confirm Password Field */}
               <div className="mb-6">
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password
+                  Confirm Your Password
                 </label>
                 <div className="relative">
                   <input
@@ -335,7 +297,7 @@ export default function ResetPasswordPage() {
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    placeholder="Confirm new password"
+                    placeholder="Confirm Your Password"
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all pr-12"
                     required
                     disabled={isLoading}
@@ -361,11 +323,11 @@ export default function ResetPasswordPage() {
 
               {/* Password Requirements */}
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm font-medium text-gray-700 mb-2">Password must contain:</p>
+                <p className="text-sm font-medium text-gray-700 mb-3">Your password should contain at least:</p>
                 <ul className="text-xs text-gray-600 space-y-1">
                   <li className="flex items-center gap-2">
                     <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}>✓</span>
-                    At least 8 characters
+                    8 characters
                   </li>
                   <li className="flex items-center gap-2">
                     <span className={/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>✓</span>
@@ -381,7 +343,7 @@ export default function ResetPasswordPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className={/[^a-zA-Z0-9]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>✓</span>
-                    One special character
+                    One special character (!@#$...)
                   </li>
                 </ul>
               </div>
@@ -399,10 +361,10 @@ export default function ResetPasswordPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Resetting...
+                      Setting...
                     </span>
                   ) : (
-                    'Reset Password'
+                    'Next'
                   )}
                 </Button>
               </div>

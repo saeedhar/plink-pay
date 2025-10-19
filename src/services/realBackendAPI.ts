@@ -66,6 +66,22 @@ export interface LoginResponse {
   refreshToken: string;
   expiresIn: number;
   userId: string;
+  needsOtp?: boolean;
+  needsCallback?: boolean;
+  callbackId?: string;
+  deviceId?: string;
+  message?: string;
+}
+
+export interface VerifyLoginOtpRequest {
+  userId: string;
+  otp: string;
+  device?: {
+    platform: string;
+    userAgent: string;
+    screenResolution?: string;
+    timezone?: string;
+  };
 }
 
 export interface PhoneUniquenessRequest {
@@ -172,9 +188,12 @@ export interface KybOptionsResponse {
 }
 
 export interface ForgotPasswordRequest {
-  phoneOrEmail: string;
-  nationalId?: string;
+  // For ID/BOD flow
+  idUnn?: string;
   dateOfBirth?: string;
+  
+  // For Phone flow  
+  phoneNumber?: string; // Must be in E164 format (+966...)
 }
 
 export interface ForgotPasswordResponse {
@@ -273,6 +292,22 @@ export async function loginWithPassword(request: LoginPasswordRequest): Promise<
 
   if (!response.ok) {
     throw new Error(`Failed to login: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+export async function verifyLoginOtp(request: VerifyLoginOtpRequest): Promise<LoginResponse> {
+  const response = await fetch(apiUrl('/api/v1/auth/login/verify-otp'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to verify login OTP: ${response.status}`);
   }
 
   return await response.json();

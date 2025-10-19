@@ -1,0 +1,635 @@
+BRD - Digital Wallet Project
+
+	•	Scope (in general):
+The digital wallet is being developed in two main phases:
+
+	•	Phase 1: B2B – Institutional Wallet (Current Focus)
+This phase targets businesses, aiming to enable organizations to manage their financial operations efficiently through a secure digital wallet account.
+
+	•	Key Features of the B2B Wallet:
+	•	Open a wallet account for your business
+	•	Manage transactions and balances
+	•	Pay bills
+	•	Local money transfers
+	•	Top up wallet
+	•	Receive incoming remittances
+	•	Issue cards and payments
+
+	•	Phase 2: B2C —Employee Wallet (Later)
+In the next phase, the focus will shift to individual users (employees) to enable personal financial services through their wallet accounts.
+
+	•	Services Overview
+	•	Onboarding Service “Sole Proprietorship, Individual owner company”
+	•	Service Description:
+	•	Onboarding is the process that allows a new user to register themselves in the system as a representative of a sole proprietorship (Single Owner).
+
+	•	The primary objective is to verify the user's identity and business data to ensure compliance with legal and regulatory standards before allowing them to use the e-wallet.
+
+	•	This process includes verifying:
+	•	Business-type survey
+	•	Mobile number
+	•	OTP validation
+	•	UNN number or ID number
+	•	Data matching with local and global lists
+
+	•	Owner authority
+	•	Authorization
+	•	KYB Form
+	•	Set password and account creation
+	•	Biometric setup
+
+	•	General User Story:
+"As a new user, I would like to register my sole proprietorship, through a series of digital verification steps, so that I can use the wallet services."
+
+	•	Detailed Onboarding Flow:
+
+Step #1
+The client will see a survey containing four types of business accounts:
+
+	•	Sole Proprietorship
+	•	Individual owner company
+	•	Freelancer
+	•	Multi-Owner Company
+
+	•	If the client selects (sole proprietorship, individual owner company, or freelancer), the onboarding process continues, and they move to the next step, which is entering their mobile number.
+
+	•	If the client selects (multi-owner company), the onboarding process stops, and they will see the message, "Sorry, we don't support opening accounts of this type."
+
+	•	The user chooses to register as a sole proprietorship or an individually owned company
+Step #2
+Mobile Number Entry
+The user enters their mobile number
+.
+Acceptance Criteria:
+	•	The user must enter a valid local Saudi phone number that starts with (05) and consists of exactly 10 digits (numbers only, no letters), with support for both Arabic and English numerals.
+
+	•	The system automatically converts Arabic numerals to English.
+
+	•	The system must verify that the phone number is not
+
+
+already associated with another user account.
+	•	The system must display the digit keypad only for the customer.
+	•	The user cannot proceed to the OTP verification step unless a valid number is entered. A clear error message must be displayed if the input is invalid or incomplete.
+
+Negative Scenarios
+	•	Invalid Format:
+Incorrect or incomplete number → "Please enter a valid phone number."
+	•	Empty Field:
+No input provided → "This field is required."
+	•	Duplicate Number:
+Number already used → "The phone number is already in use."
+	•	Too Many Attempts:
+5+ rapid attempts → "Temporarily blocked. Try again later."
+	•	System Error:
+Server failure or internal error → "A system error has occurred."
+Step #3
+OTP Verification Acceptance Criteria:
+	•	System sends OTP to the phone number immediately after entry, with a dedicated input field for the code.
+
+	•	Code expires after 5 minutes.
+
+	•	"Resend Code" option becomes available after 1 minute.
+
+	•	If five failed code attempts are made, the process is terminated and a temporary session lock is applied (for example).
+
+	•	If successful, a "Success" message appears upon correct entry, and the user proceeds to the CR-UNN step.
+
+
+Negative Scenarios:
+	•	The user enters an incorrect OTP → The message "Invalid code, try again" is displayed.
+	•	The user enters an expired code → The message "The code has expired, try again" is displayed.
+	•	The user enters the code too late after it expires → Verification is prevented with the message "Invalid code".
+	•	The user doesn't receive the code due to an SMS issue → The message "The option to resend the code after 30 seconds” is displayed.
+	•	The user attempts to enter more than 3 incorrect code → The session is temporarily closed with the message "Too many attempts, try again later."
+	•	The user enters the correct code, but there is an internal error → The message "An error occurred, please try again later" is displayed.
+The business should have the ability to modify any error message text through a designated interface in the business portal without requiring technical intervention.
+Step #4
+CR/UNN Entry
+
+	•	The user enters the UNN (national number). This company number is then searched for using "Stitch", which is primarily linked to Arab Bank. Feedback is then sent to us.
+
+	•	If the CR/UNN number matches and is blacklisted, the process stops.
+
+	•	If the CR/UNN number not match, the user proceeds to the next step, "Wathiq"
+
+	•	An API Call is connected to Stitch when the search is executed.
+
+	•	Caching is used to save data after the search process, so that if there is a mismatch and the customer refuses to complete the process, if he enters this wrong option again, he will be blocked from the beginning of the process without the need to repeat the process from the beginning. Additionally, the caching mechanism should be configurable,
+
+
+and initially, the cache duration for the CR Details Service should be set to 1 month.
+Step #5
+Wathiq Verification "External Services"
+- Wathiq will be primarily linked to Stitch, which retrieves the required CR/UNN data, such as the company name, company establishment, and other information. It then performs a data check.
+
+	•	Business Activity Check:
+	•	The business activity must not be listed in the internal blocked activities list.
+	•	If the activity is found in the blocked list → the process must be stopped.
+	•	Business Type Check:
+	•	The business type must be either an individual establishment or a single owner.
+	•	Any other business types should be rejected, and the process should not proceed to global screening.
+- The CR/UNN data is checked by a "Global List" (for example, check of the company name, etc.), which is linked to the "External Service (Mozon)”, which performs a full data check.
+	•	If a match is found (i.e., this person is suspected), the data is transferred to a "Compilation Review" (manual review within the system). This is where the decision is made whether the person is rejected or accepted.
+	•	In case of rejection, we have an "internal list" so that if a customer attempts to enter an UNN, it will be invalid, and a text message and an immediate notification will be sent to the user stating, "Sorry, your registration request has been rejected." The UNN has been internally blocked.
+
+	•	If the case is accepted by Compliance Review, a text message and an immediate notification will be sent to the user stating, "Approved, you may now continue your registration."Then, the user will proceed to “Enter ID Number.”
+
+	•	If there is no match (i.e., the person is not a suspect), proceed to the next step, which is to "Enter the ID number."
+
+
+	•	The compliance review is done through a third-party "External Portal," and feedback is sent to the system, and based on that, it is determined whether the user can complete the operations or terminate them.
+	•	Caching is used to save data after the search process, so that if there is a mismatch and the customer refuses to complete the process, if he enters the wrong option again, he will be blocked from the beginning of the process without the need to repeat the process from the beginning.
+Step #6
+ID Number
+
+	•	The user must enter a valid ID number starting with (1) or
+(2) and consisting of exactly 10 digits (with support for Arabic and English numbers)
+
+	•	Among the information provided by the CR/UNN is the ID number of the company's authorized person, such as the administrator or owner. At the same time, the user enters their own ID number.
+
+	•	If the ID number matches the ID-CR, the process is completed and the user moves to the next step.
+
+	•	If the ID number not match the ID-CR, the process stops and an error message appears: "Please enter a valid number."
+Step #7
+Owner ID Screening (Local List) "External Services"
+
+	•	At this stage, the ID number entered by the user is verified to see if it is on the blacklist.
+
+	•	If there is a match, the process ends.
+
+	•	If there is no match, the process proceeds to the next stage, "Tahaquq."
+
+	•	The external “Stitch” service handles the verification process.
+
+	•	Caching is used to save data after the search process for only one month, so that if there is a mismatch and the customer refuses to complete the process, if he enters the wrong option again, he will be blocked from the beginning of the process without the need to repeat the process from the beginning.
+
+Step #8
+Tahaquq verification "External Services"
+	•	Tahaquq service that links the user's initially entered mobile number with the ID number they also entered.
+	•	The owner must be the same as the owner of the entered mobile number for the process to be successful.
+	•	If there is a match between the mobile number and the ID number, the next step is "Nafath Authentication."
+	•	If there is no match, the process is stopped and the message "Mobile number doesn't match ID" appears.
+	•	Caching is used to save data after the search process for 15 days, so that if there is a mismatch and the customer refuses to complete the process, if he enters the wrong option again, he will be blocked from the beginning of the process without the need to repeat the process from the beginning.
+Step #9
+Nafath "External Services"
+
+	•	The Nafath app will be linked to verify the user. The process is completed by displaying a specific number generated by Nafath to the user. When the user clicks "Go to Nafath" on the interface, they are directed to an external application, “Nafath app”.
+
+	•	The user selects the number previously displayed to them, and the feedback is sent to us, either success or failure.
+
+	•	Feedback:
+	•	If the process is complete, the customer proceeds to the next step.
+
+	•	If	the	process	is	not	complete,	there are two scenarios:
+
+	•	Rejected, and the Process ended.
+	•	The number expired. Here, the customer is presented with another generated number and asked to enter it again.
+Step #10
+Owner Screening (Global List) "External Services"
+-	Based on the data retrieved from "Authentication Nafath," this data is taken, and part of it is sent to "Global Screening"
+
+
+via an external system, which sends feedback.
+	•	If there is a match, the data is transferred to "Compliance Review" (a manual review within the system). Here, the decision is made to reject or accept the person.
+	•	In the case of rejection, we have an "internal list" so that if the customer attempts to enter an invalid confirmation number again, a text message and a immediate notification will be sent to the user stating, "Sorry, your registration request has been rejected.” The process will be stopped."
+	•	In the case of accepted by Compliance Review, a text message and an immediate notification will be sent to the user stating, "Approved, you may now continue your registration.” Then, the user will proceed to "KYB Form."
+	•	If there is no match, they will proceed to the next step, "KYB Form."
+Step #11
+KYB Form - Know Your Business
+
+	•	In this step, the user fills out the KYB form, which contains company data, such as annual revenue, expected number of transactions, and business activity classification. Based on this data, the system calculates and assigns a specific Risk Rating to the client based on the configuration that the compliance review will later build.
+
+	•	"KYB" form, which includes the following information:
+
+	•	Source of Funds
+
+	•	This field is used to determine where the client's primary operating capital (company or business) comes from. It helps assess the client's risk and understand the nature of the funds flowing into the e-wallet.
+
+	•	The field type will be a drop-down list that appears to the client and contains several options, such as: (sales, investments, loans, donations, freelance, Other)
+
+	•	When "Other" is selected, an additional text field appears for manually entering the source.
+
+
+
+- This can be adjusted according to the business requirements and targeted segments that management should establish.
+	•	Expected Transaction Volume and Value
+	•	In this field, customers are asked to provide a monthly/annual estimate of the volume and value of transactions they will conduct through the wallet. This helps the company understand customer behavior and set appropriate usage limits from the outset.
+	•	This estimate should also include sub-layers to be filled out by the customer in the form of a drop-down list.
+	•	Sub-layers:
+	•	expected	monthly	payroll processing volume and value.
+	•	expected	monthly	domestic	transfer volume and value.
+	•	expected monthly international transfer volume and value.
+	•	expected monthly deposit volume and value.
+	•	Each field type/ Drop-down list - one option only.
+	•	Example:
+
+
+
+	•	Purpose of the Digital Wallet Account:
+
+	•	This field is used to understand how the business will utilize the e-wallet, helping to determine the most suitable services for the customer.
+
+
+
+	•	This field will appear as a Multiple Selection
+field containing various options, such as:
+	•	Receiving payments from customers for services/goods
+	•	Paying suppliers
+	•	Managing petty cash
+	•	Distributing funds
+	•	Receiving disbursements
+	•	Donations
+	•	Other
+	•	When "Other" is selected, an additional text field appears for manually entering the source.
+	•	This can be adjusted according to the business requirements and targeted segments that management should establish.
+	•	Risk Rating for the client is done by "External services Mozon"
+	•	Caching is used to save data after a search operation.
+Step #12
+Set password
+
+	•	The user creates their own password and then confirms it again.
+
+Password - Portal
+	•	A complex string of characters used for secure login
+	•	Typically 8+ characters, includes letters, numbers, and symbols.
+	•	Web portal login (business dashboard, admin access)
+	•	Strong password policies are often enforced
+
+Authentication and Access Control Rules
+
+1. Password Policy:
+- The application must enforce the use of complex passwords in accordance with the identity and access management policy of CHAGHF AL-HALLOUL.
+
+2. Session Management:
+-	Sensitive systems should auto-logout sessions after inactivity (recommended timeout: 5 minutes).
+
+
+
+	•	Multi-Factor Authentication (MFA):
+	•	MFA is mandatory for all users and must include at least two of the following factors:
+	•	Biometric (e.g., fingerprint)
+	•	Physical security key
+	•	One-time password (OTP)
+	•	Smart card
+	•	Encryption certificate
+
+4. Device Access Control:
+-	Access to web applications must be restricted by IP-based access lists and device roles.
+
+5. Unused Accounts:
+-	All virtual or inactive accounts must be suspended or deleted.
+
+Passcode - App
+
+	•	The user creates and confirms a password to log in to the app, they then create a passcode.
+
+	•	A short numeric code used for quick access
+	•	5 digits
+	•	Mobile app login (fast access to wallet functions)
+	•	Medium – relies on simplicity and speed
+	•	Sequential numbers are not allowed, such as: 12345 or 23456
+	•	Repeated numbers are not allowed, such as: 11111
+	•	Reverse or patterned numbers are not allowed, such as: 98765 or 112233
+	•	Reusing your previous passcode is not allowed when changing it
+
+	•	After a certain number of failed attempts (e.g., 5 times), the app will be temporarily locked.
+
+	•	When a customer enters a passcode in the app, the device from which they entered the password is linked to the customer via a personal identification number (PIN). This step results in:
+	•	The device used for registration is classified as a trusted device.
+
+	•	On mobile phones, the device is linked, and the user can use the passcode/ Biometric to log in later.
+
+
+Device Authentication and Passcode Rules
+1. Multi-Factor Authentication (MFA)
+	•	Two-factor authentication must be enabled for all users.
+	•	FIDO2: Combines a fingerprint or face (biometric) with a PIN or password.
+	•	Used when logging into the app.
+
+	•	Step-up Authentication
+	•	Additional authentication is required when performing any of the following:
+	•	Large financial transactions.
+	•	Password reset.
+	•	Device rebinding.
+
+	•	Session Security
+	•	Automatically expires the session after a period of inactivity.
+	•	Forced logout if the app is sent to the background.
+
+	•	Account Controls
+	•	Disable inactive accounts after a certain period.
+	•	Refresh the password periodically (every specified period).
+	•	Lock the account after a certain number of failed login attempts.
+Step #13
+Biometric Login (It will be explained later)
+
+- Biometric Login allows users to securely access the mobile app using their fingerprint or facial recognition, providing a faster and more secure login experience.
+
+	•	If the device supports biometric authentication: Enable the "Biometric Setup"
+
+	•	If the device doesn't support biometric authentication, the process will end.
+
+	•	Onboarding Process-Flow:
+
+
+
+
+Onboarding Process_Flow_SMEs_V2.pdf
+Onboarding Process_Flow_SMEs_V2.pdf
+
+
+
+	•	Onboarding Service “Freelancer”:
+
+	•	Service Description:
+	•	Onboarding is the process that allows a new user to register themselves in the system as a representative of a freelancer.
+
+	•	The primary objective is to verify the user's identity and business data to ensure compliance with legal and regulatory standards before allowing them to use the e-wallet.
+
+	•	This process includes verifying:
+
+	•	Business-type survey
+	•	Mobile number
+	•	OTP validation
+	•	Freelancer License Number or ID number
+	•	Data matching with local and global lists
+	•	Owner authority
+	•	Authorization
+	•	KYB Form
+	•	Set password and account creation
+	•	Biometric setup
+
+	•	General User Story:
+"As a new user, I would like to register as a freelancer through a series of digital verification steps, so that I can use the wallet services."
+
+	•	Detailed Onboarding Flow:
+
+Step #1
+The client will see a survey containing four types of business accounts:
+
+	•	Sole Proprietorship
+	•	Individual owner company
+	•	Freelancer
+	•	Multi-Owner Company
+
+	•	If the client selects (sole proprietorship, individual owner company, or freelancer), the onboarding process continues, and they move to the next step, which is entering their mobile number.
+
+	•	If the client selects (multi-owner company), the onboarding process stops, and they will see the message, "Sorry, we don't support opening accounts of this type."
+
+	•	The user chooses to register as a freelancer.
+Step #2
+Mobile Number Entry
+The user enters their mobile number
+.
+Acceptance Criteria:
+	•	The user must enter a valid local Saudi phone number that starts with (05) and consists of exactly 10 digits (numbers only, no letters), with support for both Arabic and English numerals.
+
+	•	The system automatically converts Arabic numerals to English.
+
+	•	The system must verify that the phone number is not already associated with another user account.
+
+	•	The user cannot proceed to the OTP verification step unless a valid number is entered. A clear error message must be displayed if the input is invalid or incomplete.
+
+Negative Scenarios
+	•	Invalid Format:
+Incorrect or incomplete number → "Please enter a valid phone number."
+
+	•	Empty Field:
+No input provided → "This field is required."
+
+	•	Duplicate Number:
+
+
+Number already used → "The phone number is already in use."
+	•	Non-Numeric Input:
+Letters entered → "Please enter numbers only."
+	•	Too Many Attempts:
+5+ rapid attempts → "Temporarily blocked. Try again later."
+	•	Wrong Country Prefix:
+Number without Saudi prefix → Transaction blocked
+
+	•	System Error:
+Server failure or internal error → "A system error has occurred."
+Step #3
+OTP Verification
+
+Acceptance Criteria:
+	•	System sends OTP to the phone number immediately after entry, with a dedicated input field for the code.
+
+	•	Code expires after 5 minutes.
+
+	•	"Resend Code" option becomes available after 30 seconds.
+
+	•	If three failed code attempts are made, the process is terminated and a temporary session lock is applied (for example).
+
+	•	If successful, a "Success" message appears upon correct entry, and the user proceeds to the Freelancer License No. step.
+
+Negative Scenarios:
+	•	The user enters an incorrect OTP → The message "Invalid code, try again" is displayed.
+
+	•	The user enters an expired code → The message "The code has expired, try again" is displayed.
+
+	•	The user enters the code too late after it expires→ Verification is prevented with the message "Invalid code".
+
+	•	The user doesn't receive the code due to an SMS issue → The message "The option to resend the code after 30 seconds” is displayed.
+
+
+
+	•	The user attempts to enter more than 3 incorrect code → The session is temporarily closed with the message "Too many attempts, try again later."
+	•	The user enters the correct code, but there is an internal error → The message "An error occurred, please try again later" is displayed.
+Step #4
+Freelancer License Number
+
+	•	The user enters the freelancer license number. This number is then searched through the HRSD database “External service”, which returns the freelancer's data. Feedback is then sent to us.
+
+	•	If the freelance license number is not registered in our database, the process stops.
+
+	•	If the freelance license number is registered in our database, the user proceeds to the next step, "ID number."
+Step #5
+ID Number
+
+-	The user enters his ID number,
+Step #6
+Freelancer Screening (Local List) "External Services"
+
+	•	At this stage, the ID number entered by the user is verified to see if it is on the blacklist.
+
+	•	If there is a match, the process ends.
+
+	•	If there is no match, the process proceeds to the next stage, "Tahaquq."
+
+
+	•	The external “Stitch” service handles the verification process.
+
+	•	Caching is used to save data after the search process, so that if there is a mismatch and the customer refuses to complete the process, if he enters the wrong option again, he will be blocked from the beginning of the process without the need to repeat the process from the beginning.
+
+Step #7
+Tahaquq verification "External Services"
+	•	Tahaquq service that links the user's initially entered mobile number with the ID number they also entered.
+	•	The owner must be the same as the owner of the entered mobile number for the process to be successful.
+	•	If there is a match between the mobile number and the ID number, the next step is "Nafath Authentication."
+	•	If there is no match, the process is stopped and the message "Mobile number doesn't match ID" appears.
+	•	Caching is used to save data after the search process, so that if there is a mismatch and the customer refuses to complete the process, if he enters the wrong option again, he will be blocked from the beginning of the process without the need to repeat the process from the beginning.
+Step #8
+Nafath "External Services"
+
+	•	The Nafath app will be linked to verify the user. The process is completed by displaying a specific number generated by Nafath to the user. When the user clicks "Go to Nafath" on the interface, they are directed to an external application, “Nafath app”.
+
+	•	The user selects the number previously displayed to them, and the feedback is sent to us, either success or failure.
+
+	•	Feedback:
+	•	If the process is complete, the customer proceeds to the next step.
+
+	•	If	the	process	is	not	complete,	there are two scenarios:
+
+	•	Rejected, and the Process ended.
+
+	•	The number expired. Here, the customer is presented with another generated number and asked to enter it again.
+Step #9
+Freelancer Screening (Global List) "External Services"
+-	Based on the data retrieved from "Authentication Nafath," this data is taken, and part of it is sent to "Global Screening"
+
+
+via an external system, which sends feedback.
+	•	If there is a match, the data is transferred to "Compliance Review" (a manual review within the system). Here, the decision is made to reject or accept the person.
+	•	In the case of rejection, we have an "internal list" so that if the customer attempts to enter an invalid confirmation number again, they will be stopped before the process can begin.
+	•	In the case of accepted through the “compliance review”, a "success" notification will be sent to the user. You can complete the next steps. After that, the user will be directed to the "KYB Form."
+	•	If there is no match, they will proceed to the next step, "KYB Form."
+Step #10
+KYB Form - Know Your Business (It will be changed later)
+
+	•	In this step, the user fills out the KYB form, which contains company data, such as annual revenue, expected number of transactions, and business activity classification. Based on this data, the system calculates and assigns a specific Risk Rating to the client based on the configuration that the compliance review will later build.
+
+	•	"KYB" form, which includes the following information:
+
+	•	Source of Funds
+
+	•	This field is used to determine where the client's primary operating capital (company or business) comes from. It helps assess the client's risk and understand the nature of the funds flowing into the e-wallet.
+
+	•	The field type will be a drop-down list that appears to the client and contains several options, such as: (sales, investments, loans, donations, freelance, Other)
+
+	•	When "Other" is selected, an additional text field appears for manually entering the source.
+
+	•	This can be adjusted according to the business requirements and targeted segments that management should establish.
+
+
+
+	•	Expected Transaction Volume and Value
+	•	In this field, customers are asked to provide a monthly/annual estimate of the volume and value of transactions they will conduct through the wallet. This helps the company understand customer behavior and set appropriate usage limits from the outset.
+	•	This estimate should also include sub-layers to be filled out by the customer in the form of a drop-down list.
+	•	Sub-layers:
+	•	expected	monthly	payroll processing volume and value.
+
+	•	expected	monthly	domestic	transfer volume and value.
+	•	expected monthly international transfer volume and value.
+	•	expected monthly deposit volume and value.
+	•	Each field type/ Drop-down list - one option only.
+	•	Example:
+
+
+
+
+	•	Purpose of the Digital Wallet Account:
+	•	This field is used to understand how the business will utilize the e-wallet, helping to determine the most suitable services for the customer.
+
+
+	•	This field will appear as a Multiple Selection
+field containing various options, such as:
+	•	Receiving payments from customers for services/goods
+	•	Paying suppliers
+	•	Managing petty cash
+	•	Distributing funds
+	•	Receiving disbursements
+	•	Donations
+	•	Other
+	•	When "Other" is selected, an additional text field appears for manually entering the source.
+	•	This can be adjusted according to the business requirements and targeted segments that management should establish.
+	•	Risk Rating for the client is done by "External services Mozon"
+	•	Caching is used to save data after a search operation.
+Step #11
+Set a Password
+
+	•	The user creates their own password and then confirms it again.
+
+Password - Portal
+
+	•	A complex string of characters used for secure login
+	•	Typically 8+ characters, includes letters, numbers, and symbols.
+	•	Web portal login (business dashboard, admin access)
+	•	Strong password policies are often enforced.
+
+Authentication and Access Control Rules
+
+	•	Password Policy:
+	•	The application must enforce the use of complex passwords in accordance with the identity and access management policy of CHAGHF AL-HALLOUL.
+
+	•	Session Management:
+	•	Sensitive systems should auto-logout sessions after inactivity (recommended timeout: 5 minutes).
+
+
+
+	•	Multi-Factor Authentication (MFA):
+	•	MFA is mandatory for all users and must include at least two of the following factors:
+	•	Biometric (e.g., fingerprint)
+	•	Physical security key
+	•	One-time password (OTP)
+	•	Smart card
+	•	Encryption certificate
+
+	•	Device Access Control:
+	•	Access to web applications must be restricted by IP-based access lists and device roles.
+
+	•	Unused Accounts:
+All virtual or inactive accounts must be suspended or deleted.
+
+Passcode - App
+	•	A short numeric code used for quick access
+	•	5 digits
+	•	Mobile app login (fast access to wallet functions)
+	•	Medium – relies on simplicity and speed
+	•	Sequential numbers are not allowed, such as: 12345 or 23456
+	•	Repeated numbers are not allowed, such as: 11111
+	•	Reverse or patterned numbers are not allowed, such as: 98765 or 112233
+	•	Reusing your previous passcode is not allowed when changing it
+
+	•	After a certain number of failed attempts (e.g., 5 times), the app will be temporarily locked.
+
+	•	When a customer enters a passcode in the app, the device from which the password was entered is linked to the client via a PIN code.
+
+Device Authentication and Passcode Rules
+1. Multi-Factor Authentication (MFA)
+	•	Two-factor authentication must be enabled for all users.
+	•	FIDO2: Combines a fingerprint or face (biometric) with a PIN or password.
+	•	Used when logging into the app.
+
+
+	•	Step-up Authentication
+	•	Additional authentication is required when performing any of the following:
+	•	Large financial transactions.
+	•	Password reset.
+	•	Device rebinding.
+
+	•	Session Security
+	•	Automatically expires the session after a period of inactivity.
+	•	Forced logout if the app is sent to the background.
+
+	•	Account Controls
+	•	Disable inactive accounts after a certain period.
+	•	Refresh the password periodically (every specified period).
+	•	Lock the account after a certain number of failed login attempts.
+Step #12
+Biometric Login (It will be explained later)
+
+- Biometric Login allows users to securely access the mobile app using their fingerprint or facial recognition, providing a faster and more secure login experience.
+
+	•	If the device supports biometric authentication: Enable the "Biometric Setup"
+
+	•	If the device doesn't support biometric authentication, the process will end.
+
+	•	Onboarding Process-Flow:
+
+
+
+Onboarding_Freelancers_V2.pdf
+Onboarding_Freelancers_V2.pdf

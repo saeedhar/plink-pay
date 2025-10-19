@@ -19,10 +19,18 @@ import {
 import OnboardingComplete from './features/onboarding/pages/OnboardingComplete';
 import GlobalScreeningPage from './features/onboarding/pages/GlobalScreeningPage';
 import LoginPage from './features/login/pages/LoginPage';
+import LoginOTPPage from './features/login/pages/LoginOTPPage';
 import OTPVerificationPage from './features/auth/pages/OTPVerificationPage';
 import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
 import ForgotPasswordOTPPage from './features/auth/pages/ForgotPasswordOTPPage';
 import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
+import ResetPasswordSuccessPage from './features/auth/pages/ResetPasswordSuccessPage';
+import ForgotPasswordPhonePage from './features/auth/pages/ForgotPasswordPhonePage';
+import ForgotPasswordPhoneOTPPage from './features/auth/pages/ForgotPasswordPhoneOTPPage';
+import SetPasswordPage from './features/auth/pages/SetPasswordPage';
+import ForgotPasswordSelectionPage from './features/auth/pages/ForgotPasswordSelectionPage';
+import CallbackVerificationPage from './features/auth/pages/CallbackVerificationPage';
+import AccountLockedPage from './features/auth/pages/AccountLockedPage';
 import { AppAdminRoutes } from './features/admin/AppAdminRoutes';
 
 function AppRoutes() {
@@ -36,12 +44,22 @@ function AppRoutes() {
         
         {/* Auth routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/verify-otp" element={<LoginOTPPage />} />
+        <Route path="/login/callback-verification" element={<CallbackVerificationPage />} />
+        <Route path="/account-locked" element={<AccountLockedPage />} />
         <Route path="/otp-verification" element={<OTPVerificationPage />} />
         
         {/* Forgot Password routes */}
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/forgot-password/otp" element={<ForgotPasswordOTPPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordSelectionPage />} />
+        <Route path="/forgot-password/id-bod" element={<ForgotPasswordPage />} />
+        <Route path="/forgot-password/id-bod/otp" element={<ForgotPasswordOTPPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/reset-password-success" element={<ResetPasswordSuccessPage />} />
+        
+        {/* Forgot Password routes - Phone flow */}
+        <Route path="/forgot-password/phone" element={<ForgotPasswordPhonePage />} />
+        <Route path="/forgot-password/phone/otp" element={<ForgotPasswordPhoneOTPPage />} />
+        <Route path="/forgot-password/phone/set-password" element={<SetPasswordPage />} />
         
         {/* Admin routes */}
         {import.meta.env.VITE_ADMIN_ENABLED === 'true' && (
