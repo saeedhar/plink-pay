@@ -480,3 +480,4 @@ POST /api/v1/auth/reset-password
 11. ❌ Create passcode login page
 12. ❌ Implement biometric authentication (if needed for web)
 
+
