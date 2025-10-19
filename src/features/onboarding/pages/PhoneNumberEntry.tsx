@@ -121,7 +121,6 @@ export default function PhoneNumberEntry() {
                     id="phone"
                     label="Phone Number"
                     helper="Must start with 05 and be exactly 10 digits"
-                    error={error || validationError}
                     required
                   >
                     <Input
@@ -133,11 +132,9 @@ export default function PhoneNumberEntry() {
                       hasError={!!(error || validationError)}
                       maxLength={12} // Formatted length
                       autoComplete="tel"
-                      leftIcon={
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                      }
+                      leftIcon={<span className="text-black font-medium">+966</span>}
+                      className="pl-16"
+                      style={{ borderRadius: '20px', borderColor: '#023B67' }}
                     />
                   </FormField>
                 </div>
@@ -146,10 +143,10 @@ export default function PhoneNumberEntry() {
                   <button
                     onClick={handleNext}
                     disabled={!isValid || isLoading}
-                    className={`px-12 py-4 rounded-lg font-semibold transition-colors text-lg w-full ${
+                    className={`px-12 py-3 rounded-2xl font-semibold transition-colors text-lg w-full ${
                       !isValid || isLoading
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-[#2E248F] text-white hover:bg-[#1a1a5a]"
+                        : "bg-[#023B67] text-white hover:bg-[#023B67]/90"
                     }`}
                   >
                     {isLoading ? (
@@ -167,13 +164,13 @@ export default function PhoneNumberEntry() {
         </main>
       </div>
       
-      <DevScenarioBar
+      {/* <DevScenarioBar
         title="Phone Scenarios"
         items={[
           { label: 'Duplicate phone', patch: { duplicatePhone: true } },
           { label: 'OK',               patch: { duplicatePhone: false } },
         ]}
-      />
+      /> */}
     </div>
 
       {/* Duplicate Phone Modal */}

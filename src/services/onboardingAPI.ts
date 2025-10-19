@@ -176,7 +176,7 @@ async function apiRequest<T>(
 // OTP SERVICES
 // ==========================================
 
-export async function sendOTP(phoneNumber: string, businessType: 'freelancer' | 'b2b' = 'freelancer'): Promise<OTPSendResponse> {
+export async function sendOTP(phoneNumber: string, businessType: 'freelancer' | 'b2b' = 'freelancer'): Promise<OTPSendResponse & { testOTP?: string }> {
   try {
     const response = await apiRequest<{ success: boolean; message: string }>('/api/v1/auth/send-otp', {
       method: 'POST',
@@ -186,10 +186,14 @@ export async function sendOTP(phoneNumber: string, businessType: 'freelancer' | 
       })
     });
     
+    // Generate a test OTP for development/testing purposes
+    const testOTP = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    
     return {
       requestId: `otp_${Date.now()}`,
       expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
-      attemptsRemaining: businessType === 'freelancer' ? 3 : 5
+      attemptsRemaining: businessType === 'freelancer' ? 3 : 5,
+      testOTP: testOTP // Include test OTP for development
     };
   } catch (error: any) {
     if (error.status === 409) {

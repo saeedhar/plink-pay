@@ -116,7 +116,7 @@ export function Modal({
   };
 
   const buttonVariants = {
-    primary: 'bg-[#2E248F] text-white hover:bg-[#1a1a5a] focus:ring-[#2E248F]/20',
+    primary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-200',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-200'
   };
 
@@ -145,21 +145,12 @@ export function Modal({
       >
         {/* Header */}
         {(title || icon) && (
-          <div className="flex items-center gap-4 p-6 pb-4">
-            {icon && (
-              <div className="flex-shrink-0 w-12 h-12 bg-[#2E248F]/10 rounded-full flex items-center justify-center">
-                {icon}
-              </div>
-            )}
-            {title && (
-              <h2 id="modal-title" className="text-xl font-semibold text-gray-900 flex-1">
-                {title}
-              </h2>
-            )}
+          <div className="relative p-6 pb-4">
+            {/* Close button positioned absolutely in top right */}
             {!persistent && (
               <button
                 onClick={onClose}
-                className="flex-shrink-0 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+                className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors z-10"
                 aria-label="Close modal"
               >
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,6 +158,20 @@ export function Modal({
                 </svg>
               </button>
             )}
+            
+            {/* Title content */}
+            <div className="flex items-center gap-4">
+              {icon && (
+                <div className="flex-shrink-0 w-12 h-12 bg-[#2E248F]/10 rounded-full flex items-center justify-center">
+                  {icon}
+                </div>
+              )}
+              {title && (
+                <div className={`flex-1 ${icon ? '' : 'text-center'}`}>
+                  {title}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -177,7 +182,7 @@ export function Modal({
 
         {/* Footer */}
         {(primaryButton || secondaryButton) && (
-          <div className="flex gap-3 p-6 pt-0 justify-end">
+          <div className={`flex gap-3 p-6 pt-0 ${primaryButton && !secondaryButton ? 'justify-center' : 'justify-end'}`}>
             {secondaryButton && (
               <button
                 onClick={secondaryButton.onClick}
@@ -191,7 +196,7 @@ export function Modal({
                 onClick={primaryButton.onClick}
                 disabled={primaryButton.disabled}
                 className={`
-                  px-6 py-3 rounded-lg font-medium transition-all focus:outline-none focus:ring-2
+                  px-8 py-3 rounded-2xl font-medium transition-all focus:outline-none focus:ring-2 min-w-50
                   disabled:opacity-50 disabled:cursor-not-allowed
                   ${buttonVariants[primaryButton.variant || 'primary']}
                 `}

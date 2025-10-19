@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { Stepper } from "../../../components/ui/Stepper";
-import { AlertModal } from "../../../components/ui/Modal";
+import { Modal } from "../../../components/ui/Modal";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
-import heroLogo from "../../../assets/hero-logo-mini.svg";
+import heroLogo from "../../../assets/hero-logo2.svg";
+import WarningIcon from "../../../assets/warning.svg";
 // icons
 import SoleProprietorshipIcon from "../../../assets/select your buisness type assets/Vector.svg";
 import IndividualOwnerIcon from "../../../assets/select your buisness type assets/Vector-1.svg";
@@ -122,11 +123,21 @@ export default function BusinessTypeSelection() {
           <div className="text-center">
             <button
               onClick={handleNext}
-              className={`px-12 py-4 rounded-full font-medium transition-all text-lg ${
+              className={`font-medium transition-all text-lg border ${
                 selectedType
-                  ? "bg-[#022466] text-white hover:bg-[#022466]/90"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "bg-[#023A66] text-white hover:bg-[#023A66]/90 border-[#023A66]"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300"
               }`}
+              style={{
+                width: '362px',
+                height: '48px',
+                borderRadius: '15px',
+                paddingTop: '12px',
+                paddingRight: '20px',
+                paddingBottom: '12px',
+                paddingLeft: '20px',
+                gap: '8px'
+              }}
               disabled={!selectedType}
             >
               Sign up
@@ -138,18 +149,41 @@ export default function BusinessTypeSelection() {
       </div>
 
       {/* Account Cannot be Opened Modal */}
-      <AlertModal
+      <Modal
         isOpen={showBlockedModal}
         onClose={() => setShowBlockedModal(false)}
-        title="Account Cannot be Opened"
-        message="Unfortunately, we are currently unable to open accounts for Multi-Owner Companies. Please contact our support team for alternative solutions."
-        buttonLabel="I Understand"
-        variant="primary"
-        icon={
-          <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
+        title={
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <img src={WarningIcon} alt="Warning" className="w-16 h-16" />
+            </div>
+            <h2 className="text-black mb-4" style={{
+              fontWeight: 700,
+              fontSize: '28px',
+              lineHeight: '40px',
+              letterSpacing: '0%',
+              textAlign: 'center'
+            }}>
+              Account Cannot be Opened
+            </h2>
+            <p className="text-gray-600" style={{
+              fontWeight: 400,
+              fontSize: '16px',
+              lineHeight: '26px',
+              letterSpacing: '0%',
+              textAlign: 'center'
+            }}>
+              Your request could not be completed. Please verify your details and try again.
+            </p>
+          </div>
         }
+        primaryButton={{
+          label: "Close",
+          onClick: () => setShowBlockedModal(false),
+          variant: "primary"
+        }}
+        size="sm"
+        className="max-w-sm"
       />
     </>
   );
