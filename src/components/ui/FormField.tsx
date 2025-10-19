@@ -38,7 +38,7 @@ export function FormField({
       {/* Label */}
       <label 
         htmlFor={id}
-        className={`block text-sm font-medium transition-colors ${
+        className={`block text-sm font-medium transition-colors text-left ml-3 ${
           hasError 
             ? 'text-red-600' 
             : 'text-gray-700'
@@ -57,7 +57,7 @@ export function FormField({
       {(helper || error) && (
         <div 
           id={`${id}-description`}
-          className={`text-sm ${
+          className={`text-sm text-left ml-3 ${
             hasError 
               ? 'text-red-600' 
               : 'text-gray-500'

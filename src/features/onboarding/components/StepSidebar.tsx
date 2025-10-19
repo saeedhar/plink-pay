@@ -43,15 +43,18 @@ export default function StepSidebar({ steps, activeIndex, logoSrc }: StepSidebar
 
         {/* Steps */}
         <div className="relative flex-1">
-          {/* Vertical connector line */}
-          <div 
-            className="absolute w-px bg-white/30"
-            style={{
-              left: '16px',
-              top: '16px',
-              height: `${(steps.length - 1) * 60}px`
-            }}
-          />
+          {/* Vertical connector lines between circles */}
+          {steps.slice(0, -1).map((_, index) => (
+            <div 
+              key={index}
+              className="absolute w-px bg-white/30"
+              style={{
+                left: '16px',
+                top: `${40 + (index * 60)}px`,
+                height: '20px'
+              }}
+            />
+          ))}
 
           <div className="space-y-8">
             {steps.map((step, index) => (
@@ -59,8 +62,8 @@ export default function StepSidebar({ steps, activeIndex, logoSrc }: StepSidebar
                 {/* Circle */}
                 <span className={`absolute left-0 w-8 h-8 rounded-full grid place-items-center text-sm font-semibold ${
                   index === activeIndex 
-                    ? 'bg-white text-[#022466] border-2 border-[#022466]' 
-                    : 'border-2 border-[#022466] text-[#022466] bg-white'
+                    ? 'text-white border-2 border-white' 
+                    : 'border-2 border-white text-white'
                 }`}>
                   {index + 1}
                 </span>

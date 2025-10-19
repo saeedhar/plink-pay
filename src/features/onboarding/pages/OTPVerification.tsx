@@ -14,7 +14,7 @@ import { DevScenarioBar } from '../../../dev/DevScenarioBar';
 
 export default function OTPVerification() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [timeLeft, setTimeLeft] = useState(OTP_CONFIG.RESEND_SECONDS);
+  const [timeLeft, setTimeLeft] = useState<number>(OTP_CONFIG.RESEND_SECONDS);
   const [expiryTime, setExpiryTime] = useState<Date>(
     new Date(Date.now() + OTP_CONFIG.EXPIRY_MINUTES * 60 * 1000)
   );
@@ -23,6 +23,7 @@ export default function OTPVerification() {
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState('');
   const [isExpired, setIsExpired] = useState(false);
+  const [testOTP, setTestOTP] = useState<string>('');
   
   const navigate = useNavigate();
   const { state, dispatch } = useOnboarding();
@@ -55,6 +56,23 @@ export default function OTPVerification() {
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
+
+  // Get test OTP on component mount
+  useEffect(() => {
+    const getTestOTP = async () => {
+      if (state.data.phone) {
+        try {
+          const response = await sendOTP(state.data.phone.replace(/\s/g, ''), (state.data.businessType as 'freelancer' | 'b2b') || 'freelancer');
+          if (response.testOTP) {
+            setTestOTP(response.testOTP);
+          }
+        } catch (err) {
+          console.log('Could not get test OTP:', err);
+        }
+      }
+    };
+    getTestOTP();
+  }, [state.data.phone, state.data.businessType]);
 
   const handleInputChange = (index: number, value: string) => {
     // Convert Arabic numerals to English and only allow numeric input
@@ -104,9 +122,8 @@ export default function OTPVerification() {
       return;
     }
 
-    const validationError = validateOTP(otpCode);
-    if (validationError) {
-      setError(validationError);
+    if (otpCode.length !== 6) {
+      setError('Please enter all 6 digits.');
       return;
     }
 
@@ -148,10 +165,15 @@ export default function OTPVerification() {
     setIsExpired(false);
     
     try {
-      const response = await sendOTP(state.data.phone.replace(/\s/g, ''), state.businessType || 'freelancer');
+      const response = await sendOTP(state.data.phone.replace(/\s/g, ''), (state.data.businessType as 'freelancer' | 'b2b') || 'freelancer');
       
       // Update expiry time
       setExpiryTime(new Date(response.expiresAt));
+      
+      // Store test OTP for display
+      if (response.testOTP) {
+        setTestOTP(response.testOTP);
+      }
       
       // Success feedback could be added here
     } catch (err: any) {
@@ -180,19 +202,19 @@ export default function OTPVerification() {
           <Modal
             isOpen={true}
             onClose={handleClose}
-            title="Enter Verification Code"
-            icon={
-              <svg className="w-6 h-6 text-[#2E248F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+            title={
+              <div className="text-center">
+                <h2 className="text-3xl font-semibold text-gray-900 mb-2">
+                  Mobile Number <br /> OTP Verification
+                </h2>
+                <p className="text-gray-600 text-lg">
+                  Enter your OTP code
+                </p>
+              </div>
             }
-            size="sm"
+            size="md"
           >
             <div className="text-center">
-          <p className="text-gray-600 mb-6">
-            We've sent a verification code to<br />
-            <span className="font-medium text-gray-900">{state.data.phone}</span>
-          </p>
 
           {/* OTP Input Fields */}
           <div className="flex justify-center gap-3 mb-6">
@@ -206,18 +228,41 @@ export default function OTPVerification() {
                 onKeyDown={e => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
                 className={`
-                  w-12 h-12 text-center text-xl font-semibold border-2 rounded-lg
-                  focus:outline-none focus:ring-2 transition-all
+                  w-16 h-16 text-center border-2 rounded-lg
+                  focus:outline-none focus:ring-2 transition-all text-[#023B67]
                   ${error 
                     ? 'border-red-500 focus:border-red-500 focus:ring-red-200' 
-                    : 'border-gray-300 focus:border-[#2E248F] focus:ring-[#2E248F]/20'
+                    : 'border-gray-300 focus:border-[#023B67] focus:ring-[#023B67]/20'
                   }
                 `}
+                style={{
+                  fontFamily: 'Lato',
+                  fontWeight: 900,
+                  fontSize: '48px',
+                  lineHeight: '130%',
+                  letterSpacing: '0%',
+                  color: '#00BDFF'
+                }}
                 maxLength={1}
                 autoComplete="one-time-code"
               />
             ))}
           </div>
+
+          {/* Test OTP Display for Development */}
+          {testOTP && (
+            <div className="text-center mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800 text-sm font-medium mb-2">
+                🧪 Test Mode - OTP Code:
+              </p>
+              <p className="text-2xl font-bold text-yellow-900 tracking-widest">
+                {testOTP}
+              </p>
+              <p className="text-yellow-700 text-xs mt-2">
+                Use this code to verify your phone number
+              </p>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -229,16 +274,24 @@ export default function OTPVerification() {
             </div>
           )}
 
+          {/* Resend Section */}
+          <div className="text-center mb-6">
+         
+            <p className="text-[#00BDFF] text-sm font-medium mt-2">
+              Change Mobile Number?
+            </p>
+          </div>
+
           {/* Action Buttons */}
-          <div className="space-y-4">
+          <div className="space-y-3 flex flex-col items-center">
             <button
               onClick={() => handleVerify()}
               disabled={otp.some(digit => !digit) || isVerifying}
               className={`
-                w-full py-3 px-6 rounded-lg font-medium transition-all
+                w-60 py-3 px-6 rounded-2xl font-semibold transition-all text-lg
                 ${otp.some(digit => !digit) || isVerifying
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-[#2E248F] text-white hover:bg-[#1a1a5a]'
+                  : 'bg-[#024273] text-white hover:bg-[#024273]/90'
                 }
               `}
             >
@@ -248,56 +301,30 @@ export default function OTPVerification() {
                   Verifying...
                 </div>
               ) : (
-                'Verify Code'
+                'Verify'
               )}
             </button>
 
-            {/* Resend Button */}
-            <div className="text-center">
-              {canResend && !isExpired ? (
-                <button
-                  onClick={handleResend}
-                  disabled={isResending}
-                  className="text-[#2E248F] hover:text-[#1a1a5a] font-medium transition-colors disabled:opacity-50"
-                >
-                  {isResending ? 'Sending...' : 'Resend verification code'}
-                </button>
-              ) : isExpired ? (
-                <button
-                  onClick={handleResend}
-                  disabled={isResending}
-                  className="bg-[#2E248F] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#1a1a5a] transition-colors disabled:opacity-50"
-                >
-                  {isResending ? 'Sending...' : 'Send New Code'}
-                </button>
-              ) : (
-                <p className="text-gray-500 text-sm">
-                  Resend code in {timeLeft}s
-                </p>
-              )}
-            </div>
-
-            {/* Expiry Timer */}
-            {!isExpired && (
-              <div className="text-center mt-4">
-                <p className="text-xs text-gray-400">
-                  Code expires in {expiryMinutes}:{expirySeconds.toString().padStart(2, '0')}
-                </p>
-              </div>
-            )}
-            </div>
+            <button
+              onClick={handleResend}
+              disabled={!canResend || isResending}
+              className="w-50 py-3 px-6 rounded-2xl font-semibold transition-all text-lg bg-[#00BDFF] text-white hover:bg-[#00BDFF]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isResending ? 'Sending...' : 'Resend'}
+            </button>
+          </div>
             </div>
           </Modal>
         </div>
       </div>
       
-      <DevScenarioBar
+      {/* <DevScenarioBar
         title="OTP Scenarios"
         items={[
           { label: 'Accept code 1234', patch: { otpAcceptCode: '1234' } },
           { label: 'Always invalid',   patch: { otpAcceptCode: 'never' } },
         ]}
-      />
+      /> */}
     </>
   );
 }
