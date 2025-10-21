@@ -15,32 +15,17 @@ export default function ForgotPasswordSelectionPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background with gradient */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-        }}
-      />
-
+    <div className="min-h-screen bg-blue-50 relative overflow-hidden">
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-2">
+        <div className="w-full max-w-2xl">
           {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <img src={logo} alt="Tyaseer Pay" className="h-16 w-auto" />
-            </div>
+          <div className="text-center mb-4">
+            <img src={logo} alt="Tyaseer Pay" className="h-20 w-auto mx-auto" />
           </div>
 
-          {/* Selection Card */}
-          <div 
-            className="backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-blue-200/50 relative"
-            style={{
-              background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-            }}
-          >
+          {/* Card */}
+          <div className="bg-white rounded-3xl px-12 py-8 shadow-lg relative mt-8">
             {/* Back Button */}
             <button
               onClick={() => navigate('/login')}
@@ -52,11 +37,11 @@ export default function ForgotPasswordSelectionPage() {
             </button>
 
             {/* Content */}
-            <div className="pt-8">
+            <div className="pt-4">
               {/* Title */}
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-[#022466] mb-2">Forgot Password?</h2>
-                <p className="text-gray-600">
+                <h2 className="text-3xl font-semibold text-gray-900 mb-2">Forgot Password?</h2>
+                <p className="text-gray-600 text-lg">
                   Choose how you'd like to reset your password
                 </p>
               </div>
@@ -65,9 +50,9 @@ export default function ForgotPasswordSelectionPage() {
               <div className="mb-6">
                 <button
                   onClick={handleIDBODFlow}
-                  className="w-full p-6 rounded-xl border-2 border-gray-200 hover:border-[#022466] transition-all text-left group"
+                  className="w-full p-6 rounded-2xl border-2 border-gray-200 hover:border-[#022466] transition-all text-left group bg-white hover:bg-gray-50"
                 >
-                  <div className="flex items-center mb-3">
+                  <div className="flex items-center">
                     <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4 group-hover:bg-[#022466] transition-colors">
                       <svg className="w-6 h-6 text-[#022466] group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -82,12 +67,12 @@ export default function ForgotPasswordSelectionPage() {
               </div>
 
               {/* Option 2: Phone Flow */}
-              <div className="mb-6">
+              <div className="mb-8">
                 <button
                   onClick={handlePhoneFlow}
-                  className="w-full p-6 rounded-xl border-2 border-gray-200 hover:border-[#022466] transition-all text-left group"
+                  className="w-full p-6 rounded-2xl border-2 border-gray-200 hover:border-[#022466] transition-all text-left group bg-white hover:bg-gray-50"
                 >
-                  <div className="flex items-center mb-3">
+                  <div className="flex items-center">
                     <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4 group-hover:bg-[#022466] transition-colors">
                       <svg className="w-6 h-6 text-[#022466] group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>

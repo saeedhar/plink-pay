@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
+import AccountBlockedModal from '../../../components/modals/AccountBlockedModal';
 import { verifyOtp, sendOtp } from '../../../services/realBackendAPI';
 import type { VerifyOtpRequest, SendOtpRequest } from '../../../services/realBackendAPI';
 
@@ -15,6 +16,8 @@ export default function OTPVerificationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [businessType, setBusinessType] = useState<'freelancer' | 'b2b'>('freelancer');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
 
   // Get phone number from navigation state
   useEffect(() => {
@@ -121,16 +124,33 @@ export default function OTPVerificationPage() {
           navigate('/dashboard');
         }
       } else {
-        setError('Verification failed. Please try again.');
+        // Increment failed attempts
+        const newFailedAttempts = failedAttempts + 1;
+        setFailedAttempts(newFailedAttempts);
+        
+        if (newFailedAttempts >= 5) {
+          setShowAccountBlockedModal(true);
+        } else {
+          setError('Verification failed. Please try again.');
+        }
       }
     } catch (error: any) {
       console.error('❌ OTP verification error:', error);
-      if (error.message.includes('400') || error.message.includes('Invalid')) {
-        setError('Invalid verification code. Please try again.');
-      } else if (error.message.includes('Network') || error.message.includes('fetch')) {
-        setError('Unable to connect to server. Please check your connection.');
+      
+      // Increment failed attempts for any error
+      const newFailedAttempts = failedAttempts + 1;
+      setFailedAttempts(newFailedAttempts);
+      
+      if (newFailedAttempts >= 5) {
+        setShowAccountBlockedModal(true);
       } else {
-        setError(error.message || 'Verification failed. Please try again.');
+        if (error.message.includes('400') || error.message.includes('Invalid')) {
+          setError('Invalid verification code. Please try again.');
+        } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+          setError('Unable to connect to server. Please check your connection.');
+        } else {
+          setError(error.message || 'Verification failed. Please try again.');
+        }
       }
     } finally {
       setIsLoading(false);
@@ -173,6 +193,11 @@ export default function OTPVerificationPage() {
   };
 
   const handleChangeNumber = () => {
+    navigate('/login');
+  };
+
+  const handleModalClose = () => {
+    setShowAccountBlockedModal(false);
     navigate('/login');
   };
 
@@ -324,6 +349,12 @@ export default function OTPVerificationPage() {
           </div>
         </div>
       </div>
+      
+      {/* Account Blocked Modal */}
+      <AccountBlockedModal 
+        isOpen={showAccountBlockedModal}
+        onClose={handleModalClose}
+      />
     </div>
   );
 }

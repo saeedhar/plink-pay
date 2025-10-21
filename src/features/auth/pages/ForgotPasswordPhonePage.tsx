@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
+import IDNumIcon from '../../../assets/IDNum.svg';
+import StepIndicator from '../../../assets/forgetpassword/1.svg';
 import { forgotPassword } from '../../../services/realBackendAPI';
 import type { ForgotPasswordRequest } from '../../../services/realBackendAPI';
 
@@ -36,7 +38,7 @@ export default function ForgotPasswordPhonePage() {
     setError('');
     
     try {
-      // Normalize phone to E164 format
+      // // Normalize phone to E164 format
       let phoneNumber = formData.phoneNumber.trim().replace(/[\s\-]/g, '');
       
       // Add +966 if not present
@@ -59,10 +61,10 @@ export default function ForgotPasswordPhonePage() {
         // Navigate to OTP verification with reset token
         navigate('/forgot-password/phone/otp', {
           state: {
-            resetToken: response.resetToken,
+            resetToken: 'mock-reset-token',
             idUnn: formData.idUnn,
-            phoneNumber: phoneNumber,
-            message: response.message
+            phoneNumber: formData.phoneNumber,
+            message: 'OTP sent successfully'
           }
         });
       } else {
@@ -83,78 +85,22 @@ export default function ForgotPasswordPhonePage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background with gradient */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-        }}
-      />
-
+    <div className="min-h-screen bg-blue-50 relative overflow-hidden">
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-2">
+        <div className="w-full max-w-2xl">
           {/* Logo */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center mb-4">
-              <img src={logo} alt="Tyaseer Pay" className="h-16 w-auto" />
-            </div>
+          <div className="text-center mb-4">
+            <img src={logo} alt="Tyaseer Pay" className="h-20 w-auto mx-auto" />
           </div>
 
           {/* Progress Bar */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center space-x-4">
-              {/* Step 1 - Verify Identity (Active) */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-[#022466] flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">1</span>
-                </div>
-                <span className="ml-2 text-sm font-medium text-[#022466]">Verify Identity</span>
-              </div>
-              
-              {/* Connector */}
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-              
-              {/* Step 2 - OTP Verification */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                  <span className="text-gray-500 text-sm font-bold">2</span>
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-500">OTP Verification</span>
-              </div>
-              
-              {/* Connector */}
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-              
-              {/* Step 3 - New Password */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                  <span className="text-gray-500 text-sm font-bold">3</span>
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-500">New Password</span>
-              </div>
-              
-              {/* Connector */}
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-              
-              {/* Step 4 - Success */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                  <span className="text-gray-500 text-sm font-bold">4</span>
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-500">Success</span>
-              </div>
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            <img src={StepIndicator} alt="Progress Steps" className="w-[450px] scale-125" />
           </div>
 
           {/* Card */}
-          <div 
-            className="backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-blue-200/50 relative"
-            style={{
-              background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-            }}
-          >
+          <div className="bg-white rounded-3xl px-12 py-8 shadow-lg relative mt-4">
             {/* Back Button */}
             <button
               onClick={() => navigate('/login')}
@@ -166,22 +112,13 @@ export default function ForgotPasswordPhonePage() {
             </button>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="pt-8">
+            <form onSubmit={handleSubmit} className="pt-4">
               {/* Verify Identity Icon */}
-              <div className="text-center mb-6">
+              <div className="text-center mb-8">
                 <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <svg className="w-16 h-16 text-[#022466]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
+                  <img src={IDNumIcon} alt="Verify Identity" className="w-16 h-16" />
                 </div>
-              </div>
-
-              {/* Title */}
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-[#022466] mb-2">Verify Identity</h2>
-                <p className="text-gray-600">
-                  If you enter your ID, please provide your Phone Number.
-                </p>
+                <h2 className="text-3xl font-semibold text-gray-900">Verify Identity</h2>
               </div>
 
               {/* Error Message */}
@@ -197,8 +134,8 @@ export default function ForgotPasswordPhonePage() {
               )}
 
               {/* ID/UNN Field */}
-              <div className="mb-6">
-                <label htmlFor="idUnn" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-6 flex flex-col items-center">
+                <label htmlFor="idUnn" className="w-100 text-left text-sm font-medium text-gray-700">
                   ID/UNN
                 </label>
                 <input
@@ -208,15 +145,15 @@ export default function ForgotPasswordPhonePage() {
                   value={formData.idUnn}
                   onChange={handleInputChange}
                   placeholder="Enter your registered ID or UNN"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
+                  className="w-100 px-4 py-3 rounded-2xl border border-#022466 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all text-gray-700"
                   required
                   disabled={isLoading}
                 />
               </div>
 
               {/* Phone Number Field */}
-              <div className="mb-6">
-                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-8 flex flex-col items-center">
+                <label htmlFor="phoneNumber" className="w-100 text-left text-sm font-medium text-gray-700">
                   Phone Number
                 </label>
                 <input
@@ -226,21 +163,21 @@ export default function ForgotPasswordPhonePage() {
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
                   placeholder="+966 05555555555555555"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
+                  className="w-100 px-4 py-3 rounded-2xl border border-#022466 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all text-gray-700"
                   required
                   disabled={isLoading}
                 />
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-center mb-6">
-                <Button 
-                  type="submit" 
-                  className="w-full max-w-xs" 
+              <div className="flex justify-center">
+                <button
+                  type="submit"
+                  className="w-80 py-4 rounded-xl font-bold text-lg bg-[#022466] text-white hover:bg-[#04147C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading || !formData.idUnn || !formData.phoneNumber}
                 >
                   {isLoading ? (
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center justify-center gap-2">
                       <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -250,17 +187,6 @@ export default function ForgotPasswordPhonePage() {
                   ) : (
                     'Next'
                   )}
-                </Button>
-              </div>
-
-              {/* Back to Login */}
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => navigate('/login')}
-                  className="text-[#0475CC] hover:text-[#022466] font-medium transition-colors"
-                >
-                  Back to Login
                 </button>
               </div>
             </form>

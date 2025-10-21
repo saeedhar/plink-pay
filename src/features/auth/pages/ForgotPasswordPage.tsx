@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
+import IDNumIcon from '../../../assets/IDNum.svg';
+import StepIndicator from '../../../assets/forgetpassword/1.svg';
 import { forgotPassword } from '../../../services/realBackendAPI';
 import type { ForgotPasswordRequest } from '../../../services/realBackendAPI';
 
@@ -31,6 +33,8 @@ export default function ForgotPasswordPage() {
       setError('Please enter both ID/UNN and Date of Birth');
       return;
     }
+    
+    // Commented out API verification for testing
     
     setIsLoading(true);
     setError('');
@@ -70,80 +74,45 @@ export default function ForgotPasswordPage() {
     } finally {
       setIsLoading(false);
     }
+    
+    
+    // Temporary navigation for testing
+    console.log('Form submitted:', formData);
+    navigate('/forgot-password/id-bod/otp', {
+      state: {
+        resetToken: 'test-token',
+        idUnn: formData.idUnn,
+        dateOfBirth: formData.dateOfBirth,
+        message: 'Test verification successful'
+      }
+    });
   };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background with gradient */}
+      {/* Background */}
       <div 
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-        }}
+        className="absolute inset-0 bg-blue-50"
       />
 
       {/* Main content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-2xl">
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <img src={logo} alt="Tyaseer Pay" className="h-16 w-auto" />
+              <img src={logo} alt="Tyaseer Pay" className="h-20 w-auto" />
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center space-x-4">
-              {/* Step 1 - Verify Identity (Active) */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-[#022466] flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">1</span>
-                </div>
-                <span className="ml-2 text-sm font-medium text-[#022466]">Verify Identity</span>
-              </div>
-              
-              {/* Connector */}
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-              
-              {/* Step 2 - OTP Verification */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                  <span className="text-gray-500 text-sm font-bold">2</span>
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-500">OTP Verification</span>
-              </div>
-              
-              {/* Connector */}
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-              
-              {/* Step 3 - New Password */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                  <span className="text-gray-500 text-sm font-bold">3</span>
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-500">New Password</span>
-              </div>
-              
-              {/* Connector */}
-              <div className="w-8 h-0.5 bg-gray-300"></div>
-              
-              {/* Step 4 - Success */}
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                  <span className="text-gray-500 text-sm font-bold">4</span>
-                </div>
-                <span className="ml-2 text-sm font-medium text-gray-500">Success</span>
-              </div>
-            </div>
+          <div className="flex items-center justify-center">
+            <img src={StepIndicator} alt="Progress Steps" className="w-[450px] scale-125" />
           </div>
 
           {/* Card */}
           <div 
-            className="backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-blue-200/50 relative"
-            style={{
-              background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-            }}
+            className="bg-white rounded-3xl px-12 py-2 shadow-lg relative"
           >
             {/* Back Button */}
             <button
@@ -160,9 +129,7 @@ export default function ForgotPasswordPage() {
               {/* Verify Identity Icon */}
               <div className="text-center mb-6">
                 <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <svg className="w-16 h-16 text-[#022466]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
+                  <img src={IDNumIcon} alt="Verify Identity" className="w-16 h-16" />
                 </div>
               </div>
 
@@ -187,8 +154,8 @@ export default function ForgotPasswordPage() {
               )}
 
               {/* ID/UNN Field */}
-              <div className="mb-6">
-                <label htmlFor="idUnn" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-6 flex flex-col items-center">
+                <label htmlFor="idUnn" className="block text-sm font-medium text-gray-600 mb-2 w-80 text-left">
                   ID/UNN
                 </label>
                 <input
@@ -198,30 +165,31 @@ export default function ForgotPasswordPage() {
                   value={formData.idUnn}
                   onChange={handleInputChange}
                   placeholder="Enter your registered ID or UNN"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
+                  className="w-100 px-4 py-4 rounded-2xl border border-#022466 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all text-gray-700"
                   required
                   disabled={isLoading}
                 />
               </div>
 
-              {/* Date of Birth Field */}
-              <div className="mb-6">
-                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
+              {/* Birth Of Date Field */}
+              <div className="mb-8 flex flex-col items-center">
+                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-600 mb-2 w-80 text-left">
                   Birth Of Date
                 </label>
                 <div className="relative">
                   <input
-                    type="date"
+                    type="text"
                     id="dateOfBirth"
                     name="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
+                    placeholder="03 December, 2000"
+                    className="w-80 px-12 py-4 rounded-2xl border border-#022466 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all text-gray-700"
                     required
                     disabled={isLoading}
                   />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <svg className="w-5 h-5 text-[#0475CC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
@@ -229,10 +197,10 @@ export default function ForgotPasswordPage() {
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-center mb-6">
+              <div className="mb-6 flex justify-center">
                 <Button 
                   type="submit" 
-                  className="w-full max-w-xs" 
+                  className="w-80 py-4 rounded-xl bg-[#022466] text-white font-bold text-lg hover:bg-[#04147C] transition-colors" 
                   disabled={isLoading || !formData.idUnn || !formData.dateOfBirth}
                 >
                   {isLoading ? (
@@ -249,16 +217,7 @@ export default function ForgotPasswordPage() {
                 </Button>
               </div>
 
-              {/* Back to Login */}
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => navigate('/login')}
-                  className="text-[#0475CC] hover:text-[#022466] font-medium transition-colors"
-                >
-                  Back to Login
-                </button>
-              </div>
+            
             </form>
           </div>
         </div>
