@@ -32,9 +32,13 @@ import ForgotPasswordSelectionPage from './features/auth/pages/ForgotPasswordSel
 import CallbackVerificationPage from './features/auth/pages/CallbackVerificationPage';
 import AccountLockedPage from './features/auth/pages/AccountLockedPage';
 import { AppAdminRoutes } from './features/admin/AppAdminRoutes';
+import AppNavigator from './components/navigation/AppNavigator';
 
 function AppRoutes() {
   const security = useSecurity();
+  
+  // Mock authentication status - set to true for testing
+  const isAuthenticated = true;
 
   return (
     <>
@@ -149,6 +153,11 @@ function AppRoutes() {
             } 
           />
         </Route>
+        
+        {/* Authenticated App Routes */}
+        {isAuthenticated && (
+          <Route path="/app/*" element={<AppNavigator />} />
+        )}
       </Routes>
 
               {/* Session Warning Modal */}
