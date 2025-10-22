@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const TransactionsTable: React.FC = () => {
+  const navigate = useNavigate();
   const transactions = [
     {
       referenceId: 'TXN12345',
@@ -44,7 +46,7 @@ const TransactionsTable: React.FC = () => {
     <div className="transactions-table">
       <div className="transactions-header">
         <h3 className="transactions-title">Transactions</h3>
-        <a href="#" className="see-all-link">See All</a>
+        <a href="#" className="see-all-link" onClick={(e) => { e.preventDefault(); navigate('/app/transactions'); }}>See All</a>
       </div>
       
       <div className="table-container">

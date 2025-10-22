@@ -33,8 +33,8 @@ const Sidebar: React.FC = () => {
         </Link>
 
         <Link 
-          to="/transactions" 
-          className={`nav-item ${isActive('/transactions') ? 'active' : ''}`}
+          to="/app/transactions" 
+          className={`nav-item ${isActive('/app/transactions') ? 'active' : ''}`}
         >
           <img src={transfersIcon} alt="Transactions" className="nav-icon" />
           <span>Transaction</span>
