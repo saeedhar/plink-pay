@@ -113,12 +113,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background with gradient */}
+      {/* Background */}
       <div 
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-        }}
+        className="absolute inset-0 bg-blue-50"
       />
 
       {/* Main content */}
@@ -133,10 +130,7 @@ export default function LoginPage() {
 
           {/* Login Card */}
           <div 
-            className="backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-blue-200/50 relative"
-            style={{
-              background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-            }}
+            className="bg-white rounded-3xl p-8 shadow-lg relative"
           >
             {/* User Icon */}
             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">

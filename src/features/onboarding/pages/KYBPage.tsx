@@ -17,9 +17,11 @@ import { DevScenarioBar } from "../../../dev/DevScenarioBar";
 import { fetchAllKybOptions, type PublicKybOption } from "../api/kybPublicService";
 
 export default function KYBPage() {
-  const [annualRevenue, setAnnualRevenue] = useState("");
-  const [businessActivity, setBusinessActivity] = useState("");
-  const [purposeOfAccount, setPurposeOfAccount] = useState<string[]>([]);
+  const [sourceOfFunds, setSourceOfFunds] = useState("");
+  const [sourceOfFundsOther, setSourceOfFundsOther] = useState("");
+  const [expectedTransactionType, setExpectedTransactionType] = useState("");
+  const [expectedMonthlyVolume, setExpectedMonthlyVolume] = useState("");
+  const [purposeOfAccount, setPurposeOfAccount] = useState<string[]>(['receiving-payments']);
   const [purposeOther, setPurposeOther] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -60,16 +62,20 @@ export default function KYBPage() {
   }, []);
 
   // Validation functions
-  const validateAnnualRevenue = (value: string): string | undefined => {
-    return validateKYBField(value, "Annual Revenue") || undefined;
+  const validateSourceOfFunds = (value: string): string | undefined => {
+    return validateKYBField(value, "Source of Funds") || undefined;
   };
 
-  const validateBusinessActivity = (value: string): string | undefined => {
-    return validateKYBField(value, "Business Activity") || undefined;
+  const validateExpectedTransactionType = (value: string): string | undefined => {
+    return validateKYBField(value, "Expected Transaction Type") || undefined;
+  };
+
+  const validateExpectedMonthlyVolume = (value: string): string | undefined => {
+    return validateKYBField(value, "Expected Monthly Volume") || undefined;
   };
 
   const validatePurposeOfAccount = (value: string[]): string | undefined => {
-    return validateKYBField(value, "Purpose of Opening the Account") || undefined;
+    return validateKYBField(value, "Purpose of Digital Wallet Account") || undefined;
   };
 
   const validatePurposeOtherText = (value: string): string | undefined => {
@@ -79,24 +85,35 @@ export default function KYBPage() {
     return undefined;
   };
 
+  const validateSourceOfFundsOtherText = (value: string): string | undefined => {
+    if (sourceOfFunds === 'other' && !value.trim()) {
+      return validateOtherText(value) || undefined;
+    }
+    return undefined;
+  };
+
   const isFormValid = () => {
     return (
       !isLoadingOptions &&
       !optionsError &&
-      !validateAnnualRevenue(annualRevenue) &&
-      !validateBusinessActivity(businessActivity) &&
+      !validateSourceOfFunds(sourceOfFunds) &&
+      !validateExpectedTransactionType(expectedTransactionType) &&
+      !validateExpectedMonthlyVolume(expectedMonthlyVolume) &&
       !validatePurposeOfAccount(purposeOfAccount) &&
-      (!purposeOfAccount.includes('other') || !validatePurposeOtherText(purposeOther))
+      (!purposeOfAccount.includes('other') || !validatePurposeOtherText(purposeOther)) &&
+      (sourceOfFunds !== 'other' || !validateSourceOfFundsOtherText(sourceOfFundsOther))
     );
   };
 
   const handleNext = async () => {
-    const revenueError = validateAnnualRevenue(annualRevenue);
-    const activityError = validateBusinessActivity(businessActivity);
+    const sourceError = validateSourceOfFunds(sourceOfFunds);
+    const transactionError = validateExpectedTransactionType(expectedTransactionType);
+    const volumeError = validateExpectedMonthlyVolume(expectedMonthlyVolume);
     const purposeError = validatePurposeOfAccount(purposeOfAccount);
     const otherError = purposeOfAccount.includes('other') ? validatePurposeOtherText(purposeOther) : undefined;
+    const sourceOtherError = sourceOfFunds === 'other' ? validateSourceOfFundsOtherText(sourceOfFundsOther) : undefined;
 
-    if (revenueError || activityError || purposeError || otherError) {
+    if (sourceError || transactionError || volumeError || purposeError || otherError || sourceOtherError) {
       setShowErrors(true);
       return;
     }
@@ -105,10 +122,13 @@ export default function KYBPage() {
 
     try {
       const kybData = {
-        annualRevenue,
-        businessActivity,
+        annualRevenue: expectedMonthlyVolume, // Map to expected field
+        businessActivity: expectedTransactionType, // Map to expected field
         purposeOfAccount,
         purposeOther: purposeOfAccount.includes('other') ? purposeOther : undefined,
+        // Store additional fields in a custom format for now
+        sourceOfFunds,
+        sourceOfFundsOther: sourceOfFunds === 'other' ? sourceOfFundsOther : undefined,
       };
 
       const result = await submitKYB(kybData);
@@ -129,8 +149,6 @@ export default function KYBPage() {
   return (
     <>
       <div className="min-h-screen bg-gray-50">
-
-        
         <div className="flex min-h-screen"
           style={{
             background: 'linear-gradient(160.08deg, #023A66 38.35%, #0475CC 91.81%)'
@@ -155,8 +173,8 @@ export default function KYBPage() {
               <img src={HeroLogo} alt="" className="h-12 w-12 mx-auto" />
             </div>
             
-            <div className="flex-1 flex items-start justify-center pt-16">
-              <div className="max-w-md w-full px-8">
+            <div className="flex-1 flex items-start justify-center pt-8">
+              <div className="max-w-4xl w-full px-8">
                 <div className="text-center mb-6">
                   <div className="flex items-center justify-center gap-4 mb-4">
                     <img src={KYBIcon} alt="" className="h-12 w-12" />
@@ -201,119 +219,304 @@ export default function KYBPage() {
                   </div>
                 )}
 
-                <div className="space-y-6 mb-8">
-                  {/* Annual Revenue */}
-                  <CustomSelect
-                    id="annualRevenue"
-                    label="Annual Revenue"
-                    placeholder="Less than $100K, $100K–$500K, etc."
-                    value={annualRevenue}
-                    onChange={(value) => {
-                      setAnnualRevenue(value);
-                      setShowErrors(false);
-                    }}
-                    options={[
-                      { value: "", label: "Select Annual Revenue" },
-                      ...kybOptions.annualRevenue.map(option => ({
-                        value: option.id,
-                        label: option.label
-                      }))
-                    ]}
-                    validation={validateAnnualRevenue}
-                    showError={showErrors}
-                    disabled={isLoadingOptions}
-                  />
-
-                  {/* Business Activity */}
-                  <CustomSelect
-                    id="businessActivity"
-                    label="Business Activity"
-                    placeholder="Retail, IT Services, Construction"
-                    value={businessActivity}
-                    onChange={(value) => {
-                      setBusinessActivity(value);
-                      setShowErrors(false);
-                    }}
-                    options={[
-                      { value: "", label: "Select Business Activity" },
-                      ...kybOptions.businessActivity.map(option => ({
-                        value: option.id,
-                        label: option.label
-                      }))
-                    ]}
-                    validation={validateBusinessActivity}
-                    showError={showErrors}
-                    disabled={isLoadingOptions}
-                  />
-
-                  {/* Purpose of Opening the Account - Multi-Select */}
-                  <MultiSelect
-                    id="purposeOfAccount"
-                    label="Purpose of Opening the Account"
-                    placeholder="Business Payments, Client Billing"
-                    value={purposeOfAccount}
-                    onChange={(value) => {
-                      setPurposeOfAccount(value);
-                      setShowErrors(false);
-                      // Clear "other" text if "other" is deselected
-                      if (!value.includes('other')) {
-                        setPurposeOther("");
-                      }
-                    }}
-                    options={kybOptions.purposeOfAccount.map(option => ({
-                      value: option.id,
-                      label: option.label
-                    }))}
-                    validation={validatePurposeOfAccount}
-                    showError={showErrors}
-                    required
-                    disabled={isLoadingOptions}
-                  />
-
-                  {/* Other Purpose Text Input */}
-                  {purposeOfAccount.includes('other') && (
-                    <FormField
-                      id="purposeOther"
-                      label="Please specify"
-                      error={showErrors ? validatePurposeOtherText(purposeOther) : undefined}
-                    >
-                      <Input
-                        id="purposeOther"
-                        type="text"
-                        placeholder="Describe your business purpose..."
-                        value={purposeOther}
+              <div className="grid grid-cols-2 gap-8 items-start mb-6">
+                {/* Left Column - Independent */}
+                <div className="space-y-4 p-6 rounded-3xl" style={{ backgroundColor: '#B9BEC01A' }}>
+                  {/* Source of Funds */}
+                  <div>
+                    <label className="font-manrope block font-medium text-gray-700 mb-2">
+                      Source of Funds
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={sourceOfFunds}
                         onChange={(e) => {
-                          setPurposeOther(e.target.value);
+                          setSourceOfFunds(e.target.value);
+                          setShowErrors(false);
+                          if (e.target.value !== 'other') {
+                            setSourceOfFundsOther("");
+                          }
+                        }}
+                        className="border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0475CC] focus:border-transparent transition-all appearance-none"
+                        style={{
+                          width: '350px',
+                          height: '48px',
+                          borderRadius: '15px',
+                          paddingTop: '8px',
+                          paddingRight: '40px',
+                          paddingBottom: '8px',
+                          paddingLeft: '12px',
+                          fontFamily: 'Hanken Grotesk',
+                          fontWeight: 400,
+                          fontSize: '14px',
+                          lineHeight: '145%',
+                          color: '#98A2B3'
+                        }}
+                        disabled={isLoadingOptions}
+                      >
+                        <option value="">Select your Source of Funds</option>
+                        <option value="sales">Sales</option>
+                        <option value="investments">Investments</option>
+                        <option value="loans">Loans</option>
+                        <option value="donations">Donations</option>
+                        <option value="freelance">Freelance</option>
+                        <option value="other">Other</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#98A2B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                    {showErrors && validateSourceOfFunds(sourceOfFunds) && (
+                      <p className="mt-1 text-sm text-red-600">{validateSourceOfFunds(sourceOfFunds)}</p>
+                    )}
+                  </div>
+
+                  {/* Source of Funds Other */}
+                  {sourceOfFunds === 'other' && (
+                    <div>
+                        <label className="font-manrope block font-medium text-gray-700 mb-2">
+                          Please specify
+                        </label>
+                      <textarea
+                        value={sourceOfFundsOther}
+                        onChange={(e) => {
+                          setSourceOfFundsOther(e.target.value);
                           setShowErrors(false);
                         }}
-                        hasError={!!(showErrors && validatePurposeOtherText(purposeOther))}
-                        maxLength={100}
+                        placeholder="Please describe your source of funds"
+                        className="border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0475CC] focus:border-transparent transition-all resize-none"
+                        style={{
+                          width: '350px',
+                          height: '60px',
+                          borderRadius: '15px',
+                          paddingTop: '8px',
+                          paddingRight: '12px',
+                          paddingBottom: '8px',
+                          paddingLeft: '12px',
+                          fontFamily: 'Hanken Grotesk',
+                          fontWeight: 400,
+                          fontSize: '14px',
+                          lineHeight: '145%',
+                          color: '#98A2B3'
+                        }}
+                        rows={3}
+                        maxLength={200}
                       />
-                    </FormField>
+                      {showErrors && validateSourceOfFundsOtherText(sourceOfFundsOther) && (
+                        <p className="mt-1 text-sm text-red-600">{validateSourceOfFundsOtherText(sourceOfFundsOther)}</p>
+                      )}
+                    </div>
                   )}
+
+                  {/* Expected Transaction Type */}
+                  <div>
+                    <label className="font-manrope block font-medium text-gray-700 mb-2">
+                      Expected Transaction Type
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={expectedTransactionType}
+                        onChange={(e) => {
+                          setExpectedTransactionType(e.target.value);
+                          setShowErrors(false);
+                        }}
+                        className="border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0475CC] focus:border-transparent transition-all appearance-none"
+                        style={{
+                          width: '350px',
+                          height: '48px',
+                          borderRadius: '15px',
+                          paddingTop: '8px',
+                          paddingRight: '40px',
+                          paddingBottom: '8px',
+                          paddingLeft: '12px',
+                          fontFamily: 'Hanken Grotesk',
+                          fontWeight: 400,
+                          fontSize: '14px',
+                          lineHeight: '145%',
+                          color: '#98A2B3'
+                        }}
+                        disabled={isLoadingOptions}
+                      >
+                        <option value="">payroll processing</option>
+                        <option value="payroll-processing">payroll processing</option>
+                        <option value="domestic-transfer">Domestic transfer</option>
+                        <option value="international-transfer">International transfer</option>
+                        <option value="deposit">Deposit</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#98A2B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                    {showErrors && validateExpectedTransactionType(expectedTransactionType) && (
+                      <p className="mt-1 text-sm text-red-600">{validateExpectedTransactionType(expectedTransactionType)}</p>
+                    )}
+                  </div>
+
+                  {/* Expected Monthly Volume */}
+                  <div>
+                    <label className="font-manrope block font-medium text-gray-700 mb-2">
+                      Expected monthly volume and value
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={expectedMonthlyVolume}
+                        onChange={(e) => {
+                          setExpectedMonthlyVolume(e.target.value);
+                          setShowErrors(false);
+                        }}
+                        className="border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0475CC] focus:border-transparent transition-all appearance-none"
+                        style={{
+                          width: '350px',
+                          height: '48px',
+                          borderRadius: '15px',
+                          paddingTop: '8px',
+                          paddingRight: '40px',
+                          paddingBottom: '8px',
+                          paddingLeft: '12px',
+                          fontFamily: 'Hanken Grotesk',
+                          fontWeight: 400,
+                          fontSize: '14px',
+                          lineHeight: '145%',
+                          color: '#98A2B3'
+                        }}
+                        disabled={isLoadingOptions}
+                      >
+                        <option value="">Select expected monthly volume</option>
+                        <option value="less-than-500k">Less than 500,000</option>
+                        <option value="500k-1m">500,000 to 1,000,000</option>
+                        <option value="1m-2.5m">1,000,000 to 2,500,000</option>
+                        <option value="2.5m-5m">2,500,000 to 5,000,000</option>
+                        <option value="5m-20m">5,000,000 to 20,000,000</option>
+                        <option value="20m-40m">20,000,000 to 40,000,000</option>
+                        <option value="more-than-40m">More than 40,000,000</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                        <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 1.5L6 6.5L11 1.5" stroke="#98A2B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                    {showErrors && validateExpectedMonthlyVolume(expectedMonthlyVolume) && (
+                      <p className="mt-1 text-sm text-red-600">{validateExpectedMonthlyVolume(expectedMonthlyVolume)}</p>
+                    )}
+                  </div>
                 </div>
 
-                <SignupButton
-                  onClick={handleNext}
-                  disabled={!isFormValid()}
-                  isLoading={isLoading}
-                  loadingText="Submitting..."
-                >
-                  Next
-                </SignupButton>
+                {/* Right Column with Button - Independent */}
+                <div className="space-y-6">
+                  <div className="p-6 rounded-3xl" style={{ backgroundColor: '#B9BEC01A' }}>
+                    <label className="font-manrope block font-medium text-gray-700 mb-3">
+                      Purpose of the Digital Wallet Account
+                    </label>
+                    
+                    <div className="space-y-2">
+                      {[
+                        { id: 'receiving-payments', label: 'Receiving payments from customers for services/goods' },
+                        { id: 'paying-suppliers', label: 'Paying suppliers' },
+                        { id: 'managing-cash', label: 'Managing petty cash' },
+                        { id: 'distributing-funds', label: 'Distributing funds' },
+                        { id: 'receiving-disbursements', label: 'Receiving disbursements' },
+                        { id: 'donations', label: 'Donations' },
+                        { id: 'other', label: 'Other' }
+                      ].map((purpose) => (
+                        <label key={purpose.id} className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={purposeOfAccount.includes(purpose.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setPurposeOfAccount([...purposeOfAccount, purpose.id]);
+                              } else {
+                                setPurposeOfAccount(purposeOfAccount.filter(p => p !== purpose.id));
+                                if (purpose.id === 'other') {
+                                  setPurposeOther("");
+                                }
+                              }
+                              setShowErrors(false);
+                            }}
+                            className="w-4 h-4 rounded focus:ring-2 focus:ring-[#00BDFF]"
+                          style={{
+                            accentColor: '#00BDFF',
+                            border: purposeOfAccount.includes(purpose.id) ? 'none' : '1px solid #E5E5E5',
+                            backgroundColor: purposeOfAccount.includes(purpose.id) ? '#00BDFF' : 'transparent'
+                          }}
+                          />
+                          <span className="text-sm text-gray-700">{purpose.label}</span>
+                        </label>
+                      ))}
+                    </div>
+
+                    {showErrors && validatePurposeOfAccount(purposeOfAccount) && (
+                      <p className="mt-2 text-sm text-red-600">{validatePurposeOfAccount(purposeOfAccount)}</p>
+                    )}
+
+                    {/* Other Purpose */}
+                    {purposeOfAccount.includes('other') && (
+                      <div className="mt-3">
+                        <label className="font-manrope block font-medium text-gray-700 mb-2">
+                          Other Purpose
+                        </label>
+                        <input
+                          type="text"
+                          value={purposeOther}
+                          onChange={(e) => {
+                            setPurposeOther(e.target.value);
+                            setShowErrors(false);
+                          }}
+                          placeholder="Please Enter Other Purpose..."
+                          className="border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#0475CC] focus:border-transparent transition-all text-gray-700"
+                          style={{
+                            width: '350px',
+                            height: '60px',
+                            borderRadius: '15px',
+                            paddingTop: '8px',
+                            paddingRight: '12px',
+                            paddingBottom: '8px',
+                            paddingLeft: '12px',
+                            fontFamily: 'Hanken Grotesk',
+                            fontWeight: 400,
+                            fontSize: '14px',
+                            lineHeight: '145%',
+                            color: '#98A2B3'
+                          }}
+                          maxLength={100}
+                        />
+                        {showErrors && validatePurposeOtherText(purposeOther) && (
+                          <p className="mt-1 text-sm text-red-600">{validatePurposeOtherText(purposeOther)}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Next Button - Part of right column */}
+                  <button
+                    onClick={handleNext}
+                    disabled={!isFormValid() || isLoading}
+                    className="gradient-button w-full py-3 rounded-lg text-white font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed border-0"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Submitting...
+                      </span>
+                    ) : (
+                      'Next'
+                    )}
+                  </button>
+                </div>
+              </div>
               </div>
             </div>
           </main>
         </div>
       </div>
-      
-      {/* <DevScenarioBar
-        title="KYB Scenarios"
-        items={[
-          { label: 'High Risk', patch: { globalHit: true } },
-          { label: 'Low Risk',  patch: { globalHit: false } },
-        ]}
-      /> */}
     </>
   );
 }

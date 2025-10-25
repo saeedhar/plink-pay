@@ -1,9 +1,38 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import balanceIcon from '../../../assets/dashboard/balance.svg';
 import profileIcon from '../../../assets/dashboard/profile.svg';
 import notificationsIcon from '../../../assets/dashboard/Notifications.svg';
+import ProfileDropdown from './ProfileDropdown';
 
 const Header: React.FC = () => {
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const toggleProfileDropdown = () => {
+    setIsProfileDropdownOpen(!isProfileDropdownOpen);
+  };
+
+  const closeProfileDropdown = () => {
+    setIsProfileDropdownOpen(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        closeProfileDropdown();
+      }
+    };
+
+    if (isProfileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileDropdownOpen]);
+
   return (
     <div className="header">
       <div className="header-left">
@@ -28,8 +57,16 @@ const Header: React.FC = () => {
           <div className="icon-button notification-icon">
             <img src={notificationsIcon} alt="Notifications" className="notification-icon-img" />
           </div>
-          <div className="icon-button profile-icon">
+          <div 
+            ref={profileRef}
+            className="icon-button profile-icon"
+            onClick={toggleProfileDropdown}
+          >
             <img src={profileIcon} alt="Profile" className="profile-icon-img" />
+            <ProfileDropdown 
+              isOpen={isProfileDropdownOpen}
+              onClose={closeProfileDropdown}
+            />
           </div>
         </div>
       </div>

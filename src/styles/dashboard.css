@@ -2359,3 +2359,959 @@ body, html {
 .toggle-switch input:checked + .toggle-slider:before {
   transform: translateX(20px);
 }
+
+/* Profile Dropdown Styles */
+.profile-dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 998;
+  background: transparent;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 999;
+  min-width: 240px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 10px 25px rgba(0, 0, 0, 0.15);
+  border: 1px solid #E5E7EB;
+  overflow: hidden;
+}
+
+.profile-dropdown-content {
+  padding: 8px;
+}
+
+.profile-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.profile-dropdown-item:hover {
+  background-color: #00BDFF0D;
+}
+
+.profile-dropdown-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.profile-dropdown-text {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #1F2937;
+}
+
+/* Profile icon positioning */
+.profile-icon {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Account Settings Styles */
+.account-settings-container {
+  width: 100%;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.profile-avatar {
+  position: relative;
+}
+
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  background: #E0F7FF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.avatar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-icon {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-name {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 24px;
+  color: #1F2937;
+  margin: 0 0 4px 0;
+}
+
+.profile-email {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.settings-section {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.section-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 24px;
+  color: #1F2937;
+  margin: 0;
+  padding: 20px 24px 16px 24px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.settings-menu {
+  padding: 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #F3F4F6;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:hover {
+  background-color: #F9FAFB;
+}
+
+.menu-item-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.menu-item-text {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 20px;
+  color: #1F2937;
+}
+
+/* Update Mobile Number Modal Styles */
+.update-mobile-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 40px 32px;
+  min-height: 500px;
+}
+
+.update-mobile-modal {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 480px;
+  min-height: 400px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #F3F4F6;
+}
+
+.modal-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 28px;
+  color: #1F2937;
+  margin: 0;
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.modal-subtitle-section {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-subtitle {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 24px;
+  color: #022466;
+  margin: 0;
+}
+
+.modal-description {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  position: relative;
+}
+
+.form-label {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #374151;
+  align-self: flex-start;
+  margin-left: calc((100% - 300px) / 2);
+}
+
+.phone-input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #D1D5DB;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  width: 300px;
+}
+
+.country-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border-right: 1px solid #D1D5DB;
+  min-width: 30px;
+}
+
+
+
+.country-code {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #374151;
+}
+
+.phone-input {
+  flex: 1;
+  padding: 12px 10px;
+  border: none;
+  outline: none;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #374151;
+}
+
+.phone-input::placeholder {
+  color: #9CA3AF;
+}
+
+.phone-input-error {
+  border-color: #EF4444 !important;
+}
+
+.phone-input-container:has(.phone-input-error) {
+  border-color: #EF4444;
+}
+
+.error-message {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: #EF4444;
+  margin-top: 4px;
+  align-self: flex-start;
+  margin-left: calc((100% - 300px) / 2);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.btn-secondary {
+  padding: 12px 32px;
+  border: 1px solid #D1D5DB;
+  border-radius: 12px;
+  background: white;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.btn-secondary:hover {
+  background: #F9FAFB;
+  border-color: #9CA3AF;
+}
+
+.btn-primary {
+  padding: 12px 32px;
+  border: none;
+  border-radius: 12px;
+  background: #022466;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.btn-primary:hover {
+  background: #011a4d;
+}
+
+/* OTP Verification Styles */
+.otp-test-display {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin: 16px 0;
+}
+
+.otp-test-label {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: #3B82F6;
+  margin: 0 0 4px 0;
+}
+
+.otp-test-code {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 24px;
+  color: #1E40AF;
+  margin: 0;
+}
+
+.otp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+.otp-inputs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.otp-input {
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  border: 2px solid #D1D5DB;
+  border-radius: 12px;
+  background: white;
+  color: #022466;
+  font-family: 'Manrope', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.otp-input:focus {
+  outline: none;
+  border-color: #022466;
+  box-shadow: 0 0 0 3px rgba(2, 36, 102, 0.1);
+}
+
+.otp-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-message-center {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: #EF4444;
+  text-align: center;
+}
+
+.resend-section {
+  text-align: center;
+}
+
+.resend-timer {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.resend-button {
+  background: none;
+  border: none;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #022466;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.resend-button:hover {
+  color: #011a4d;
+}
+
+/* Success Modal Styles */
+.success-modal {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 480px;
+  min-height: 400px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  text-align: center;
+}
+
+.success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+
+.success-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #1F2937;
+  margin: 0;
+}
+
+.success-subtitle {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+  color: #1F2937;
+  margin: 0;
+}
+
+.success-description {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.success-mobile {
+  font-weight: 600;
+  color: #022466;
+}
+
+.success-date {
+  font-weight: 500;
+  color: #374151;
+}
+
+.success-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-primary-full {
+  padding: 12px 32px;
+  border: none;
+  border-radius: 12px;
+  background: #022466;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.btn-primary-full:hover {
+  background: #011a4d;
+}
+
+/* Fullscreen Layout Styles */
+.fullscreen-content {
+  width: 100%;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-height: 500px;
+}
+
+.fullscreen-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.fullscreen-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fullscreen-header-text {
+  flex: 1;
+}
+
+.fullscreen-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  color: #022466;
+  margin: 0 0 8px 0;
+}
+
+.fullscreen-description {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.fullscreen-form {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: center;
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.fullscreen-footer {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+/* Success Fullscreen Styles */
+.success-fullscreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  background: white;
+  padding: 60px 40px;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  min-height: 400px;
+  justify-content: center;
+}
+
+.success-icon-large {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-content-fullscreen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+  max-width: 600px;
+}
+
+.success-title-large {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 40px;
+  color: #1F2937;
+  margin: 0;
+}
+
+.success-subtitle-large {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 40px;
+  color: #1F2937;
+  margin: 0;
+}
+
+.success-description-large {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 28px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.success-footer-fullscreen {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-primary-large {
+  padding: 16px 48px;
+  border: none;
+  border-radius: 12px;
+  background: #022466;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.btn-primary-large:hover {
+  background: #011a4d;
+}
+
+/* OTP Verification Content - Following Dashboard Pattern */
+.otp-verification-content {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.otp-header-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.otp-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  color: #022466;
+  margin: 0 0 8px 0;
+}
+
+.otp-description {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.otp-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+.otp-footer-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* Success Verification Content - Following Dashboard Pattern */
+.success-verification-content {
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  text-align: center;
+}
+
+.success-icon-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-content-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+  max-width: 500px;
+}
+
+.success-main-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 36px;
+  color: #1F2937;
+  margin: 0;
+}
+
+.success-main-subtitle {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 36px;
+  color: #1F2937;
+  margin: 0;
+}
+
+.success-main-description {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.success-button-section {
+  display: flex;
+  justify-content: center;
+}
+
+/* Email Management Styles */
+.email-add-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.email-add-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.email-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: #F9FAFB;
+  border-radius: 16px;
+  border: 2px solid #E5E7EB;
+}
+
+.add-plus-icon {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #E5E7EB;
+}
+
+.email-add-title {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 28px;
+  color: #022466;
+  margin: 0;
+}
+
+.email-add-description {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #9CA3AF;
+  margin: 0;
+}
+
+.email-input {
+  width: 300px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid #D1D5DB;
+  padding: 12px 16px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #374151;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.email-input:focus {
+  outline: none;
+  border-color: #022466;
+  box-shadow: 0 0 0 3px rgba(2, 36, 102, 0.1);
+}
+
+.email-input::placeholder {
+  color: #9CA3AF;
+}
+
+.email-input-error {
+  border-color: #EF4444;
+}
+
+.email-help-text {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  color: #6B7280;
+  margin: 8px 0 0 0;
+  text-align: center;
+  max-width: 300px;
+}
