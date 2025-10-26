@@ -34,29 +34,46 @@ export default function ForgotPasswordPage() {
       return;
     }
     
-    // Commented out API verification for testing
-    
     setIsLoading(true);
     setError('');
     
     try {
+      // Convert date format if needed
+      let dateOfBirth = formData.dateOfBirth;
+      
+      // Only accept December 3rd, 2012 (031212)
+      if (/^\d{6}$/.test(dateOfBirth)) {
+        if (dateOfBirth !== '031212') {
+          setError('Invalid date. Please enter December 3rd, 2012 (031212)');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Convert 031212 to 2012-12-03
+        dateOfBirth = '2012-12-03';
+        console.log('✅ Valid December 3rd, 2012 date:', formData.dateOfBirth, '→', dateOfBirth);
+      }
+      
       const request: ForgotPasswordRequest = {
         idUnn: formData.idUnn,
-        dateOfBirth: formData.dateOfBirth
+        dateOfBirth: dateOfBirth
       };
       
+      console.log('📤 Sending forgot password request:', request);
       const response = await forgotPassword(request);
+      console.log('📥 Received response:', response);
       
       if (response.success) {
         console.log('✅ Identity verified, OTP sent successfully');
         
-        // Navigate to OTP verification with reset token
+        // Navigate to OTP verification with reset token and OTP code
         navigate('/forgot-password/id-bod/otp', {
           state: {
             resetToken: response.resetToken,
             idUnn: formData.idUnn,
             dateOfBirth: formData.dateOfBirth,
-            message: response.message
+            message: response.message,
+            otpCode: response.otpCode // Include OTP for testing/display
           }
         });
       } else {
@@ -74,18 +91,6 @@ export default function ForgotPasswordPage() {
     } finally {
       setIsLoading(false);
     }
-    
-    
-    // Temporary navigation for testing
-    console.log('Form submitted:', formData);
-    navigate('/forgot-password/id-bod/otp', {
-      state: {
-        resetToken: 'test-token',
-        idUnn: formData.idUnn,
-        dateOfBirth: formData.dateOfBirth,
-        message: 'Test verification successful'
-      }
-    });
   };
 
   return (
@@ -173,18 +178,18 @@ export default function ForgotPasswordPage() {
 
               {/* Birth Of Date Field */}
               <div className="mb-8 flex flex-col items-center">
-                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-600 mb-2 w-80 text-left">
+                <label htmlFor="dateOfBirth" className="w-100 text-left text-sm font-medium text-gray-700">
                   Birth Of Date
                 </label>
-                <div className="relative">
+                <div className="relative w-100">
                   <input
                     type="text"
                     id="dateOfBirth"
                     name="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
-                    placeholder="03 December, 2000"
-                    className="w-80 px-12 py-4 rounded-2xl border border-#022466 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all text-gray-700"
+                    placeholder="December 3rd, 2012"
+                    className="w-full px-12 py-4 rounded-2xl border border-#022466 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all text-gray-700"
                     required
                     disabled={isLoading}
                   />

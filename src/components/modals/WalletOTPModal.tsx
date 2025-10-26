@@ -22,6 +22,7 @@ export default function WalletOTPModal({ isOpen, onClose, onVerify, action }: Wa
   const [businessType, setBusinessType] = useState<'freelancer' | 'b2b'>('freelancer');
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
+  const [testOTP, setTestOTP] = useState<string>('');
 
   // Get phone number from localStorage or use a default
   useEffect(() => {
@@ -171,7 +172,12 @@ export default function WalletOTPModal({ isOpen, onClose, onVerify, action }: Wa
         businessType: businessType
       };
       
-      await sendOtp(request);
+      const response = await sendOtp(request);
+      
+      // Store the OTP code for display
+      if (response.otpCode) {
+        setTestOTP(response.otpCode);
+      }
       
       // Reset timer and clear OTP fields
       setTimeLeft(30);
@@ -271,6 +277,21 @@ export default function WalletOTPModal({ isOpen, onClose, onVerify, action }: Wa
                 />
               ))}
             </div>
+
+            {/* Test OTP Display for Development */}
+            {testOTP && (
+              <div className="text-center mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800 text-sm font-medium mb-2">
+                  🧪 Test Mode - OTP Code:
+                </p>
+                <p className="text-2xl font-bold text-yellow-900 tracking-widest">
+                  {testOTP}
+                </p>
+                <p className="text-yellow-700 text-xs mt-2">
+                  Use this code to verify your wallet {action}
+                </p>
+              </div>
+            )}
 
             {/* Error Message */}
             {error && (

@@ -64,7 +64,8 @@ export default function LoginPage() {
             userId: response.userId,
             phoneOrEmail: emailOrPhone,
             password: formData.password, // Include password for resend OTP
-            message: response.message
+            message: response.message,
+            otpCode: response.otpCode // Include OTP for testing/display
           }
         });
         return;
@@ -78,7 +79,7 @@ export default function LoginPage() {
       console.log('✅ Login successful:', response.userId);
       
       // Navigate to dashboard
-      navigate('/dashboard');
+      navigate('/app/dashboard');
       
     } catch (error: any) {
       console.error('Login error:', error);
@@ -143,7 +144,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="pt-8">
               <div className="text-center mb-8">
                 <h2 className="text-2xl text-gray-800 mb-2">Sign In</h2>
-                <p className="text-black">Enter your Information Number</p>
+                <p className="text-black">Enter your phone number or ID/UNN</p>
               </div>
 
               {/* Error Message */}
@@ -163,7 +164,7 @@ export default function LoginPage() {
                 <div className="flex justify-center">
                   <div className="w-full max-w-sm">
                     <label htmlFor="idUnn" className="block text-sm font-medium text-gray-700 mb-2">
-                      ID/UNN
+                      Phone Number or ID/UNN
                     </label>
                     <input
                       type="text"
@@ -171,10 +172,13 @@ export default function LoginPage() {
                       name="idUnn"
                       value={formData.idUnn}
                       onChange={handleInputChange}
-                      placeholder="Enter your registered ID or UNN"
+                      placeholder="Enter your phone number (0501234567) or ID/UNN"
                       className="w-full px-4 py-2 rounded-xl border border-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
                       required
                     />
+                    <p className="mt-2 text-xs text-gray-500">
+                      Examples: 0501234567, 1234567890, or your registered ID
+                    </p>
                   </div>
                 </div>
               </div>

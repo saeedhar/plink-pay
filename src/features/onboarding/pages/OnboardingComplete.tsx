@@ -50,7 +50,7 @@ export default function OnboardingComplete() {
       
       // Navigate to success page or dashboard after a delay
       setTimeout(() => {
-        navigate('/dashboard'); // or wherever you want to go after onboarding
+        navigate('/app/dashboard');
       }, 3000);
       
     } catch (err: any) {
@@ -68,7 +68,7 @@ export default function OnboardingComplete() {
 
   const handleSkip = () => {
     // Navigate to dashboard without creating profile
-    navigate('/dashboard');
+    navigate('/app/dashboard');
   };
 
   if (isCreating) {

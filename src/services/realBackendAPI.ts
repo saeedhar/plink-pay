@@ -15,6 +15,7 @@ export interface SendOtpRequest {
 export interface SendOtpResponse {
   success: boolean;
   message: string;
+  otpCode?: string; // OTP code for testing/display
 }
 
 export interface VerifyOtpRequest {
@@ -71,6 +72,7 @@ export interface LoginResponse {
   callbackId?: string;
   deviceId?: string;
   message?: string;
+  otpCode?: string; // OTP code for testing/display
 }
 
 export interface VerifyLoginOtpRequest {
@@ -200,6 +202,17 @@ export interface ForgotPasswordResponse {
   success: boolean;
   message: string;
   resetToken: string;
+  otpCode?: string; // OTP code for testing/display
+}
+
+export interface VerifyOtpRequest {
+  resetToken: string;
+  otp: string;
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface ResetPasswordRequest {
@@ -467,6 +480,7 @@ export async function createProfile(request: CreateProfileRequest): Promise<Crea
 
   return await response.json();
 }
+
 
 // ==========================================
 // KYB APIs

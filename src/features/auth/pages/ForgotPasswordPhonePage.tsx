@@ -61,10 +61,11 @@ export default function ForgotPasswordPhonePage() {
         // Navigate to OTP verification with reset token
         navigate('/forgot-password/phone/otp', {
           state: {
-            resetToken: 'mock-reset-token',
+            resetToken: response.resetToken,
             idUnn: formData.idUnn,
             phoneNumber: formData.phoneNumber,
-            message: 'OTP sent successfully'
+            message: response.message,
+            otpCode: response.otpCode // Include OTP for testing/display
           }
         });
       } else {

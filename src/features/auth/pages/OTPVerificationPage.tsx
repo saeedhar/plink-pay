@@ -18,10 +18,15 @@ export default function OTPVerificationPage() {
   const [businessType, setBusinessType] = useState<'freelancer' | 'b2b'>('freelancer');
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
+  const [testOTP, setTestOTP] = useState<string>('');
 
   // Get phone number from navigation state
   useEffect(() => {
-    const state = location.state as { phoneNumber?: string; businessType?: 'freelancer' | 'b2b' };
+    const state = location.state as { 
+      phoneNumber?: string; 
+      businessType?: 'freelancer' | 'b2b';
+      otpCode?: string;
+    };
     if (state?.phoneNumber) {
       setPhoneNumber(state.phoneNumber);
     } else {
@@ -31,6 +36,9 @@ export default function OTPVerificationPage() {
     }
     if (state?.businessType) {
       setBusinessType(state.businessType);
+    }
+    if (state?.otpCode) {
+      setTestOTP(state.otpCode);
     }
   }, [location, navigate]);
 
@@ -172,7 +180,12 @@ export default function OTPVerificationPage() {
         businessType: businessType
       };
       
-      await sendOtp(request);
+      const response = await sendOtp(request);
+      
+      // Store the OTP code for display
+      if (response.otpCode) {
+        setTestOTP(response.otpCode);
+      }
       
       // Reset timer and clear OTP fields
       setTimeLeft(30);
@@ -272,6 +285,21 @@ export default function OTPVerificationPage() {
                   />
                 ))}
               </div>
+
+              {/* Test OTP Display for Development */}
+              {testOTP && (
+                <div className="text-center mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800 text-sm font-medium mb-2">
+                    🧪 Test Mode - OTP Code:
+                  </p>
+                  <p className="text-2xl font-bold text-yellow-900 tracking-widest">
+                    {testOTP}
+                  </p>
+                  <p className="text-yellow-700 text-xs mt-2">
+                    Use this code to verify your phone number
+                  </p>
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (

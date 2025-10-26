@@ -178,22 +178,30 @@ async function apiRequest<T>(
 
 export async function sendOTP(phoneNumber: string, businessType: 'freelancer' | 'b2b' = 'freelancer'): Promise<OTPSendResponse & { testOTP?: string }> {
   try {
-    const response = await apiRequest<{ success: boolean; message: string }>('/api/v1/auth/send-otp', {
+    // Convert phone number to E.164 format
+    const cleanPhone = phoneNumber.replace(/\s/g, '');
+    const e164Phone = cleanPhone.startsWith('+966') ? cleanPhone : 
+                     cleanPhone.startsWith('966') ? `+${cleanPhone}` :
+                     cleanPhone.startsWith('05') ? `+966${cleanPhone.substring(1)}` :
+                     cleanPhone;
+    
+    const response = await apiRequest<{ success: boolean; message: string; otpCode?: string }>('/api/v1/auth/send-otp', {
       method: 'POST',
       body: JSON.stringify({ 
-        phoneNumber: phoneNumber,
+        phoneNumber: e164Phone,
         businessType: businessType
       })
     });
     
-    // Generate a test OTP for development/testing purposes
-    const testOTP = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    // Use the real OTP from backend response, or generate a test OTP if not available
+    const realOTP = response.data?.otpCode;
+    const testOTP = realOTP || Math.floor(100000 + Math.random() * 900000).toString();
     
     return {
       requestId: `otp_${Date.now()}`,
       expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
       attemptsRemaining: businessType === 'freelancer' ? 3 : 5,
-      testOTP: testOTP // Include test OTP for development
+      testOTP: testOTP // Use real OTP from backend or fallback to test OTP
     };
   } catch (error: any) {
     if (error.status === 409) {
@@ -208,10 +216,14 @@ export async function verifyOTP(
   code: string
 ): Promise<OTPVerifyResponse> {
   try {
-    // Clean phone number by removing spaces, same as in sendOTP
+    // Convert phone number to E.164 format
     const cleanPhone = phoneNumber.replace(/\s/g, '');
+    const e164Phone = cleanPhone.startsWith('+966') ? cleanPhone : 
+                     cleanPhone.startsWith('966') ? `+${cleanPhone}` :
+                     cleanPhone.startsWith('05') ? `+966${cleanPhone.substring(1)}` :
+                     cleanPhone;
     
-    console.log('📞 Calling verify-otp API with:', { phoneNumber: cleanPhone, otp: code });
+    console.log('📞 Calling verify-otp API with:', { phoneNumber: e164Phone, otp: code });
     
     const response = await apiRequest<{ 
       success: boolean; 
@@ -222,7 +234,7 @@ export async function verifyOTP(
     }>('/api/v1/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ 
-        phoneNumber: cleanPhone,
+        phoneNumber: e164Phone,
         otp: code
       })
     });

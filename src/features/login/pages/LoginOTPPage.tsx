@@ -16,6 +16,7 @@ export default function LoginOTPPage() {
   const [userId, setUserId] = useState('');
   const [phoneOrEmail, setPhoneOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [testOTP, setTestOTP] = useState<string>('');
 
   // Get data from navigation state
   useEffect(() => {
@@ -24,12 +25,16 @@ export default function LoginOTPPage() {
       phoneOrEmail?: string;
       password?: string;
       message?: string;
+      otpCode?: string;
     };
     
     if (state?.userId && state?.phoneOrEmail) {
       setUserId(state.userId);
       setPhoneOrEmail(state.phoneOrEmail);
       setPassword(state.password || '');
+      if (state.otpCode) {
+        setTestOTP(state.otpCode);
+      }
     } else {
       // If no data, redirect to login
       console.warn('No login data provided, redirecting to login');
@@ -125,7 +130,7 @@ export default function LoginOTPPage() {
       console.log('✅ Login successful with 2FA:', response.userId);
       
       // Navigate to dashboard
-      navigate('/dashboard');
+      navigate('/app/dashboard');
       
     } catch (error: any) {
       console.error('❌ OTP verification error:', error);
@@ -176,7 +181,12 @@ export default function LoginOTPPage() {
         }
       };
       
-      await loginWithPassword(request);
+      const response = await loginWithPassword(request);
+      
+      // Store the OTP code for display
+      if (response.otpCode) {
+        setTestOTP(response.otpCode);
+      }
       
       // Reset timer and clear OTP fields
       setTimeLeft(30);
@@ -273,6 +283,21 @@ export default function LoginOTPPage() {
                   />
                 ))}
               </div>
+
+              {/* Test OTP Display for Development */}
+              {testOTP && (
+                <div className="text-center mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800 text-sm font-medium mb-2">
+                    🧪 Test Mode - OTP Code:
+                  </p>
+                  <p className="text-2xl font-bold text-yellow-900 tracking-widest">
+                    {testOTP}
+                  </p>
+                  <p className="text-yellow-700 text-xs mt-2">
+                    Use this code to verify your login
+                  </p>
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (

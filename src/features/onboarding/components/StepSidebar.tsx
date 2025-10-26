@@ -77,7 +77,7 @@ export default function StepSidebar({ steps, activeIndex, logoSrc, showReloadBut
                     <div 
                       className="text-white rounded-xl shadow-sm flex items-center"
                       style={{
-                        width: '210px',
+                        width: '220px',
                         height: '46px',
                         top: '154px',
                         left: '89px',

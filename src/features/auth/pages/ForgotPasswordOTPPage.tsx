@@ -4,8 +4,8 @@ import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
 import StepIndicator from '../../../assets/forgetpassword/2.svg';
 import AccountBlockedModal from '../../../components/modals/AccountBlockedModal';
-import { forgotPassword, verifyOtp } from '../../../services/realBackendAPI';
-import type { ForgotPasswordRequest, VerifyOtpRequest } from '../../../services/realBackendAPI';
+import { forgotPassword } from '../../../services/realBackendAPI';
+import type { ForgotPasswordRequest } from '../../../services/realBackendAPI';
 
 export default function ForgotPasswordOTPPage() {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ export default function ForgotPasswordOTPPage() {
   const [phoneOrEmail, setPhoneOrEmail] = useState('');
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
+  const [testOTP, setTestOTP] = useState<string>('');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Get data from navigation state
@@ -28,11 +29,15 @@ export default function ForgotPasswordOTPPage() {
       idUnn?: string;
       dateOfBirth?: string;
       message?: string;
+      otpCode?: string;
     };
     
     if (state?.resetToken && state?.idUnn) {
       setResetToken(state.resetToken);
       setPhoneOrEmail(state.idUnn); // Use ID/UNN as identifier
+      if (state.otpCode) {
+        setTestOTP(state.otpCode);
+      }
     } else {
       // If no data, redirect to forgot password
       console.warn('No reset token provided, redirecting to forgot password');
@@ -106,45 +111,17 @@ export default function ForgotPasswordOTPPage() {
     setError('');
     
     try {
-      // Comment out API call for UI testing
-      const request: VerifyOtpRequest = {
-        resetToken: resetToken,
-        otp: otpCode
-      };
-      
-      const response = await verifyOtp(request);
-      
-      if (response.success) {
-        // Navigate to reset password with token and OTP
-        navigate('/reset-password', {
-          state: {
-            resetToken: resetToken,
-            otp: otpCode
-          }
-        });
-      } else {
-        // Increment failed attempts
-        const newFailedAttempts = failedAttempts + 1;
-        setFailedAttempts(newFailedAttempts);
-        
-        if (newFailedAttempts >= 5) {
-          setShowAccountBlockedModal(true);
-        } else {
-          setError('Verification failed. Please try again.');
+      // Skip API call - verification will happen in reset password step
+      // Navigate directly to reset password with token and OTP
+      navigate('/reset-password', {
+        state: {
+          resetToken: resetToken,
+          otp: otpCode
         }
-      }
+      });
     } catch (error: any) {
-      console.error('❌ OTP verification error:', error);
-      
-      // Increment failed attempts for any error
-      const newFailedAttempts = failedAttempts + 1;
-      setFailedAttempts(newFailedAttempts);
-      
-      if (newFailedAttempts >= 5) {
-        setShowAccountBlockedModal(true);
-      } else {
-        setError('Verification failed. Please try again.');
-      }
+      console.error('❌ Navigation error:', error);
+      setError('Failed to proceed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -170,6 +147,11 @@ export default function ForgotPasswordOTPPage() {
       if (response.success) {
         // Update reset token
         setResetToken(response.resetToken);
+        
+        // Store the OTP code for display
+        if (response.otpCode) {
+          setTestOTP(response.otpCode);
+        }
         
         // Reset timer and clear OTP fields
         setTimeLeft(30);
@@ -277,6 +259,21 @@ export default function ForgotPasswordOTPPage() {
                   />
                 ))}
               </div>
+
+              {/* Test OTP Display for Development */}
+              {testOTP && (
+                <div className="text-center mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800 text-sm font-medium mb-2">
+                    🧪 Test Mode - OTP Code:
+                  </p>
+                  <p className="text-2xl font-bold text-yellow-900 tracking-widest">
+                    {testOTP}
+                  </p>
+                  <p className="text-yellow-700 text-xs mt-2">
+                    Use this code to verify your password reset
+                  </p>
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (

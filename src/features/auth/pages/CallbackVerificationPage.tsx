@@ -91,7 +91,9 @@ export default function CallbackVerificationPage() {
 
         // Navigate to dashboard
         setMessage('Login successful! Redirecting...');
-        setTimeout(() => navigate('/dashboard'), 1500);
+        setTimeout(() => {
+          navigate('/app/dashboard');
+        }, 1500);
       } else {
         throw new Error('No access token received');
       }
@@ -199,8 +201,3 @@ export default function CallbackVerificationPage() {
   );
 }
 
-
-<<<<<<< HEAD
-=======
-
->>>>>>> 2991c46 (Added AccountLockedPage)
