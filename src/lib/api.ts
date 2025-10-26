@@ -1,13 +1,47 @@
 // src/lib/api.ts
 
 // 1) Read the base URL from Vite env (string or empty).
-// - In dev: VITE_API_BASE_URL === ''  → relative URLs like `/api/v1/...`
-// - In prod: VITE_API_BASE_URL === 'http://101.46.58.237:8080' (or your domain)
-const BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+// - In dev: VITE_API_BASE_URL === ''  → relative URLs like `/api/v1/...` (uses Vite proxy)
+// - In prod: Use HTTP backend URL directly (if frontend is also HTTP)
+let BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+
+// If BASE is empty, use HTTP backend directly
+// This works if the frontend is served over HTTP (not HTTPS)
+if (!BASE) {
+  // In dev: use relative URLs (proxy will handle it)
+  // In prod: use HTTP backend directly
+  if (import.meta.env.DEV) {
+    BASE = '' // Empty = relative URLs (uses Vite proxy)
+  } else {
+    // Always use HTTP backend (even if frontend is HTTPS, we need HTTP backend)
+    BASE = 'http://101.46.58.237:8080' // Production: direct HTTP backend
+  }
+}
+
+// Force HTTP - prevent browser from upgrading to HTTPS
+if (BASE) {
+  // If BASE contains our backend IP, ensure it's HTTP (not HTTPS)
+  if (BASE.includes('101.46.58.237')) {
+    BASE = BASE.replace(/^https:/, 'http:')
+  }
+}
 
 /** Build a full URL by joining BASE and the path. Ensures exactly one slash. */
 export function apiUrl(path: string) {
-  return `${BASE}${path.startsWith('/') ? path : `/${path}`}`
+  let url = `${BASE}${path.startsWith('/') ? path : `/${path}`}`
+  
+  // Force HTTP for backend IP (runtime check)
+  if (url.includes('101.46.58.237')) {
+    url = url.replace(/^https:/, 'http:')
+  }
+  
+  // Debug: log the first API call to verify URL
+  if (!(window as any).__apiUrlLogged) {
+    console.log('🔗 API Base URL:', BASE || '(relative)')
+    console.log('🔗 Full API URL example:', url)
+    ;(window as any).__apiUrlLogged = true
+  }
+  return url
 }
 
 /** Common headers – add Authorization once here, affects every request */

@@ -29,20 +29,21 @@ export default function LoginPage() {
     setError('');
     
     try {
-      // Normalize phone number if it looks like a phone (digits only)
+      // Handle both phone number and ID/UNN
       let emailOrPhone = formData.idUnn.trim();
       
-      // If input is all digits (with optional spaces/dashes), treat as phone
-      if (/^[0-9\s\-]+$/.test(emailOrPhone)) {
-        // Remove spaces and dashes
-        const cleanPhone = emailOrPhone.replace(/[\s\-]/g, '');
-        // Add +966 if not present
-        if (!cleanPhone.startsWith('+')) {
-          emailOrPhone = cleanPhone.startsWith('966') ? `+${cleanPhone}` : `+966${cleanPhone.replace(/^0/, '')}`;
-        } else {
-          emailOrPhone = cleanPhone;
-        }
+      // Check if it's a phone number pattern
+      // Saudi phone: 9-10 digits, optionally starting with 0, +966, or 966
+      const cleaned = emailOrPhone.replace(/[\s\-]/g, '');
+      const isPhoneNumber = /^(\+966|966)?0?[0-9]{9}$/.test(cleaned) && cleaned.length <= 13;
+      
+      if (isPhoneNumber) {
+        // It's a phone number - normalize it to E.164 format
+        const digitsOnly = cleaned.replace(/^\+966|^966|^0/, '');
+        emailOrPhone = `+966${digitsOnly}`;
       }
+      // Otherwise, treat as ID/UNN or email - send as-is to backend
+      // Backend will search by email/phone first, then by ID/UNN
       
       const response = await loginWithPassword({
         emailOrPhone: emailOrPhone,

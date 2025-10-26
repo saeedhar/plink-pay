@@ -304,7 +304,22 @@ export async function loginWithPassword(request: LoginPasswordRequest): Promise<
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to login: ${response.status}`);
+    // Try to get error message from response
+    let errorMessage = `Failed to login: ${response.status}`;
+    try {
+      const text = await response.text();
+      console.error('Login error response (raw):', text);
+      try {
+        const errorData = JSON.parse(text);
+        errorMessage = errorData.message || errorData.error || errorMessage;
+        console.error('Login error details:', errorData);
+      } catch (e) {
+        errorMessage = text || errorMessage;
+      }
+    } catch (e) {
+      console.error('Failed to read error response:', e);
+    }
+    throw new Error(errorMessage);
   }
 
   return await response.json();
