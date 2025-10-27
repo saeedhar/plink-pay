@@ -29,7 +29,6 @@ import ForgotPasswordPhonePage from './features/auth/pages/ForgotPasswordPhonePa
 import ForgotPasswordPhoneOTPPage from './features/auth/pages/ForgotPasswordPhoneOTPPage';
 import SetPasswordPage from './features/auth/pages/SetPasswordPage';
 import ForgotPasswordSelectionPage from './features/auth/pages/ForgotPasswordSelectionPage';
-import CallbackVerificationPage from './features/auth/pages/CallbackVerificationPage';
 import AccountLockedPage from './features/auth/pages/AccountLockedPage';
 import { AppAdminRoutes } from './features/admin/AppAdminRoutes';
 import AppNavigator from './components/navigation/AppNavigator';
@@ -49,7 +48,6 @@ function AppRoutes() {
         {/* Auth routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/login/verify-otp" element={<LoginOTPPage />} />
-        <Route path="/login/callback-verification" element={<CallbackVerificationPage />} />
         <Route path="/account-locked" element={<AccountLockedPage />} />
         <Route path="/otp-verification" element={<OTPVerificationPage />} />
         

@@ -106,20 +106,10 @@ export default function LoginOTPPage() {
       
       const response = await verifyLoginOtp(request);
       
-      // Check if callback verification is needed
+      // Web apps don't use callback verification - skip it
+      // Just store tokens and continue to dashboard
       if (response.needsCallback) {
-        console.log('✅ OTP verified, but device not trusted. Initiating callback verification...');
-        
-        // Navigate to callback verification page
-        navigate('/login/callback-verification', {
-          state: {
-            callbackId: response.callbackId,
-            deviceId: response.deviceId,
-            deviceInfo: request.device,
-            userId: response.userId
-          }
-        });
-        return;
+        console.log('⚠️  Callback verification requested but skipped for web platform');
       }
       
       // Store tokens
@@ -214,30 +204,24 @@ export default function LoginOTPPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background with gradient */}
+      {/* Background */}
       <div 
-        className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-        }}
+        className="absolute inset-0 bg-blue-50"
       />
 
       {/* Main content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-xl">
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <img src={logo} alt="Tyaseer Pay" className="h-16 w-auto" />
+              <img src={logo} alt="Tyaseer Pay" className="h-18 w-auto" />
             </div>
           </div>
 
           {/* OTP Card */}
           <div 
-            className="backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-blue-200/50 relative"
-            style={{
-              background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
-            }}
+            className="bg-white rounded-3xl p-8 shadow-lg relative"
           >
             {/* Back Button */}
             <button
@@ -253,11 +237,8 @@ export default function LoginOTPPage() {
             <form onSubmit={handleVerify} className="pt-8">
               {/* Title */}
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-[#022466] mb-2">Mobile Number</h2>
-                <h3 className="text-xl font-bold text-[#022466] mb-2">OTP Verification</h3>
-                <p className="text-gray-600">
-                  Enter the 6-digit code sent to your phone
-                </p>
+                <h2 className="text-2xl text-gray-800 mb-2">OTP Verification</h2>
+                <p className="text-black">Enter the 6-digit code sent to your phone</p>
               </div>
 
               {/* OTP Input Fields */}
