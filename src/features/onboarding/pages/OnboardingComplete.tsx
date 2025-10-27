@@ -119,10 +119,10 @@ export default function OnboardingComplete() {
             <div className="text-center">
               <img className="mx-auto h-12 w-auto" src={HeroLogo} alt="Plink" />
               <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-                Welcome to Plink! 🎉
+                Welcome to Tyaseer! 🎉
               </h2>
               <p className="mt-2 text-sm text-gray-600">
-                Your profile has been created successfully. You're all set to start using Plink.
+                Your profile has been created successfully. You're all set to start using Tyaseer.
               </p>
             </div>
 

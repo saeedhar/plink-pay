@@ -1,7 +1,7 @@
 import { adminHttp } from './adminHttp';
 import { apiUrl } from '../../../lib/api';
 
-export type KybCategory = 'purpose_of_account' | 'business_activity' | 'annual_revenue';
+export type KybCategory = 'purpose_of_account' | 'business_activity' | 'annual_revenue' | 'source_of_funds';
 
 export interface KybOption {
   id: string;
@@ -57,13 +57,33 @@ export class KybOptionsService {
   }
 
   /**
+   * Toggle KYB option active status
+   */
+  async toggleOptionStatus(category: KybCategory, optionId: string, active: boolean, locale: 'en' | 'ar' = 'en'): Promise<KybOption> {
+    return adminHttp<KybOption>(`/api/admin/kyb/options/${optionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ category, active, locale })
+    });
+  }
+
+  /**
+   * Delete a KYB option
+   */
+  async deleteOption(category: KybCategory, optionId: string, locale: 'en' | 'ar' = 'en'): Promise<void> {
+    return adminHttp<void>(`/api/admin/kyb/options/${optionId}?category=${category}&locale=${locale}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
    * Get all categories with their display names
    */
   getCategories(): Array<{ value: KybCategory; label: string }> {
     return [
+      { value: 'source_of_funds', label: 'Source of Funds' },
       { value: 'purpose_of_account', label: 'Purpose of Account' },
-      { value: 'business_activity', label: 'Business Activity' },
-      { value: 'annual_revenue', label: 'Annual Revenue' }
+      { value: 'business_activity', label: 'Business Activity (Transaction Type)' },
+      { value: 'annual_revenue', label: 'Annual Revenue (Monthly Volume)' }
     ];
   }
 

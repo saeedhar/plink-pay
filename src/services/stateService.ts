@@ -161,7 +161,7 @@ export class StateService {
       data: {
         ...state.data,
         // Clear sensitive fields
-        password: undefined,
+        passwordSet: false,
         // Keep other data for UX
       }
     };

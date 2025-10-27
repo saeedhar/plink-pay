@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { kybOptionsService, type KybCategory, type KybOption, type CreateKybOptionRequest } from '../api/kybOptionsService';
+import { filterService, type TransactionFilter, type CreateFilterRequest } from '../api/filterService';
 
-export function AdminKybOptionsPage() {
-  const [selectedCategory, setSelectedCategory] = useState<KybCategory>('annual_revenue');
-  const [options, setOptions] = useState<KybOption[]>([]);
+export function AdminFiltersPage() {
+  const [filters, setFilters] = useState<TransactionFilter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -15,17 +14,14 @@ export function AdminKybOptionsPage() {
     label: '',
     code: '',
     order: '',
-    active: true,
-    locale: 'en' as 'en' | 'ar'
+    active: true
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const categories = kybOptionsService.getCategories();
-
-  // Load options when category changes
+  // Load filters on mount
   useEffect(() => {
-    loadOptions();
-  }, [selectedCategory]);
+    loadFilters();
+  }, []);
 
   // Clear success message after 3 seconds
   useEffect(() => {
@@ -35,18 +31,18 @@ export function AdminKybOptionsPage() {
     }
   }, [successMessage]);
 
-  const loadOptions = async () => {
+  const loadFilters = async () => {
     setIsLoading(true);
     setError('');
     try {
-      console.log('Loading options for category:', selectedCategory);
-      const response = await kybOptionsService.listOptions(selectedCategory);
+      console.log('Loading transaction filters...');
+      const response = await filterService.listFilters();
       console.log('Received response:', response);
-      setOptions(Array.isArray(response.items) ? response.items : []);
+      setFilters(Array.isArray(response.items) ? response.items : []);
     } catch (err) {
-      console.error('Error loading options:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load options');
-      setOptions([]); // Set empty array on error
+      console.error('Error loading filters:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load filters');
+      setFilters([]);
     } finally {
       setIsLoading(false);
     }
@@ -57,8 +53,7 @@ export function AdminKybOptionsPage() {
       label: '',
       code: '',
       order: '',
-      active: true,
-      locale: 'en'
+      active: true
     });
     setFormErrors({});
     setIsDrawerOpen(true);
@@ -70,8 +65,7 @@ export function AdminKybOptionsPage() {
       label: '',
       code: '',
       order: '',
-      active: true,
-      locale: 'en'
+      active: true
     });
     setFormErrors({});
   };
@@ -98,60 +92,58 @@ export function AdminKybOptionsPage() {
 
     setIsCreating(true);
     try {
-      const payload: CreateKybOptionRequest = {
-        category: selectedCategory,
+      const payload: CreateFilterRequest = {
         label: formData.label.trim(),
         code: formData.code.trim() || undefined,
         order: formData.order ? Number(formData.order) : undefined,
-        active: formData.active,
-        locale: formData.locale
+        active: formData.active
       };
 
-      await kybOptionsService.createOption(payload);
+      await filterService.createFilter(payload);
       
       // Success - close drawer and refresh list
       closeDrawer();
-      setSuccessMessage('Option created successfully!');
-      await loadOptions();
+      setSuccessMessage('Filter created successfully!');
+      await loadFilters();
     } catch (err) {
       setFormErrors({
-        submit: err instanceof Error ? err.message : 'Failed to create option'
+        submit: err instanceof Error ? err.message : 'Failed to create filter'
       });
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleToggleStatus = async (option: KybOption) => {
+  const handleToggleStatus = async (filter: TransactionFilter) => {
     try {
-      await kybOptionsService.toggleOptionStatus(selectedCategory, option.id, !option.active);
-      setSuccessMessage(`Option ${!option.active ? 'activated' : 'deactivated'} successfully!`);
-      await loadOptions();
+      await filterService.toggleFilterStatus(filter.id, !filter.active);
+      setSuccessMessage(`Filter ${!filter.active ? 'activated' : 'deactivated'} successfully!`);
+      await loadFilters();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update option status');
+      setError(err instanceof Error ? err.message : 'Failed to update filter status');
     }
   };
 
-  const handleDelete = async (option: KybOption) => {
-    if (!confirm(`Are you sure you want to delete the option "${option.label}"?`)) {
+  const handleDelete = async (filter: TransactionFilter) => {
+    if (!confirm(`Are you sure you want to delete the filter "${filter.label}"?`)) {
       return;
     }
 
     try {
-      await kybOptionsService.deleteOption(selectedCategory, option.id);
-      setSuccessMessage('Option deleted successfully!');
-      await loadOptions();
+      await filterService.deleteFilter(filter.id);
+      setSuccessMessage('Filter deleted successfully!');
+      await loadFilters();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete option');
+      setError(err instanceof Error ? err.message : 'Failed to delete filter');
     }
   };
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Manage KYB Options</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Transaction Type Filters</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Configure dropdown options for KYB forms
+          Manage transaction type filters for the application
         </p>
       </div>
 
@@ -171,33 +163,12 @@ export function AdminKybOptionsPage() {
         </div>
       )}
 
-      {/* Category Selector */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {categories.map((category) => (
-              <button
-                key={category.value}
-                onClick={() => setSelectedCategory(category.value)}
-                className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
-                  selectedCategory === category.value
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {category.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-medium text-gray-900">
-              {kybOptionsService.getCategoryDisplayName(selectedCategory)} Options
+              All Transaction Filters
             </h3>
             <button
               onClick={openAddDrawer}
@@ -206,7 +177,7 @@ export function AdminKybOptionsPage() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              Add Option
+              Add Filter
             </button>
           </div>
 
@@ -217,14 +188,14 @@ export function AdminKybOptionsPage() {
             </div>
           )}
 
-          {/* Options Table */}
+          {/* Filters Table */}
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-          ) : options.length === 0 ? (
+          ) : filters.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">No options found for this category.</p>
+              <p className="text-gray-500">No filters found.</p>
             </div>
           ) : (
             <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
@@ -244,58 +215,50 @@ export function AdminKybOptionsPage() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Locale
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {options.map((option) => (
-                    <tr key={option.id} className="hover:bg-gray-50 transition-colors">
+                  {filters.map((filter) => (
+                    <tr key={filter.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold">
-                          {option.order}
+                          {filter.order}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {option.label}
+                        {filter.label}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                          {option.code || '-'}
+                          {filter.code || '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                          option.active 
+                          filter.active 
                             ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-600/20' 
                             : 'bg-rose-100 text-rose-700 ring-1 ring-rose-600/20'
                         }`}>
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 8 8">
                             <circle cx="4" cy="4" r="3" />
                           </svg>
-                          {option.active ? 'Available' : 'Unavailable'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
-                          {option.locale ? option.locale.toUpperCase() : 'EN'}
+                          {filter.active ? 'Available' : 'Unavailable'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleToggleStatus(option)}
+                            onClick={() => handleToggleStatus(filter)}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                              option.active 
+                              filter.active 
                                 ? 'bg-orange-50 text-orange-700 hover:bg-orange-100 ring-1 ring-orange-200 hover:ring-orange-300' 
                                 : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 ring-1 ring-emerald-200 hover:ring-emerald-300'
                             }`}
-                            title={option.active ? 'Make Unavailable' : 'Make Available'}
+                            title={filter.active ? 'Make Unavailable' : 'Make Available'}
                           >
-                            {option.active ? (
+                            {filter.active ? (
                               <>
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -311,9 +274,9 @@ export function AdminKybOptionsPage() {
                               </>
                             )}
                           </button>
-                          {parseInt(option.id) >= 1000 && (
+                          {parseInt(filter.id) > 17 && (
                             <button
-                              onClick={() => handleDelete(option)}
+                              onClick={() => handleDelete(filter)}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 ring-1 ring-red-200 hover:ring-red-300 transition-all duration-200"
                               title="Delete"
                             >
@@ -334,7 +297,7 @@ export function AdminKybOptionsPage() {
         </div>
       </div>
 
-      {/* Add Option Drawer */}
+      {/* Add Filter Drawer */}
       {isDrawerOpen && (
         <div className="fixed inset-0 overflow-hidden z-50">
           <div className="absolute inset-0 overflow-hidden">
@@ -344,7 +307,7 @@ export function AdminKybOptionsPage() {
                 <div className="h-full flex flex-col bg-white shadow-xl">
                   <div className="flex-1 py-6 overflow-y-auto px-4 sm:px-6">
                     <div className="flex items-start justify-between">
-                      <h2 className="text-lg font-medium text-gray-900">Add New Option</h2>
+                      <h2 className="text-lg font-medium text-gray-900">Add New Filter</h2>
                       <div className="ml-3 h-7 flex items-center">
                         <button
                           onClick={closeDrawer}
@@ -359,14 +322,6 @@ export function AdminKybOptionsPage() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-                      {/* Category (readonly) */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Category</label>
-                        <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-500">
-                          {kybOptionsService.getCategoryDisplayName(selectedCategory)}
-                        </div>
-                      </div>
-
                       {/* Label */}
                       <div>
                         <label htmlFor="label" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -382,7 +337,7 @@ export function AdminKybOptionsPage() {
                               ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                               : 'border-gray-200 focus:border-blue-500 focus:ring-blue-500'
                           } focus:ring-2 focus:ring-opacity-20`}
-                          placeholder="Enter option label"
+                          placeholder="Enter filter label"
                         />
                         {formErrors.label && (
                           <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
@@ -405,7 +360,7 @@ export function AdminKybOptionsPage() {
                           value={formData.code}
                           onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
                           className="block w-full px-4 py-2.5 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-colors"
-                          placeholder="OPTION_CODE"
+                          placeholder="filter_code"
                         />
                       </div>
 
@@ -450,22 +405,6 @@ export function AdminKybOptionsPage() {
                         </label>
                       </div>
 
-                      {/* Locale */}
-                      <div>
-                        <label htmlFor="locale" className="block text-sm font-semibold text-gray-700 mb-2">
-                          Locale
-                        </label>
-                        <select
-                          id="locale"
-                          value={formData.locale}
-                          onChange={(e) => setFormData(prev => ({ ...prev, locale: e.target.value as 'en' | 'ar' }))}
-                          className="block w-full px-4 py-2.5 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-colors cursor-pointer"
-                        >
-                          <option value="en">🌐 English</option>
-                          <option value="ar">🌐 Arabic</option>
-                        </select>
-                      </div>
-
                       {/* Submit Error */}
                       {formErrors.submit && (
                         <div className="rounded-md bg-red-50 p-4">
@@ -505,7 +444,7 @@ export function AdminKybOptionsPage() {
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                           </svg>
-                          Create Option
+                          Create Filter
                         </>
                       )}
                     </button>
@@ -519,3 +458,4 @@ export function AdminKybOptionsPage() {
     </div>
   );
 }
+

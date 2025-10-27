@@ -21,17 +21,19 @@ export default function KYBPage() {
   const [sourceOfFundsOther, setSourceOfFundsOther] = useState("");
   const [expectedTransactionType, setExpectedTransactionType] = useState("");
   const [expectedMonthlyVolume, setExpectedMonthlyVolume] = useState("");
-  const [purposeOfAccount, setPurposeOfAccount] = useState<string[]>(['receiving-payments']);
+  const [purposeOfAccount, setPurposeOfAccount] = useState<string[]>([]);
   const [purposeOther, setPurposeOther] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   
   // API options state
   const [kybOptions, setKybOptions] = useState<{
+    sourceOfFunds: PublicKybOption[];
     purposeOfAccount: PublicKybOption[];
     businessActivity: PublicKybOption[];
     annualRevenue: PublicKybOption[];
   }>({
+    sourceOfFunds: [],
     purposeOfAccount: [],
     businessActivity: [],
     annualRevenue: []
@@ -255,12 +257,11 @@ export default function KYBPage() {
                         disabled={isLoadingOptions}
                       >
                         <option value="">Select your Source of Funds</option>
-                        <option value="sales">Sales</option>
-                        <option value="investments">Investments</option>
-                        <option value="loans">Loans</option>
-                        <option value="donations">Donations</option>
-                        <option value="freelance">Freelance</option>
-                        <option value="other">Other</option>
+                        {kybOptions.sourceOfFunds.map((option) => (
+                          <option key={option.id} value={option.code || option.label.toLowerCase().replace(/\s+/g, '-')}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                       <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                         <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -339,11 +340,12 @@ export default function KYBPage() {
                         }}
                         disabled={isLoadingOptions}
                       >
-                        <option value="">payroll processing</option>
-                        <option value="payroll-processing">payroll processing</option>
-                        <option value="domestic-transfer">Domestic transfer</option>
-                        <option value="international-transfer">International transfer</option>
-                        <option value="deposit">Deposit</option>
+                        <option value="">Select Expected Transaction Type</option>
+                        {kybOptions.businessActivity.map((option) => (
+                          <option key={option.id} value={option.code || option.label.toLowerCase().replace(/\s+/g, '-')}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                       <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                         <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -386,13 +388,11 @@ export default function KYBPage() {
                         disabled={isLoadingOptions}
                       >
                         <option value="">Select expected monthly volume</option>
-                        <option value="less-than-500k">Less than 500,000</option>
-                        <option value="500k-1m">500,000 to 1,000,000</option>
-                        <option value="1m-2.5m">1,000,000 to 2,500,000</option>
-                        <option value="2.5m-5m">2,500,000 to 5,000,000</option>
-                        <option value="5m-20m">5,000,000 to 20,000,000</option>
-                        <option value="20m-40m">20,000,000 to 40,000,000</option>
-                        <option value="more-than-40m">More than 40,000,000</option>
+                        {kybOptions.annualRevenue.map((option) => (
+                          <option key={option.id} value={option.code || option.label.toLowerCase().replace(/\s+/g, '-')}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                       <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                         <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -414,40 +414,36 @@ export default function KYBPage() {
                     </label>
                     
                     <div className="space-y-2">
-                      {[
-                        { id: 'receiving-payments', label: 'Receiving payments from customers for services/goods' },
-                        { id: 'paying-suppliers', label: 'Paying suppliers' },
-                        { id: 'managing-cash', label: 'Managing petty cash' },
-                        { id: 'distributing-funds', label: 'Distributing funds' },
-                        { id: 'receiving-disbursements', label: 'Receiving disbursements' },
-                        { id: 'donations', label: 'Donations' },
-                        { id: 'other', label: 'Other' }
-                      ].map((purpose) => (
-                        <label key={purpose.id} className="flex items-center gap-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={purposeOfAccount.includes(purpose.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setPurposeOfAccount([...purposeOfAccount, purpose.id]);
-                              } else {
-                                setPurposeOfAccount(purposeOfAccount.filter(p => p !== purpose.id));
-                                if (purpose.id === 'other') {
-                                  setPurposeOther("");
+                      {kybOptions.purposeOfAccount.map((option) => {
+                        const optionId = option.code || option.label.toLowerCase().replace(/\s+/g, '-');
+                        return (
+                          <label key={option.id} className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={purposeOfAccount.includes(optionId)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setPurposeOfAccount([...purposeOfAccount, optionId]);
+                                } else {
+                                  setPurposeOfAccount(purposeOfAccount.filter(p => p !== optionId));
+                                  if (optionId === 'other') {
+                                    setPurposeOther("");
+                                  }
                                 }
-                              }
-                              setShowErrors(false);
-                            }}
-                            className="w-4 h-4 rounded focus:ring-2 focus:ring-[#00BDFF]"
-                          style={{
-                            accentColor: '#00BDFF',
-                            border: purposeOfAccount.includes(purpose.id) ? 'none' : '1px solid #E5E5E5',
-                            backgroundColor: purposeOfAccount.includes(purpose.id) ? '#00BDFF' : 'transparent'
-                          }}
-                          />
-                          <span className="text-sm text-gray-700">{purpose.label}</span>
-                        </label>
-                      ))}
+                                setShowErrors(false);
+                              }}
+                              className="w-4 h-4 rounded focus:ring-2 focus:ring-[#00BDFF]"
+                              disabled={isLoadingOptions}
+                              style={{
+                                accentColor: '#00BDFF',
+                                border: purposeOfAccount.includes(optionId) ? 'none' : '1px solid #E5E5E5',
+                                backgroundColor: purposeOfAccount.includes(optionId) ? '#00BDFF' : 'transparent'
+                              }}
+                            />
+                            <span className="text-sm text-gray-700">{option.label}</span>
+                          </label>
+                        );
+                      })}
                     </div>
 
                     {showErrors && validatePurposeOfAccount(purposeOfAccount) && (

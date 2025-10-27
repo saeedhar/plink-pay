@@ -1,14 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar, Header } from '../components';
 import { FiFilter, FiRefreshCw, FiDownload, FiSearch } from 'react-icons/fi';
+import { fetchTransactionFilters, type TransactionFilter } from '../../../services/transactionFiltersService';
 
 const Transactions: React.FC = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [filters, setFilters] = useState({
     status: 'Successful',
-    transactionType: 'Wallet Top_Up',
+    transactionType: '',
     merchant: ''
   });
+  const [transactionTypes, setTransactionTypes] = useState<TransactionFilter[]>([]);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(true);
+
+  // Fetch transaction filters on mount
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        setIsLoadingFilters(true);
+        const filters = await fetchTransactionFilters();
+        setTransactionTypes(filters);
+        // Set first filter as default if available
+        if (filters.length > 0) {
+          setFilters(prev => ({ ...prev, transactionType: filters[0].label }));
+        }
+      } catch (error) {
+        console.error('Failed to load transaction filters:', error);
+      } finally {
+        setIsLoadingFilters(false);
+      }
+    };
+
+    loadFilters();
+  }, []);
 
   const transactions = [
     {
@@ -90,12 +114,22 @@ const Transactions: React.FC = () => {
                     className="status-dropdown"
                     value={filters.transactionType}
                     onChange={(e) => setFilters({...filters, transactionType: e.target.value})}
+                    disabled={isLoadingFilters}
                   >
-                    <option value="Wallet Top_Up">Wallet Top_Up</option>
-                    <option value="Credit Card Topup">Credit Card Topup</option>
-                    <option value="Mobile Recharge">Mobile Recharge</option>
-                    <option value="Transfer">Transfer</option>
-                    <option value="Bill Payment">Bill Payment</option>
+                    {isLoadingFilters ? (
+                      <option value="">Loading...</option>
+                    ) : transactionTypes.length === 0 ? (
+                      <option value="">No transaction types available</option>
+                    ) : (
+                      <>
+                        <option value="">All Transaction Types</option>
+                        {transactionTypes.map((filter) => (
+                          <option key={filter.id} value={filter.label}>
+                            {filter.label}
+                          </option>
+                        ))}
+                      </>
+                    )}
                   </select>
                 </div>
 
