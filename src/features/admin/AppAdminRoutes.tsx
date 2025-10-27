@@ -5,6 +5,8 @@ import { AdminLayout } from './components/AdminLayout';
 import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminHomePage } from './pages/AdminHomePage';
 import { AdminKybOptionsPage } from './pages/AdminKybOptionsPage';
+import { AdminUserManagementPage } from './pages/AdminUserManagementPage';
+import { AdminFiltersPage } from './pages/AdminFiltersPage';
 
 export function AppAdminRoutes() {
   if (import.meta.env.VITE_ADMIN_ENABLED !== 'true') {
@@ -28,6 +30,8 @@ export function AppAdminRoutes() {
         >
           <Route index element={<AdminHomePage />} />
           <Route path="kyb-options" element={<AdminKybOptionsPage />} />
+          <Route path="users" element={<AdminUserManagementPage />} />
+          <Route path="filters" element={<AdminFiltersPage />} />
         </Route>
       </Routes>
     </AdminAuthProvider>

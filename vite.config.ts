@@ -15,6 +15,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (p) => p
+      },
+      // Admin API routes
+      '/api/admin': {
+        target: 'http://101.46.58.237:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (p) => p
       }
     }
   }

@@ -1,9 +1,14 @@
+import { apiUrl } from '../../../lib/api';
+
 /**
  * HTTP wrapper for admin API calls that automatically injects Authorization header
  */
-export async function adminHttp<T = unknown>(url: string, init: RequestInit = {}): Promise<T> {
+export async function adminHttp<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
   // Get token from sessionStorage
   const token = (sessionStorage.getItem('admin_token') ?? '').trim();
+  
+  // Build full URL - use apiUrl for consistency with other services
+  const url = apiUrl(path);
   
   console.log('AdminHttp: Making request to', url, 'with token:', token ? 'present' : 'missing');
   
@@ -44,6 +49,15 @@ export async function adminHttp<T = unknown>(url: string, init: RequestInit = {}
     throw new Error(errorMessage);
   }
   
-  // Parse JSON response
+  // Parse JSON response - handle empty responses (like DELETE)
+  const contentType = response.headers.get('Content-Type');
+  const contentLength = response.headers.get('Content-Length');
+  
+  // If no content or empty response, return null
+  if (contentLength === '0' || !contentType?.includes('application/json')) {
+    const text = await response.text();
+    if (!text) return null as T;
+  }
+  
   return response.json() as Promise<T>;
 }

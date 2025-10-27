@@ -6,6 +6,7 @@ import limitsIcon from '../../../assets/limits.svg';
 import limitsIcon2 from '../../../assets/wallet-managment/limits.svg';
 import currentIcon from '../../../assets/current.svg';
 import checkCircle from '../../../assets/check_circle.svg';
+import { fetchTransactionFilters, type TransactionFilter } from '../../../services/transactionFiltersService';
 
 const LimitsConfiguration: React.FC = () => {
   const navigate = useNavigate();
@@ -25,29 +26,12 @@ const LimitsConfiguration: React.FC = () => {
   const [otpError, setOtpError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [generatedOTP, setGeneratedOTP] = useState('');
-  const [selectedTransaction, setSelectedTransaction] = useState('Wallet Top-up');
+  const [selectedTransaction, setSelectedTransaction] = useState('');
   const [showTransactionDropdown, setShowTransactionDropdown] = useState(false);
 
-  // Transaction types data
-  const transactionTypes = [
-    'Wallet Top-up',
-    'MADA Card Topup',
-    'Credit Card Topup',
-    'Merchant Payment',
-    'Apple Pay Topup',
-    'Bill Payment',
-    'Government Bill Payment',
-    'Wallet-to-Bank Transfer',
-    'Reversal Transaction',
-    'Local ATM Cash Withdrawal',
-    'International ATM Cash Withdrawal',
-    'Local POS Transaction',
-    'International POS Transaction',
-    'Local Online Purchase',
-    'International Online Purchase',
-    'Refund transaction',
-    'Reversal transaction'
-  ];
+  // Transaction types data from backend
+  const [transactionTypes, setTransactionTypes] = useState<TransactionFilter[]>([]);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(true);
 
   // Generate random OTP
   const generateOTP = () => {
@@ -55,6 +39,27 @@ const LimitsConfiguration: React.FC = () => {
     setGeneratedOTP(randomOTP);
     return randomOTP;
   };
+
+  // Fetch transaction filters on mount
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        setIsLoadingFilters(true);
+        const filters = await fetchTransactionFilters();
+        setTransactionTypes(filters);
+        // Set first filter as default if available
+        if (filters.length > 0 && !selectedTransaction) {
+          setSelectedTransaction(filters[0].label);
+        }
+      } catch (error) {
+        console.error('Failed to load transaction filters:', error);
+      } finally {
+        setIsLoadingFilters(false);
+      }
+    };
+
+    loadFilters();
+  }, []);
 
   useEffect(() => {
     const root = document.getElementById('root');
@@ -552,8 +557,9 @@ const LimitsConfiguration: React.FC = () => {
                               type="button"
                               onClick={() => setShowTransactionDropdown(!showTransactionDropdown)}
                               className="transaction-dropdown-button"
+                              disabled={isLoadingFilters}
                             >
-                              <span>{selectedTransaction}</span>
+                              <span>{selectedTransaction || 'Loading...'}</span>
                               <svg className="transaction-dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
                                 <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
@@ -571,16 +577,22 @@ const LimitsConfiguration: React.FC = () => {
                                   </svg>
                                 </div>
                                 <div className="transaction-dropdown-list">
-                                  {transactionTypes.map((transaction, index) => (
-                                    <button
-                                      key={index}
-                                      type="button"
-                                      onClick={() => handleTransactionSelect(transaction)}
-                                      className={`transaction-dropdown-item ${selectedTransaction === transaction ? 'selected' : ''}`}
-                                    >
-                                      {transaction}
-                                    </button>
-                                  ))}
+                                  {isLoadingFilters ? (
+                                    <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
+                                  ) : transactionTypes.length === 0 ? (
+                                    <div className="px-4 py-3 text-sm text-gray-500">No transaction types available</div>
+                                  ) : (
+                                    transactionTypes.map((filter) => (
+                                      <button
+                                        key={filter.id}
+                                        type="button"
+                                        onClick={() => handleTransactionSelect(filter.label)}
+                                        className={`transaction-dropdown-item ${selectedTransaction === filter.label ? 'selected' : ''}`}
+                                      >
+                                        {filter.label}
+                                      </button>
+                                    ))
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -669,8 +681,9 @@ const LimitsConfiguration: React.FC = () => {
                               type="button"
                               onClick={() => setShowTransactionDropdown(!showTransactionDropdown)}
                               className="transaction-dropdown-button"
+                              disabled={isLoadingFilters}
                             >
-                              <span>{selectedTransaction}</span>
+                              <span>{selectedTransaction || 'Loading...'}</span>
                               <svg className="transaction-dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
                                 <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
@@ -688,16 +701,22 @@ const LimitsConfiguration: React.FC = () => {
                                   </svg>
                                 </div>
                                 <div className="transaction-dropdown-list">
-                                  {transactionTypes.map((transaction, index) => (
-                                    <button
-                                      key={index}
-                                      type="button"
-                                      onClick={() => handleTransactionSelect(transaction)}
-                                      className={`transaction-dropdown-item ${selectedTransaction === transaction ? 'selected' : ''}`}
-                                    >
-                                      {transaction}
-                                    </button>
-                                  ))}
+                                  {isLoadingFilters ? (
+                                    <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
+                                  ) : transactionTypes.length === 0 ? (
+                                    <div className="px-4 py-3 text-sm text-gray-500">No transaction types available</div>
+                                  ) : (
+                                    transactionTypes.map((filter) => (
+                                      <button
+                                        key={filter.id}
+                                        type="button"
+                                        onClick={() => handleTransactionSelect(filter.label)}
+                                        className={`transaction-dropdown-item ${selectedTransaction === filter.label ? 'selected' : ''}`}
+                                      >
+                                        {filter.label}
+                                      </button>
+                                    ))
+                                  )}
                                 </div>
                               </div>
                             )}
