@@ -515,8 +515,7 @@ export function AdminUserManagementPage() {
                         </div>
                       </div>
 
-                      {drawerMode === 'edit' && (
-                        <>
+                      <>
                           {/* Lock Reason */}
                           <div>
                             <label htmlFor="lockReason" className="block text-sm font-medium text-gray-700">
@@ -551,8 +550,7 @@ export function AdminUserManagementPage() {
                               </select>
                             </div>
                           </div>
-                        </>
-                      )}
+                      </>
 
                       {/* Submit Error */}
                       {formErrors.submit && (

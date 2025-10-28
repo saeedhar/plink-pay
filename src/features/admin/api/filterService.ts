@@ -27,11 +27,7 @@ export class FilterService {
    * Get all transaction type filters
    */
   async listFilters(): Promise<FiltersListResponse> {
-    const response = await fetch('/api/v1/filters/transaction-types');
-    if (!response.ok) {
-      throw new Error(`Failed to fetch filters: ${response.status}`);
-    }
-    return await response.json();
+    return adminHttp<FiltersListResponse>('/api/admin/filters');
   }
 
   /**
