@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import DeactivateWalletModal from '../../../components/modals/DeactivateWalletModal';
 import ActivateWalletModal from '../../../components/modals/ActivateWalletModal';
+import { WalletService, WalletStatus, WalletBalance } from '../../../services/walletService';
 import walletManagementIcon from '../../../assets/wallet-managment/wallet-managment.svg';
 import statusIcon from '../../../assets/wallet-managment/status.svg';
 import limitsIcon from '../../../assets/wallet-managment/limits.svg';
@@ -13,6 +14,10 @@ const Wallet: React.FC = () => {
   const [isWalletActive, setIsWalletActive] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
+  const [walletStatus, setWalletStatus] = useState<WalletStatus | null>(null);
+  const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const root = document.getElementById('root');
@@ -26,6 +31,11 @@ const Wallet: React.FC = () => {
     };
   }, []);
 
+  // Load wallet data on component mount
+  useEffect(() => {
+    loadWalletData();
+  }, []);
+
   // Check for completed OTP verification
   useEffect(() => {
     const actionCompleted = localStorage.getItem('walletActionCompleted');
@@ -34,8 +44,12 @@ const Wallet: React.FC = () => {
     if (actionCompleted === 'true' && action) {
       if (action === 'activate') {
         setIsWalletActive(true);
+        // Reload wallet data after activation
+        loadWalletData();
       } else if (action === 'deactivate') {
         setIsWalletActive(false);
+        // Reload wallet data after deactivation
+        loadWalletData();
       }
       
       // Clear the stored action
@@ -43,6 +57,35 @@ const Wallet: React.FC = () => {
       localStorage.removeItem('walletActionCompleted');
     }
   }, []);
+
+  // Load wallet data from API
+  const loadWalletData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Load wallet status and balance in parallel
+      const [status, balance] = await Promise.all([
+        WalletService.getStatus(),
+        WalletService.getBalance()
+      ]);
+      
+      setWalletStatus(status);
+      setWalletBalance(balance);
+      setIsWalletActive(status.isActive);
+      
+      console.log('🔍 Wallet data loaded:', {
+        status: status,
+        balance: balance,
+        isWalletActive: status.isActive
+      });
+    } catch (err) {
+      console.error('Error loading wallet data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load wallet data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleToggleChange = () => {
     if (isWalletActive) {
@@ -109,11 +152,17 @@ const Wallet: React.FC = () => {
                   <div className="wallet-section-info">
                     <h3 className="wallet-section-title">Wallet Status</h3>
                     <p className="wallet-section-description">
-                      {isWalletActive 
-                        ? "Wallet is activated. You can use all services." 
-                        : "Wallet is deactivated. Reactivate to use services."
-                      }
+                      {isLoading ? (
+                        "Loading wallet status..."
+                      ) : error ? (
+                        `Error: ${error}`
+                      ) : isWalletActive ? (
+                        "Wallet is activated. You can use all services."
+                      ) : (
+                        "Wallet is deactivated. Reactivate to use services."
+                      )}
                     </p>
+                    
                   </div>
                 </div>
                 <div className="wallet-section-control">

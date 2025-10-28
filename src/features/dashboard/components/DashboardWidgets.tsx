@@ -1,22 +1,77 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VictoryChart, VictoryLine, VictoryAxis, VictoryTooltip, VictoryVoronoiContainer } from 'victory';
 import placeholderChart from '../../../assets/dashboard/placeholderchart.svg';
 import upIcon from '../../../assets/dashboard/up.svg';
 import walletIcon from '../../../assets/dashboard/wallet.svg';
 import onholdIcon from '../../../assets/onhold.svg';
+import { TransactionService, WalletBalanceResponse } from '../../../services/transactionService';
+import { WalletService, SubWalletData } from '../../../services/walletService';
 
 interface DashboardWidgetsProps {
   subWalletName?: string;
+  subWalletId?: string;
   isSubWallet?: boolean;
 }
 
-const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ subWalletName, isSubWallet }) => {
+const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ subWalletName, subWalletId, isSubWallet }) => {
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState('Last week');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<WalletBalanceResponse | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [subWalletData, setSubWalletData] = useState<SubWalletData | null>(null);
+  const [isLoadingSubWallet, setIsLoadingSubWallet] = useState(false);
+  const [subWalletError, setSubWalletError] = useState<string | null>(null);
 
   const periods = ['Last week', 'Last month', 'Last year'];
+
+  // Fetch wallet balance on component mount
+  useEffect(() => {
+    const loadWalletBalance = async () => {
+      try {
+        setIsLoadingBalance(true);
+        setBalanceError(null);
+        const balance = await TransactionService.getWalletBalance();
+        setWalletBalance(balance);
+        console.log('🔍 Wallet balance loaded:', balance);
+      } catch (error) {
+        console.error('Error loading wallet balance:', error);
+        setBalanceError(error instanceof Error ? error.message : 'Failed to load balance');
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    };
+
+    loadWalletBalance();
+  }, []);
+
+  // Fetch sub-wallet data when sub-wallet is selected
+  useEffect(() => {
+    const loadSubWalletData = async () => {
+      if (isSubWallet && subWalletId) {
+        try {
+          setIsLoadingSubWallet(true);
+          setSubWalletError(null);
+          const subWallet = await WalletService.getSubWalletDetails(subWalletId);
+          setSubWalletData(subWallet);
+          console.log('🔍 Sub-wallet data loaded:', subWallet);
+        } catch (error) {
+          console.error('Error loading sub-wallet data:', error);
+          setSubWalletError(error instanceof Error ? error.message : 'Failed to load sub-wallet data');
+        } finally {
+          setIsLoadingSubWallet(false);
+        }
+      } else {
+        // Clear sub-wallet data when not viewing a sub-wallet
+        setSubWalletData(null);
+        setSubWalletError(null);
+      }
+    };
+
+    loadSubWalletData();
+  }, [isSubWallet, subWalletId]);
 
   // Memoized chart data to prevent re-renders
   const chartData = useMemo(() => {
@@ -79,13 +134,31 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ subWalletName, isSu
           <div className="on-hold-icon">
             <img src={onholdIcon} alt="On Hold" className="on-hold-icon-img" />
           </div>
-          <span className="on-hold-text">On Hold Balance : 400 SAR</span>
+          <span className="on-hold-text">
+            On Hold Balance: {
+              isSubWallet ? (
+                // Show sub-wallet on-hold balance
+                isLoadingSubWallet ? 'Loading...' : subWalletError ? 'Error' : subWalletData ? TransactionService.formatCurrency(subWalletData.onHoldBalance, 'SAR') : '0.00 SAR'
+              ) : (
+                // Show main wallet on-hold balance
+                isLoadingBalance ? 'Loading...' : balanceError ? 'Error' : walletBalance ? TransactionService.formatCurrency(walletBalance.onHoldBalance, walletBalance.currency) : '0.00 SAR'
+              )
+            }
+          </span>
         </div>
         {isSubWallet && subWalletName && (
           <h2 className="subwallet-name">{subWalletName}</h2>
         )}
         <h3 className="widget-title">Your Balance</h3>
-        <div className="balance-amount">SAR 2.400,00</div>
+        <div className="balance-amount">
+          {isSubWallet ? (
+            // Show sub-wallet balance
+            isLoadingSubWallet ? 'Loading...' : subWalletError ? 'Error' : subWalletData ? TransactionService.formatCurrency(subWalletData.availableBalance, 'SAR') : '0.00 SAR'
+          ) : (
+            // Show main wallet balance
+            isLoadingBalance ? 'Loading...' : balanceError ? 'Error' : walletBalance ? TransactionService.formatCurrency(walletBalance.availableBalance, walletBalance.currency) : '0.00 SAR'
+          )}
+        </div>
         <div className="balance-change">
           <img src={upIcon} alt="Up" className="change-icon" />
           <span className="change-text positive">+0.5%</span>

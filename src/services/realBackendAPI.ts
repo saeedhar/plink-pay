@@ -341,6 +341,78 @@ export async function verifyLoginOtp(request: VerifyLoginOtpRequest): Promise<Lo
   return await response.json();
 }
 
+export interface CallbackStatusResponse {
+  status: 'pending' | 'completed' | 'failed' | 'expired';
+  message: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+}
+
+export interface CallbackCompleteResponse {
+  success: boolean;
+  message: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  userId?: string;
+}
+
+/**
+ * Check callback verification status
+ */
+export async function checkCallbackStatus(callbackId: string): Promise<CallbackStatusResponse> {
+  const response = await fetch(apiUrl(`/api/v1/auth/callback-status/${callbackId}`), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to check callback status: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Complete callback verification (for testing/development)
+ */
+export async function completeCallback(callbackId: string): Promise<CallbackCompleteResponse> {
+  // Create device info object like mobile app does
+  const deviceInfo = {
+    platform: 'web',
+    userAgent: navigator.userAgent,
+    screenResolution: `${window.screen.width}x${window.screen.height}`,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    ipAddress: undefined // Not available in browser
+  };
+
+  console.log('📡 Calling callback complete endpoint:', `/api/v1/auth/callback-complete/${callbackId}`);
+  console.log('📦 Request payload:', JSON.stringify(deviceInfo, null, 2));
+
+  const response = await fetch(apiUrl(`/api/v1/auth/callback-complete/${callbackId}`), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(deviceInfo),
+  });
+
+  console.log('📦 Response status:', response.status);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ Callback complete failed:', errorText);
+    throw new Error(`Failed to complete callback: ${response.status}`);
+  }
+
+  const result = await response.json();
+  console.log('📦 Response data:', JSON.stringify(result, null, 2));
+  return result;
+}
+
 export async function checkPhoneUniqueness(request: PhoneUniquenessRequest): Promise<PhoneUniquenessResponse> {
   const response = await fetch(apiUrl('/api/v1/auth/check-phone-uniqueness'), {
     method: 'POST',

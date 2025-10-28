@@ -17,6 +17,7 @@ export interface TransactionFiltersResponse {
  */
 export async function fetchTransactionFilters(): Promise<TransactionFilter[]> {
   try {
+    console.log('🔍 Fetching transaction filters from backend...');
     const response = await fetch(apiUrl('/api/v1/filters/transaction-types'));
     
     if (!response.ok) {
@@ -24,11 +25,15 @@ export async function fetchTransactionFilters(): Promise<TransactionFilter[]> {
     }
     
     const data: TransactionFiltersResponse = await response.json();
+    console.log('✅ Transaction filters received:', data);
     
     // Filter to only return active filters, sorted by order
-    return data.items
+    const activeFilters = data.items
       .filter(filter => filter.active)
       .sort((a, b) => a.order - b.order);
+    
+    console.log('✅ Active transaction filters:', activeFilters);
+    return activeFilters;
   } catch (error) {
     console.error('Error fetching transaction filters:', error);
     throw error;

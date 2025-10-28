@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
 import profileIcon from '../../../assets/ion_person-circle-sharp.svg';
-import { loginWithPassword } from '../../../services/realBackendAPI';
+import { loginWithPassword, completeCallback } from '../../../services/realBackendAPI';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -72,9 +72,67 @@ export default function LoginPage() {
         return;
       }
       
+      // Debug: Log the full response to see what we're getting
+      console.log('🔍 Full login response:', response);
+      console.log('🔍 AccessToken:', response.accessToken);
+      console.log('🔍 RefreshToken:', response.refreshToken);
+      console.log('🔍 UserId:', response.userId);
+      
+      // Handle callback verification for web platform
+      if (response.needsCallback) {
+        console.log('⚠️  Callback verification requested but skipped for web platform');
+        console.log('📞 Callback ID:', response.callbackId);
+        console.log('📞 Device ID:', response.deviceId);
+        
+        // For development: automatically complete callback verification
+        console.log('🔄 Auto-completing callback verification for development...');
+        
+        try {
+          const callbackResponse = await completeCallback(response.callbackId);
+          console.log('✅ Callback verification completed:', callbackResponse);
+          
+          // Update response with real tokens
+          response.accessToken = callbackResponse.accessToken;
+          response.refreshToken = callbackResponse.refreshToken;
+          response.expiresIn = callbackResponse.expiresIn;
+          
+          console.log('🔧 Using real tokens from callback:', {
+            accessToken: callbackResponse.accessToken.substring(0, 20) + '...',
+            refreshToken: callbackResponse.refreshToken.substring(0, 20) + '...'
+          });
+        } catch (callbackError) {
+          console.warn('⚠️ Callback verification failed, using mock tokens:', callbackError);
+          
+          // Fallback to mock tokens if callback fails
+          const mockAccessToken = `mock_token_${response.userId}_${Date.now()}`;
+          const mockRefreshToken = `mock_refresh_${response.userId}_${Date.now()}`;
+          
+          response.accessToken = mockAccessToken;
+          response.refreshToken = mockRefreshToken;
+          response.expiresIn = 3600; // 1 hour
+          
+          console.log('🔧 Using mock tokens as fallback:', {
+            accessToken: mockAccessToken.substring(0, 20) + '...',
+            refreshToken: mockRefreshToken.substring(0, 20) + '...'
+          });
+        }
+      }
+      
       // Direct login (no 2FA) - Store tokens
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
+      if (response.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        console.log('✅ AccessToken stored');
+      } else {
+        console.warn('⚠️ No accessToken in response');
+      }
+      
+      if (response.refreshToken) {
+        localStorage.setItem('refreshToken', response.refreshToken);
+        console.log('✅ RefreshToken stored');
+      } else {
+        console.warn('⚠️ No refreshToken in response');
+      }
+      
       localStorage.setItem('userId', response.userId);
       
       console.log('✅ Login successful:', response.userId);

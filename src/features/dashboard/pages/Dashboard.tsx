@@ -4,8 +4,9 @@ import { Sidebar, Header, DashboardWidgets, TransactionsTable } from '../compone
 
 const Dashboard: React.FC = () => {
   const location = useLocation();
-  const state = location.state as { subWalletName?: string; isSubWallet?: boolean } | null;
+  const state = location.state as { subWalletName?: string; subWalletId?: string; isSubWallet?: boolean } | null;
   const subWalletName = state?.subWalletName;
+  const subWalletId = state?.subWalletId;
   const isSubWallet = state?.isSubWallet;
 
   useEffect(() => {
@@ -30,7 +31,7 @@ const Dashboard: React.FC = () => {
         <Header />
         <div className="dashboard-content">
           <h1 className="dashboard-title">Dashboard</h1>
-          <DashboardWidgets subWalletName={subWalletName} isSubWallet={isSubWallet} />
+          <DashboardWidgets subWalletName={subWalletName} subWalletId={subWalletId} isSubWallet={isSubWallet} />
           <div className="transactions-separator"></div>
           <TransactionsTable />
         </div>

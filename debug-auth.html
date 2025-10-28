@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Authentication</title>
+</head>
+<body>
+    <h1>Authentication Debug</h1>
+    <div id="debug-info"></div>
+    
+    <script>
+        // Check what's in localStorage
+        const token = localStorage.getItem('accessToken');
+        const debugDiv = document.getElementById('debug-info');
+        
+        debugDiv.innerHTML = `
+            <h2>Token Status:</h2>
+            <p><strong>Token exists:</strong> ${token ? 'Yes' : 'No'}</p>
+            <p><strong>Token value:</strong> ${token ? token.substring(0, 20) + '...' : 'None'}</p>
+            <p><strong>Token length:</strong> ${token ? token.length : 0}</p>
+            
+            <h2>Test API Call:</h2>
+            <button onclick="testAPI()">Test Wallet Balance API</button>
+            <div id="api-result"></div>
+        `;
+        
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = 'Testing API call...';
+            
+            try {
+                const response = await fetch('/api/v1/wallet/balance', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }
+                });
+                
+                const data = await response.text();
+                
+                resultDiv.innerHTML = `
+                    <h3>API Response:</h3>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Status Text:</strong> ${response.statusText}</p>
+                    <p><strong>Response:</strong></p>
+                    <pre>${data}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>API Error:</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

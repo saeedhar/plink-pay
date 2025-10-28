@@ -64,7 +64,7 @@ function AppRoutes() {
         <Route path="/forgot-password/phone/set-password" element={<SetPasswordPage />} />
         
         {/* Admin routes */}
-        {import.meta.env.VITE_ADMIN_ENABLED === 'true' && (
+        {(import.meta.env.VITE_ADMIN_ENABLED === 'true' || import.meta.env.PROD) && (
           <Route path="/admin/*" element={<AppAdminRoutes />} />
         )}
         

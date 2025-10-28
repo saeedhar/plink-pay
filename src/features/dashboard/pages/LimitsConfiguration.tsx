@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { Button } from '../../../components/ui/Button';
+import { LimitsService, CurrentLimits, OverallLimits, LimitsOTPRequest, LimitsResponse, LimitItem, UpdateOverallLimitsRequest, UpdateTransactionLimitsRequest } from '../../../services/limitsService';
+import { API } from '../../../lib/api';
+import { fetchTransactionFilters, type TransactionFilter } from '../../../services/transactionFiltersService';
 import limitsIcon from '../../../assets/limits.svg';
 import limitsIcon2 from '../../../assets/wallet-managment/limits.svg';
 import currentIcon from '../../../assets/current.svg';
 import checkCircle from '../../../assets/check_circle.svg';
-import { fetchTransactionFilters, type TransactionFilter } from '../../../services/transactionFiltersService';
 
 const LimitsConfiguration: React.FC = () => {
   const navigate = useNavigate();
@@ -18,8 +20,10 @@ const LimitsConfiguration: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'daily' | 'monthly'>('daily');
   const [dailyLimit, setDailyLimit] = useState('');
   const [monthlyLimit, setMonthlyLimit] = useState('');
+  const [transactionLimit, setTransactionLimit] = useState(''); // New state for transaction-specific limit
   const [dailyLimitError, setDailyLimitError] = useState('');
   const [monthlyLimitError, setMonthlyLimitError] = useState('');
+  const [transactionLimitError, setTransactionLimitError] = useState(''); // New state for transaction limit error
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
@@ -32,33 +36,178 @@ const LimitsConfiguration: React.FC = () => {
   // Transaction types data from backend
   const [transactionTypes, setTransactionTypes] = useState<TransactionFilter[]>([]);
   const [isLoadingFilters, setIsLoadingFilters] = useState(true);
+  
+  // Limits data from backend
+  const [currentLimits, setCurrentLimits] = useState<CurrentLimits | null>(null);
+  const [overallLimits, setOverallLimits] = useState<OverallLimits | null>(null);
+  const [limitsData, setLimitsData] = useState<LimitsResponse | null>(null);
+  const [isLoadingLimits, setIsLoadingLimits] = useState(true);
+  const [limitsError, setLimitsError] = useState<string | null>(null);
+  const [realOTP, setRealOTP] = useState('');
+  const [isRequestingOTP, setIsRequestingOTP] = useState(false);
 
-  // Generate random OTP
-  const generateOTP = () => {
-    const randomOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOTP(randomOTP);
-    return randomOTP;
+  // Helper functions to get current limits from backend data
+  const getCurrentDailyLimit = (): number => {
+    if (!limitsData) return 0;
+    const dailyLimit = limitsData.limits.find(limit => 
+      limit.limitType === 'DAILY' && limit.overallLimit === true
+    );
+    return dailyLimit?.limitAmount || 0;
   };
 
-  // Fetch transaction filters on mount
+  const getCurrentMonthlyLimit = (): number => {
+    if (!limitsData) return 0;
+    const monthlyLimit = limitsData.limits.find(limit => 
+      limit.limitType === 'MONTHLY' && limit.overallLimit === true
+    );
+    return monthlyLimit?.limitAmount || 0;
+  };
+
+  const getCurrentTransactionLimit = (transactionLabel: string): number => {
+    if (!limitsData) return 0;
+    const transactionCode = getTransactionCode(transactionLabel);
+    const backendTransactionType = getBackendTransactionType(transactionCode);
+    const transactionLimit = limitsData.limits.find(limit => 
+      limit.limitType === 'DAILY' && 
+      limit.transactionSpecificLimit === true && 
+      limit.transactionType === backendTransactionType
+    );
+    return transactionLimit?.limitAmount || 0;
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-SA', {
+      style: 'currency',
+      currency: 'SAR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  // Request OTP from backend
+  const requestOTP = async () => {
+    try {
+      setIsRequestingOTP(true);
+      setOtpError('');
+      
+      const request: LimitsOTPRequest = { 
+        action: 'update_limits',
+        dailyLimit: selectedLimitType === 'overall' ? parseFloat(dailyLimit) : undefined,
+        monthlyLimit: selectedLimitType === 'overall' ? parseFloat(monthlyLimit) : undefined,
+        transactionType: selectedLimitType === 'specific' ? getBackendTransactionType(getTransactionCode(selectedTransaction)) : undefined,
+        transactionLimit: selectedLimitType === 'specific' ? parseFloat(transactionLimit) : undefined
+      };
+      const response = await LimitsService.requestOTP(request);
+      
+      if (response.otpCode) {
+        setRealOTP(response.otpCode);
+        console.log('✅ Real OTP received from backend for limits update:', response.otpCode);
+      }
+      
+      // Reset timer
+      setTimeLeft(30);
+      setIsResendDisabled(true);
+      setOtp(['', '', '', '', '', '']);
+      
+    } catch (error: any) {
+      console.error('❌ Error requesting limits OTP:', error);
+      setOtpError(error.message || 'Failed to request OTP. Please try again.');
+    } finally {
+      setIsRequestingOTP(false);
+    }
+  };
+
+  // Debug transaction types state changes
   useEffect(() => {
-    const loadFilters = async () => {
+    console.log('🔍 Transaction types state changed:', transactionTypes);
+    console.log('🔍 Is loading filters:', isLoadingFilters);
+  }, [transactionTypes, isLoadingFilters]);
+
+  // Load limits and transaction filters on mount
+  useEffect(() => {
+    const loadData = async () => {
       try {
+        setIsLoadingLimits(true);
         setIsLoadingFilters(true);
-        const filters = await fetchTransactionFilters();
-        setTransactionTypes(filters);
-        // Set first filter as default if available
-        if (filters.length > 0 && !selectedTransaction) {
-          setSelectedTransaction(filters[0].label);
+        setLimitsError(null);
+        
+        // Load limits data and transaction filters in parallel
+        const [limitsData, filters] = await Promise.allSettled([
+          LimitsService.getLimitsData(),
+          fetchTransactionFilters()
+        ]);
+        
+        console.log('🔍 API results:', { limitsData, filters });
+        
+        // Handle limits data
+        if (limitsData.status === 'fulfilled') {
+          const data = limitsData.value;
+          setLimitsData(data);
+          
+          // Extract overall limits from the data
+          const dailyLimit = data.limits.find(limit => 
+            limit.limitType === 'DAILY' && limit.overallLimit === true
+          );
+          const monthlyLimit = data.limits.find(limit => 
+            limit.limitType === 'MONTHLY' && limit.overallLimit === true
+          );
+          
+          // Set current limits
+          setCurrentLimits({
+            dailyLimit: dailyLimit?.limitAmount || 0,
+            monthlyLimit: monthlyLimit?.limitAmount || 0,
+            transactionLimit: 0, // Not used in this context
+            currency: 'SAR',
+            remainingDaily: dailyLimit?.remainingLimit || 0,
+            remainingMonthly: monthlyLimit?.remainingLimit || 0
+          });
+          
+          // Set overall limits (same as current for now)
+          setOverallLimits({
+            maxDailyLimit: dailyLimit?.limitAmount || 0,
+            maxMonthlyLimit: monthlyLimit?.limitAmount || 0,
+            maxTransactionLimit: 0, // Not used in this context
+            currency: 'SAR'
+          });
+          
+          // Initialize form with current limits
+          setDailyLimit((dailyLimit?.limitAmount || 0).toString());
+          setMonthlyLimit((monthlyLimit?.limitAmount || 0).toString());
+          
+          console.log('🔍 Limits data processed:', {
+            dailyLimit: dailyLimit?.limitAmount,
+            monthlyLimit: monthlyLimit?.limitAmount,
+            transactionSpecificLimits: data.limits.filter(l => l.transactionSpecificLimit)
+          });
+        } else {
+          console.error('❌ Failed to load limits data:', limitsData.reason);
         }
+        
+        // Handle transaction filters
+        if (filters.status === 'fulfilled') {
+          setTransactionTypes(filters.value);
+          console.log('🔍 Transaction types loaded:', filters.value);
+          console.log('🔍 Transaction types count:', filters.value.length);
+          
+          // Set first filter as default if available
+          if (filters.value.length > 0 && !selectedTransaction) {
+            setSelectedTransaction(filters.value[0].label);
+            console.log('🔍 Default transaction selected:', filters.value[0].label);
+          }
+        } else {
+          console.error('❌ Failed to load transaction filters:', filters.reason);
+        }
+        
       } catch (error) {
-        console.error('Failed to load transaction filters:', error);
+        console.error('Error loading limits data:', error);
+        setLimitsError(error instanceof Error ? error.message : 'Failed to load limits data');
       } finally {
+        setIsLoadingLimits(false);
         setIsLoadingFilters(false);
       }
     };
 
-    loadFilters();
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -142,43 +291,101 @@ const LimitsConfiguration: React.FC = () => {
     validateMonthlyLimit(value);
   };
 
+  const handleTransactionLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTransactionLimit(value);
+    // Clear error when user starts typing
+    if (transactionLimitError) setTransactionLimitError('');
+  };
+
   const handleNext = () => {
     setShowLimitForm(true);
   };
 
   const handleConfirm = () => {
-    // Validate based on active tab
+    // Validate based on active tab and limit type
     let isValid = false;
     
+    if (selectedLimitType === 'overall') {
     if (activeTab === 'daily') {
       isValid = validateDailyLimit(dailyLimit);
     } else {
       isValid = validateMonthlyLimit(monthlyLimit);
+      }
+    } else {
+      // For specific transactions, validate the transaction limit
+      if (!transactionLimit.trim()) {
+        setTransactionLimitError('Transaction limit is required');
+        isValid = false;
+      } else {
+        const numValue = parseFloat(transactionLimit.replace(/,/g, ''));
+        if (isNaN(numValue) || numValue < 0 || numValue > 100000) {
+          setTransactionLimitError('Transaction limit must be between 0 and 100,000 SAR');
+          isValid = false;
+        } else {
+          setTransactionLimitError('');
+          isValid = true;
+        }
+      }
     }
     
     if (isValid) {
       console.log('Daily Limit:', dailyLimit);
       console.log('Monthly Limit:', monthlyLimit);
+      console.log('Transaction Limit:', transactionLimit);
       setShowConfirmation(true);
     }
   };
 
-  const handleFinalConfirm = () => {
+  const handleFinalConfirm = async () => {
     setShowConfirmation(false);
     setShowOTP(true);
-    generateOTP();
-    setTimeLeft(30);
-    setIsResendDisabled(true);
-    setOtp(['', '', '', '', '', '']);
-    setOtpError('');
+    await requestOTP();
   };
 
-  const handleOTPVerify = (otpCode: string) => {
-    if (otpCode === generatedOTP) {
-      setShowOTP(false);
-      setShowSuccess(true);
-    } else {
-      setOtpError('The code you entered is incorrect.');
+  const handleOTPVerify = async (otpCode: string) => {
+    try {
+      // First verify the OTP using the auth API
+      const phoneNumber = localStorage.getItem('phoneNumber') || '+966501234567';
+      const verifyResponse = await API.post('/api/v1/auth/verify-otp', {
+        phoneNumber: phoneNumber,
+        otp: otpCode
+      });
+      
+      if (verifyResponse.success) {
+        console.log('✅ OTP verified successfully for limits update');
+        
+        // Call the appropriate limits update API based on limit type
+        if (selectedLimitType === 'overall') {
+          // Update overall limits
+          const updateRequest: UpdateOverallLimitsRequest = {
+            dailyLimit: parseFloat(dailyLimit),
+            monthlyLimit: parseFloat(monthlyLimit)
+          };
+          
+          const updateResult = await LimitsService.updateOverallLimits(updateRequest);
+          console.log('✅ Overall limits updated:', updateResult);
+        } else {
+          // Update transaction-specific limits
+          const updateRequest: UpdateTransactionLimitsRequest = {
+            limitType: 'DAILY', // For now, only daily limits for specific transactions
+            transactionType: getBackendTransactionType(getTransactionCode(selectedTransaction)),
+            limitAmount: parseFloat(transactionLimit)
+          };
+          
+          const updateResult = await LimitsService.updateTransactionLimits(updateRequest);
+          console.log('✅ Transaction limits updated:', updateResult);
+        }
+        
+        // Show success screen
+        setShowOTP(false);
+        setShowSuccess(true);
+      } else {
+        setOtpError('The code you entered is incorrect.');
+      }
+    } catch (error: any) {
+      console.error('❌ OTP verification or limits update failed:', error);
+      setOtpError(error.message || 'Failed to verify OTP or update limits');
     }
   };
 
@@ -205,22 +412,20 @@ const LimitsConfiguration: React.FC = () => {
     }
   };
 
-  const handleOTPSubmit = (e: React.FormEvent) => {
+  const handleOTPSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpCode = otp.join('');
     if (otpCode.length === 6) {
-      handleOTPVerify(otpCode);
+      await handleOTPVerify(otpCode);
     } else {
       setOtpError('Please enter all 6 digits.');
     }
   };
 
-  const handleResendOTP = () => {
-    generateOTP();
-    setTimeLeft(30);
-    setIsResendDisabled(true);
-    setOtp(['', '', '', '', '', '']);
-    setOtpError('');
+  const handleResendOTP = async () => {
+    if (isRequestingOTP) return; // Prevent multiple requests
+    
+    await requestOTP();
   };
 
   const handleSuccessDone = () => {
@@ -230,6 +435,18 @@ const LimitsConfiguration: React.FC = () => {
   const handleTransactionSelect = (transaction: string) => {
     setSelectedTransaction(transaction);
     setShowTransactionDropdown(false);
+  };
+
+  // Helper function to get transaction code from label
+  const getTransactionCode = (label: string): string => {
+    const transaction = transactionTypes.find(t => t.label === label);
+    return transaction?.code || label;
+  };
+
+  // Helper function to convert frontend code to backend enum value
+  const getBackendTransactionType = (code: string): string => {
+    // Convert snake_case to UPPER_CASE for backend enum
+    return code.toUpperCase();
   };
 
   const handleBack = () => {
@@ -307,10 +524,18 @@ const LimitsConfiguration: React.FC = () => {
                   <h2 className="text-2xl font-bold text-[#022466] mb-2">Mobile Number</h2>
                   <h3 className="text-xl font-bold text-[#022466] mb-2">OTP Verification</h3>
                   <p className="text-gray-600">Enter your OTP code</p>
-                  {generatedOTP && (
+                  {isRequestingOTP && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600 mr-2"></div>
+                        <p className="text-sm text-yellow-800">Requesting OTP...</p>
+                      </div>
+                    </div>
+                  )}
+                  {realOTP && !isRequestingOTP && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-600 mb-1">Generated OTP for testing:</p>
-                      <p className="text-lg font-bold text-blue-800">{generatedOTP}</p>
+                      <p className="text-sm text-blue-600 mb-1">OTP from backend:</p>
+                      <p className="text-lg font-bold text-blue-800">{realOTP}</p>
                     </div>
                   )}
                 </div>
@@ -325,7 +550,8 @@ const LimitsConfiguration: React.FC = () => {
                       value={digit}
                       onChange={(e) => handleOTPChange(index, e.target.value)}
                       onKeyDown={(e) => handleOTPKeyDown(index, e)}
-                      className="w-14 h-14 text-3xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all"
+                      disabled={isLoading || isRequestingOTP}
+                      className="w-14 h-14 text-3xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
                         border: '1px solid #2C2C2CB2',
                         WebkitTextStroke: '1px #2C2C2CB2',
@@ -351,9 +577,9 @@ const LimitsConfiguration: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleResendOTP}
-                      disabled={isResendDisabled}
+                      disabled={isResendDisabled || isRequestingOTP}
                       className={`font-medium ${
-                        isResendDisabled
+                        isResendDisabled || isRequestingOTP
                           ? 'text-gray-400 cursor-not-allowed'
                           : 'text-[#0475CC] hover:text-[#022466]'
                       }`}
@@ -367,23 +593,23 @@ const LimitsConfiguration: React.FC = () => {
                     <Button
                       type="submit"
                       className="w-full max-w-xs"
-                      disabled={otp.some(digit => !digit)}
+                      disabled={otp.some(digit => !digit) || isRequestingOTP}
                     >
-                      Verify
+                      {isRequestingOTP ? 'Requesting...' : 'Verify'}
                     </Button>
                   </div>
                   <div className="flex justify-center">
                     <button
                       type="button"
                       onClick={handleResendOTP}
-                      disabled={isResendDisabled}
+                      disabled={isResendDisabled || isRequestingOTP}
                       className={`w-3/4 max-w-xs py-3 px-4 rounded-full border-2 border-[#022466] font-medium transition-all ${
-                        isResendDisabled
+                        isResendDisabled || isRequestingOTP
                           ? 'text-gray-400 border-gray-300 cursor-not-allowed'
                           : 'text-[#022466] hover:bg-[#022466] hover:text-white'
                       }`}
                     >
-                      Resend
+                      {isRequestingOTP ? 'Requesting...' : 'Resend'}
                     </button>
                   </div>
                 </div>
@@ -415,22 +641,74 @@ const LimitsConfiguration: React.FC = () => {
               <div className="confirmation-content">
                 <div className="confirmation-header">
                   <img src={limitsIcon} alt="Confirm Limit Change" className="confirmation-icon" />
-                  <h3 className="confirmation-title">Confirm Limit Change</h3>
+                  <h3 className="confirmation-title">
+                    {selectedLimitType === 'overall' 
+                      ? `Confirm ${activeTab === 'daily' ? 'Daily' : 'Monthly'} Limit Change`
+                      : `Confirm Transaction Limit Change`
+                    }
+                  </h3>
                 </div>
                 
                 <p className="confirmation-message">
-                  Please review the changes below before confirming with your OTP.
+                  {selectedLimitType === 'overall' 
+                    ? `Please review your ${activeTab === 'daily' ? 'daily' : 'monthly'} limit changes below before confirming with your OTP.`
+                    : `Please review your transaction-specific limit changes for "${selectedTransaction}" below before confirming with your OTP.`
+                  }
                 </p>
 
                 <div className="confirmation-details">
-                  <div className="confirmation-detail">
-                    <span className="confirmation-label">Current Daily Limit:</span>
-                    <span className="confirmation-value">2,000 SAR</span>
-                  </div>
-                  <div className="confirmation-detail">
-                    <span className="confirmation-label">New Daily Limit:</span>
-                    <span className="confirmation-value">{dailyLimit || '[X,XXXX]'} SAR</span>
-                  </div>
+                  {selectedLimitType === 'overall' ? (
+                    <>
+                      {/* Overall Limits Confirmation */}
+                      {activeTab === 'daily' ? (
+                        <>
+                          <div className="confirmation-detail">
+                            <span className="confirmation-label">Current Daily Limit:</span>
+                            <span className="confirmation-value">{formatCurrency(getCurrentDailyLimit())}</span>
+                          </div>
+                          <div className="confirmation-detail">
+                            <span className="confirmation-label">New Daily Limit:</span>
+                            <span className="confirmation-value">{formatCurrency(parseFloat(dailyLimit) || 0)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="confirmation-detail">
+                            <span className="confirmation-label">Current Monthly Limit:</span>
+                            <span className="confirmation-value">{formatCurrency(getCurrentMonthlyLimit())}</span>
+                          </div>
+                          <div className="confirmation-detail">
+                            <span className="confirmation-label">New Monthly Limit:</span>
+                            <span className="confirmation-value">{formatCurrency(parseFloat(monthlyLimit) || 0)}</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="confirmation-detail">
+                        <span className="confirmation-label">Limit Type:</span>
+                        <span className="confirmation-value">{activeTab === 'daily' ? 'Daily' : 'Monthly'} Overall Limit</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Specific Transaction Limits Confirmation */}
+                      <div className="confirmation-detail">
+                        <span className="confirmation-label">Transaction Type:</span>
+                        <span className="confirmation-value">{selectedTransaction}</span>
+                      </div>
+                      <div className="confirmation-detail">
+                        <span className="confirmation-label">Current Daily Limit:</span>
+                        <span className="confirmation-value">{formatCurrency(getCurrentTransactionLimit(selectedTransaction))}</span>
+                      </div>
+                      <div className="confirmation-detail">
+                        <span className="confirmation-label">New Daily Limit:</span>
+                        <span className="confirmation-value">{formatCurrency(parseFloat(transactionLimit) || 0)}</span>
+                      </div>
+                      <div className="confirmation-detail">
+                        <span className="confirmation-label">Limit Type:</span>
+                        <span className="confirmation-value">Daily Transaction-Specific Limit</span>
+                      </div>
+                    </>
+                  )}
                   <div className="confirmation-detail">
                     <span className="confirmation-label">Allowed Range:</span>
                     <span className="confirmation-value">0 - 100,000 SAR</span>
@@ -547,7 +825,9 @@ const LimitsConfiguration: React.FC = () => {
                             <img src={currentIcon} alt="Current Limit" className="current-limit-icon" />
                             <span>Current Limit</span>
                           </div>
-                          <span className="current-limit-value">2,000 SAR</span>
+                          <span className="current-limit-value">
+                            {isLoadingLimits ? 'Loading...' : formatCurrency(getCurrentTransactionLimit(selectedTransaction))}
+                          </span>
                         </div>
 
                         <div className="limit-input-group">
@@ -583,14 +863,14 @@ const LimitsConfiguration: React.FC = () => {
                                     <div className="px-4 py-3 text-sm text-gray-500">No transaction types available</div>
                                   ) : (
                                     transactionTypes.map((filter) => (
-                                      <button
+                                    <button
                                         key={filter.id}
-                                        type="button"
+                                      type="button"
                                         onClick={() => handleTransactionSelect(filter.label)}
                                         className={`transaction-dropdown-item ${selectedTransaction === filter.label ? 'selected' : ''}`}
-                                      >
+                                    >
                                         {filter.label}
-                                      </button>
+                                    </button>
                                     ))
                                   )}
                                 </div>
@@ -604,12 +884,12 @@ const LimitsConfiguration: React.FC = () => {
                           <input
                             type="text"
                             placeholder="Enter Daily Limit"
-                            value={dailyLimit}
-                            onChange={handleDailyLimitChange}
-                            className={`limit-input ${dailyLimitError ? 'error' : ''}`}
+                            value={transactionLimit}
+                            onChange={handleTransactionLimitChange}
+                            className={`limit-input ${transactionLimitError ? 'error' : ''}`}
                           />
-                          {dailyLimitError ? (
-                            <span className="limit-error">{dailyLimitError}</span>
+                          {transactionLimitError ? (
+                            <span className="limit-error">{transactionLimitError}</span>
                           ) : (
                             <span className="limit-range">Allowed range: 0 - 100,000 SAR</span>
                           )}
@@ -630,7 +910,9 @@ const LimitsConfiguration: React.FC = () => {
                             <img src={currentIcon} alt="Current Limit" className="current-limit-icon" />
                             <span>Current Limit</span>
                           </div>
-                          <span className="current-limit-value">2,000 SAR</span>
+                          <span className="current-limit-value">
+                            {isLoadingLimits ? 'Loading...' : formatCurrency(getCurrentDailyLimit())}
+                          </span>
                         </div>
 
                         <div className="limit-input-group">
@@ -671,7 +953,9 @@ const LimitsConfiguration: React.FC = () => {
                             <img src={currentIcon} alt="Current Limit" className="current-limit-icon" />
                             <span>Current Limit</span>
                           </div>
-                          <span className="current-limit-value">50,000 SAR</span>
+                          <span className="current-limit-value">
+                            {isLoadingLimits ? 'Loading...' : formatCurrency(getCurrentTransactionLimit(selectedTransaction))}
+                          </span>
                         </div>
 
                         <div className="limit-input-group">
@@ -707,14 +991,14 @@ const LimitsConfiguration: React.FC = () => {
                                     <div className="px-4 py-3 text-sm text-gray-500">No transaction types available</div>
                                   ) : (
                                     transactionTypes.map((filter) => (
-                                      <button
+                                    <button
                                         key={filter.id}
-                                        type="button"
+                                      type="button"
                                         onClick={() => handleTransactionSelect(filter.label)}
                                         className={`transaction-dropdown-item ${selectedTransaction === filter.label ? 'selected' : ''}`}
-                                      >
+                                    >
                                         {filter.label}
-                                      </button>
+                                    </button>
                                     ))
                                   )}
                                 </div>
@@ -754,7 +1038,9 @@ const LimitsConfiguration: React.FC = () => {
                             <img src={currentIcon} alt="Current Limit" className="current-limit-icon" />
                             <span>Current Limit</span>
                           </div>
-                          <span className="current-limit-value">50,000 SAR</span>
+                          <span className="current-limit-value">
+                            {isLoadingLimits ? 'Loading...' : formatCurrency(getCurrentMonthlyLimit())}
+                          </span>
                         </div>
 
                         <div className="limit-input-group">

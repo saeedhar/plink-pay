@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
+import { WalletService, WalletOTPRequest } from '../../../services/walletService';
+import { API } from '../../../lib/api';
 import logo from '../../../assets/logo-mark.svg';
 import checkCircle from '../../../assets/check_circle.svg';
 import AccountBlockedModal from '../../../components/modals/AccountBlockedModal';
@@ -17,13 +19,34 @@ export default function WalletOTPPage() {
   const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [action, setAction] = useState<'activate' | 'deactivate'>('activate');
-  const [generatedOTP, setGeneratedOTP] = useState('');
+  const [realOTP, setRealOTP] = useState('');
+  const [isRequestingOTP, setIsRequestingOTP] = useState(false);
 
-  // Generate random OTP
-  const generateOTP = () => {
-    const randomOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOTP(randomOTP);
-    return randomOTP;
+  // Request OTP from backend
+  const requestOTP = async () => {
+    try {
+      setIsRequestingOTP(true);
+      setError('');
+      
+      const request: WalletOTPRequest = { action };
+      const response = await WalletService.requestOTP(request);
+      
+      if (response.otpCode) {
+        setRealOTP(response.otpCode);
+        console.log('✅ Real OTP received from backend:', response.otpCode);
+      }
+      
+      // Reset timer
+      setTimeLeft(30);
+      setIsResendDisabled(true);
+      setOtp(['', '', '', '', '', '']);
+      
+    } catch (error: any) {
+      console.error('❌ Error requesting OTP:', error);
+      setError(error.message || 'Failed to request OTP. Please try again.');
+    } finally {
+      setIsRequestingOTP(false);
+    }
   };
 
   // Get action from navigation state
@@ -40,13 +63,13 @@ export default function WalletOTPPage() {
     setTimeLeft(30);
     setIsResendDisabled(true);
     setFailedAttempts(0);
-    generateOTP(); // Generate OTP when component mounts
+    requestOTP(); // Request real OTP from backend when component mounts
     // Focus first input
     setTimeout(() => {
       const firstInput = document.getElementById('otp-0');
       firstInput?.focus();
     }, 100);
-  }, []);
+  }, [action]); // Re-request OTP when action changes
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -95,10 +118,25 @@ export default function WalletOTPPage() {
     setIsLoading(true);
     setError('');
     
-    // Simulate API call delay
-    setTimeout(() => {
-      if (otpCode === generatedOTP) {
-        console.log('✅ OTP verified successfully for wallet', action);
+    try {
+      // First verify the OTP using the auth API
+      const phoneNumber = localStorage.getItem('phoneNumber') || '+966501234567';
+      const verifyResponse = await API.post('/api/v1/auth/verify-otp', {
+        phoneNumber: phoneNumber,
+        otp: otpCode
+      });
+      
+      if (verifyResponse.success) {
+        console.log('✅ OTP verified successfully');
+        
+        // Now perform the wallet operation (without OTP since it's already verified)
+        if (action === 'activate') {
+          await WalletService.activateWallet({ otp: '' }); // Empty OTP since already verified
+          console.log('✅ Wallet activated successfully');
+        } else {
+          await WalletService.deactivateWallet({ otp: '' }); // Empty OTP since already verified
+          console.log('✅ Wallet deactivated successfully');
+        }
         
         // Store the action result in localStorage for the wallet page to read
         localStorage.setItem('walletAction', action);
@@ -107,41 +145,30 @@ export default function WalletOTPPage() {
         // Show success screen
         setShowSuccessScreen(true);
       } else {
-        // Increment failed attempts
-        const newFailedAttempts = failedAttempts + 1;
-        setFailedAttempts(newFailedAttempts);
-        
-        if (newFailedAttempts >= 5) {
-          setShowAccountBlockedModal(true);
-        } else {
-          setError('The code you entered is incorrect.');
-        }
+        throw new Error('OTP verification failed');
       }
+      
+    } catch (error: any) {
+      console.error('❌ Wallet operation failed:', error);
+      
+      // Increment failed attempts
+      const newFailedAttempts = failedAttempts + 1;
+      setFailedAttempts(newFailedAttempts);
+      
+      if (newFailedAttempts >= 5) {
+        setShowAccountBlockedModal(true);
+      } else {
+        setError(error.message || 'The code you entered is incorrect.');
+      }
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleResend = async () => {
-    setIsLoading(true);
-    setError('');
+    if (isRequestingOTP) return; // Prevent multiple requests
     
-    // Simulate API call delay
-    setTimeout(() => {
-      // Generate new OTP
-      generateOTP();
-      
-      // Reset timer and clear OTP fields
-      setTimeLeft(30);
-      setIsResendDisabled(true);
-      setOtp(['', '', '', '', '', '']);
-      
-      // Focus first input
-      const firstInput = document.getElementById('otp-0');
-      firstInput?.focus();
-      
-      console.log('✅ OTP resent successfully for wallet', action);
-      setIsLoading(false);
-    }, 1000);
+    await requestOTP();
   };
 
   const handleChangeNumber = () => {
@@ -254,10 +281,18 @@ export default function WalletOTPPage() {
                 <h2 className="text-2xl font-bold text-[#022466] mb-2">Mobile Number</h2>
                 <h3 className="text-xl font-bold text-[#022466] mb-2">OTP Verification</h3>
                 <p className="text-gray-600">Enter your OTP code</p>
-                {generatedOTP && (
+                {isRequestingOTP && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600 mr-2"></div>
+                      <p className="text-sm text-yellow-800">Requesting OTP...</p>
+                    </div>
+                  </div>
+                )}
+                {realOTP && !isRequestingOTP && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-600 mb-1">Generated OTP for testing:</p>
-                    <p className="text-lg font-bold text-blue-800">{generatedOTP}</p>
+                    <p className="text-sm text-blue-600 mb-1">OTP from backend:</p>
+                    <p className="text-lg font-bold text-blue-800">{realOTP}</p>
                   </div>
                 )}
               </div>
@@ -274,7 +309,7 @@ export default function WalletOTPPage() {
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    disabled={isLoading}
+                    disabled={isLoading || isRequestingOTP}
                     className="w-14 h-14 text-3xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       border: '1px solid #2C2C2CB2',
@@ -330,7 +365,7 @@ export default function WalletOTPPage() {
                   <Button 
                     type="submit" 
                     className="w-full max-w-xs" 
-                    disabled={isLoading || otp.some(digit => !digit)}
+                    disabled={isLoading || isRequestingOTP || otp.some(digit => !digit)}
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
@@ -349,14 +384,14 @@ export default function WalletOTPPage() {
                   <button
                     type="button"
                     onClick={handleResend}
-                    disabled={isResendDisabled || isLoading}
+                    disabled={isResendDisabled || isLoading || isRequestingOTP}
                     className={`w-3/4 max-w-xs py-3 px-4 rounded-full border-2 border-[#022466] font-medium transition-all ${
                       isResendDisabled || isLoading
                         ? 'text-gray-400 border-gray-300 cursor-not-allowed'
                         : 'text-[#022466] hover:bg-[#022466] hover:text-white'
                     }`}
                   >
-                    {isLoading ? 'Sending...' : 'Resend'}
+                    {isLoading ? 'Sending...' : isRequestingOTP ? 'Requesting...' : 'Resend'}
                   </button>
                 </div>
               </div>

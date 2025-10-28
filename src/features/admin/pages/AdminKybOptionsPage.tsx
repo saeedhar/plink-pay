@@ -256,7 +256,7 @@ export function AdminKybOptionsPage() {
                     <tr key={option.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold">
-                          {option.order}
+                        {option.order}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -264,7 +264,7 @@ export function AdminKybOptionsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                          {option.code || '-'}
+                        {option.code || '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -372,19 +372,19 @@ export function AdminKybOptionsPage() {
                         <label htmlFor="label" className="block text-sm font-semibold text-gray-700 mb-2">
                           Label <span className="text-red-500">*</span>
                         </label>
-                        <input
-                          type="text"
-                          id="label"
-                          value={formData.label}
-                          onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
+                          <input
+                            type="text"
+                            id="label"
+                            value={formData.label}
+                            onChange={(e) => setFormData(prev => ({ ...prev, label: e.target.value }))}
                           className={`block w-full px-4 py-2.5 rounded-lg border-2 transition-colors ${
                             formErrors.label 
                               ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                               : 'border-gray-200 focus:border-blue-500 focus:ring-blue-500'
                           } focus:ring-2 focus:ring-opacity-20`}
-                          placeholder="Enter option label"
-                        />
-                        {formErrors.label && (
+                            placeholder="Enter option label"
+                          />
+                          {formErrors.label && (
                           <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
@@ -399,14 +399,14 @@ export function AdminKybOptionsPage() {
                         <label htmlFor="code" className="block text-sm font-semibold text-gray-700 mb-2">
                           Code <span className="text-gray-400 font-normal">(optional)</span>
                         </label>
-                        <input
-                          type="text"
-                          id="code"
-                          value={formData.code}
-                          onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                          <input
+                            type="text"
+                            id="code"
+                            value={formData.code}
+                            onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
                           className="block w-full px-4 py-2.5 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-colors"
-                          placeholder="OPTION_CODE"
-                        />
+                            placeholder="OPTION_CODE"
+                          />
                       </div>
 
                       {/* Order */}
@@ -414,19 +414,19 @@ export function AdminKybOptionsPage() {
                         <label htmlFor="order" className="block text-sm font-semibold text-gray-700 mb-2">
                           Order <span className="text-gray-400 font-normal">(optional)</span>
                         </label>
-                        <input
-                          type="number"
-                          id="order"
-                          value={formData.order}
-                          onChange={(e) => setFormData(prev => ({ ...prev, order: e.target.value }))}
+                          <input
+                            type="number"
+                            id="order"
+                            value={formData.order}
+                            onChange={(e) => setFormData(prev => ({ ...prev, order: e.target.value }))}
                           className={`block w-full px-4 py-2.5 rounded-lg border-2 transition-colors ${
                             formErrors.order 
                               ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                               : 'border-gray-200 focus:border-blue-500 focus:ring-blue-500'
                           } focus:ring-2 focus:ring-opacity-20`}
-                          placeholder="Auto-generated if empty"
-                        />
-                        {formErrors.order && (
+                            placeholder="Auto-generated if empty"
+                          />
+                          {formErrors.order && (
                           <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
@@ -455,15 +455,15 @@ export function AdminKybOptionsPage() {
                         <label htmlFor="locale" className="block text-sm font-semibold text-gray-700 mb-2">
                           Locale
                         </label>
-                        <select
-                          id="locale"
-                          value={formData.locale}
-                          onChange={(e) => setFormData(prev => ({ ...prev, locale: e.target.value as 'en' | 'ar' }))}
+                          <select
+                            id="locale"
+                            value={formData.locale}
+                            onChange={(e) => setFormData(prev => ({ ...prev, locale: e.target.value as 'en' | 'ar' }))}
                           className="block w-full px-4 py-2.5 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-20 transition-colors cursor-pointer"
-                        >
+                          >
                           <option value="en">🌐 English</option>
                           <option value="ar">🌐 Arabic</option>
-                        </select>
+                          </select>
                       </div>
 
                       {/* Submit Error */}

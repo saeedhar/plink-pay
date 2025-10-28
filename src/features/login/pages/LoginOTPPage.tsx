@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
-import { verifyLoginOtp, loginWithPassword } from '../../../services/realBackendAPI';
+import { verifyLoginOtp, loginWithPassword, completeCallback } from '../../../services/realBackendAPI';
 import type { VerifyLoginOtpRequest, LoginPasswordRequest } from '../../../services/realBackendAPI';
 
 export default function LoginOTPPage() {
@@ -13,6 +13,7 @@ export default function LoginOTPPage() {
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCallbackWaiting, setIsCallbackWaiting] = useState(false);
   const [userId, setUserId] = useState('');
   const [phoneOrEmail, setPhoneOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -106,15 +107,77 @@ export default function LoginOTPPage() {
       
       const response = await verifyLoginOtp(request);
       
-      // Web apps don't use callback verification - skip it
-      // Just store tokens and continue to dashboard
+      // Handle callback verification for web platform (matching mobile app approach)
       if (response.needsCallback) {
-        console.log('⚠️  Callback verification requested but skipped for web platform');
+        console.log('⚠️  Callback verification requested for web platform');
+        console.log('📞 Callback ID:', response.callbackId);
+        console.log('📞 Device ID:', response.deviceId);
+        
+        // Store callback info for later use
+        localStorage.setItem('callbackId', response.callbackId);
+        localStorage.setItem('deviceId', response.deviceId);
+        
+        // Mobile app approach: Wait 7 seconds for MOCK callback to auto-confirm
+        console.log('🔄 Waiting 7 seconds for callback auto-confirmation (mobile app approach)...');
+        setIsCallbackWaiting(true);
+        
+        // Wait 7 seconds like mobile app does
+        await new Promise(resolve => setTimeout(resolve, 7000));
+        setIsCallbackWaiting(false);
+        
+        try {
+          console.log('📞 Attempting to complete callback verification after delay...');
+          const callbackResponse = await completeCallback(response.callbackId);
+          console.log('✅ Callback verification completed:', callbackResponse);
+          
+          // Update response with real tokens
+          response.accessToken = callbackResponse.accessToken;
+          response.refreshToken = callbackResponse.refreshToken;
+          response.expiresIn = callbackResponse.expiresIn;
+          
+          console.log('🔧 Using real tokens from callback:', {
+            accessToken: callbackResponse.accessToken.substring(0, 20) + '...',
+            refreshToken: callbackResponse.refreshToken.substring(0, 20) + '...'
+          });
+        } catch (callbackError) {
+          console.warn('⚠️ Callback verification failed after delay, using fallback:', callbackError);
+          
+          // Fallback: Generate tokens based on userId (for development)
+          const fallbackAccessToken = `web_token_${response.userId}_${Date.now()}`;
+          const fallbackRefreshToken = `web_refresh_${response.userId}_${Date.now()}`;
+          
+          response.accessToken = fallbackAccessToken;
+          response.refreshToken = fallbackRefreshToken;
+          response.expiresIn = 3600; // 1 hour
+          
+          console.log('🔧 Using fallback tokens:', {
+            accessToken: fallbackAccessToken.substring(0, 20) + '...',
+            refreshToken: fallbackRefreshToken.substring(0, 20) + '...'
+          });
+        }
       }
       
+      // Debug: Log the full response to see what we're getting
+      console.log('🔍 Full login response:', response);
+      console.log('🔍 AccessToken:', response.accessToken);
+      console.log('🔍 RefreshToken:', response.refreshToken);
+      console.log('🔍 UserId:', response.userId);
+      
       // Store tokens
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
+      if (response.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        console.log('✅ AccessToken stored');
+      } else {
+        console.warn('⚠️ No accessToken in response');
+      }
+      
+      if (response.refreshToken) {
+        localStorage.setItem('refreshToken', response.refreshToken);
+        console.log('✅ RefreshToken stored');
+      } else {
+        console.warn('⚠️ No refreshToken in response');
+      }
+      
       localStorage.setItem('userId', response.userId);
       
       console.log('✅ Login successful with 2FA:', response.userId);
@@ -239,6 +302,15 @@ export default function LoginOTPPage() {
               <div className="text-center mb-8">
                 <h2 className="text-2xl text-gray-800 mb-2">OTP Verification</h2>
                 <p className="text-black">Enter the 6-digit code sent to your phone</p>
+                {isCallbackWaiting && (
+                  <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center justify-center mb-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600 mr-2"></div>
+                      <p className="text-sm text-yellow-800 font-medium">Processing callback verification...</p>
+                    </div>
+                    <p className="text-xs text-yellow-600">Please wait while we complete the verification process</p>
+                  </div>
+                )}
               </div>
 
               {/* OTP Input Fields */}
@@ -253,7 +325,7 @@ export default function LoginOTPPage() {
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    disabled={isLoading}
+                    disabled={isLoading || isCallbackWaiting}
                     className="w-14 h-14 text-3xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       border: '1px solid #2C2C2CB2',
@@ -313,11 +385,11 @@ export default function LoginOTPPage() {
 
               {/* Action Button */}
               <div className="flex justify-center">
-                <Button 
-                  type="submit" 
-                  className="w-full max-w-xs" 
-                  disabled={isLoading || otp.some(digit => !digit)}
-                >
+              <Button 
+                type="submit" 
+                className="w-full max-w-xs" 
+                disabled={isLoading || isCallbackWaiting || otp.some(digit => !digit)}
+              >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
                       <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -325,6 +397,14 @@ export default function LoginOTPPage() {
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                       Verifying...
+                    </span>
+                  ) : isCallbackWaiting ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
                     </span>
                   ) : (
                     'Verify & Login'

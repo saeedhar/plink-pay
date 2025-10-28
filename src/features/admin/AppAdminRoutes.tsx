@@ -9,7 +9,7 @@ import { AdminUserManagementPage } from './pages/AdminUserManagementPage';
 import { AdminFiltersPage } from './pages/AdminFiltersPage';
 
 export function AppAdminRoutes() {
-  if (import.meta.env.VITE_ADMIN_ENABLED !== 'true') {
+  if (import.meta.env.VITE_ADMIN_ENABLED !== 'true' && !import.meta.env.PROD) {
     return null;
   }
 

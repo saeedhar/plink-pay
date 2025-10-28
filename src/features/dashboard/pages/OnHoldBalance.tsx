@@ -19,32 +19,15 @@ const OnHoldBalance: React.FC = () => {
 
   const onHoldTransactions = [
     {
-      name: "Name Transaction",
-      amount: "400 SAR",
+      name: "Test Transaction",
+      amount: "500 SAR",
       status: "On-Hold",
       reason: "review",
       transactionRef: "TX-293848",
       holdDate: "05-Sep-2025",
       expectedRelease: "12-Sep-2025"
     },
-    {
-      name: "Name Transaction",
-      amount: "400 SAR",
-      status: "On-Hold",
-      reason: "review",
-      transactionRef: "TX-293848",
-      holdDate: "05-Sep-2025",
-      expectedRelease: "12-Sep-2025"
-    },
-    {
-      name: "Name Transaction",
-      amount: "400 SAR",
-      status: "On-Hold",
-      reason: "review",
-      transactionRef: "TX-293848",
-      holdDate: "05-Sep-2025",
-      expectedRelease: "12-Sep-2025"
-    }
+ 
   ];
 
   return (

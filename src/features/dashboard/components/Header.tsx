@@ -3,9 +3,13 @@ import balanceIcon from '../../../assets/dashboard/balance.svg';
 import profileIcon from '../../../assets/dashboard/profile.svg';
 import notificationsIcon from '../../../assets/dashboard/Notifications.svg';
 import ProfileDropdown from './ProfileDropdown';
+import { TransactionService, WalletBalanceResponse } from '../../../services/transactionService';
 
 const Header: React.FC = () => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<WalletBalanceResponse | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const toggleProfileDropdown = () => {
@@ -15,6 +19,26 @@ const Header: React.FC = () => {
   const closeProfileDropdown = () => {
     setIsProfileDropdownOpen(false);
   };
+
+  // Fetch wallet balance on component mount
+  useEffect(() => {
+    const loadWalletBalance = async () => {
+      try {
+        setIsLoadingBalance(true);
+        setBalanceError(null);
+        const balance = await TransactionService.getWalletBalance();
+        setWalletBalance(balance);
+        console.log('🔍 Header: Wallet balance loaded:', balance);
+      } catch (error) {
+        console.error('Error loading wallet balance in header:', error);
+        setBalanceError(error instanceof Error ? error.message : 'Failed to load balance');
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    };
+
+    loadWalletBalance();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -38,7 +62,17 @@ const Header: React.FC = () => {
       <div className="header-left">
         <div className="balance-badge">
           <img src={balanceIcon} alt="Balance" className="wallet-icon" />
-          <span>Total Balance : 2.400,00 SAR</span>
+          <span>
+            Total Balance: {
+              isLoadingBalance 
+                ? 'Loading...' 
+                : balanceError 
+                  ? 'Error' 
+                  : walletBalance 
+                    ? TransactionService.formatCurrency(walletBalance.totalBalance, walletBalance.currency)
+                    : '0.00 SAR'
+            }
+          </span>
         </div>
       </div>
 

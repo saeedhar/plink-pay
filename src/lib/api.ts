@@ -50,8 +50,21 @@ function defaultHeaders() {
     'Accept': 'application/json',
   }
   // Example: bearer token from localStorage (optional)
-  const token = localStorage.getItem('access_token')
-  if (token) headers['Authorization'] = `Bearer ${token}`
+  const token = localStorage.getItem('accessToken')
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+    // Debug: log token info (only first time)
+    if (!(window as any).__tokenLogged) {
+      console.log('🔑 Auth Token found:', token.substring(0, 20) + '...')
+      ;(window as any).__tokenLogged = true
+    }
+  } else {
+    // Debug: log when no token
+    if (!(window as any).__noTokenLogged) {
+      console.warn('⚠️ No auth token found in localStorage')
+      ;(window as any).__noTokenLogged = true
+    }
+  }
   return headers
 }
 
