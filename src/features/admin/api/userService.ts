@@ -7,6 +7,7 @@ export interface User {
   idUnn?: string;
   dateOfBirth?: string;
   status: string;
+  role?: 'ADMIN' | 'USER';
   lockedAt?: string;
   lockReason?: string;
   lockType?: string;
@@ -38,6 +39,7 @@ export interface UpdateUserRequest {
   status?: string;
   lockReason?: string;
   lockType?: string;
+  role?: 'ADMIN' | 'USER';
 }
 
 /**
@@ -119,6 +121,24 @@ export class UserService {
     return adminHttp<{ message: string; tempPassword: string; user: User }>(`/api/admin/users/${userId}/reset-password`, {
       method: 'POST'
     });
+  }
+
+  /** Create a new admin user (email + optional phone + password) */
+  async createAdmin(payload: { email: string; phoneE164?: string; password: string }): Promise<User> {
+    return adminHttp<User>(`/api/admin/admin-users`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  /** Promote a user to ADMIN */
+  async makeAdmin(userId: string): Promise<User> {
+    return adminHttp<User>(`/api/admin/users/${userId}/make-admin`, { method: 'POST' });
+  }
+
+  /** Demote a user to USER */
+  async makeRegular(userId: string): Promise<User> {
+    return adminHttp<User>(`/api/admin/users/${userId}/make-regular`, { method: 'POST' });
   }
 }
 

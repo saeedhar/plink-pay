@@ -1,20 +1,24 @@
 import { ReactNode, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from './AdminAuthProvider';
+import { ChangePasswordScreen } from '../pages/AdminChangePasswordScreen';
 
 interface AdminProtectedRouteProps {
   children: ReactNode;
 }
 
 export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
-  const { token, user, isLoading } = useAdminAuth();
+  const { token, user, isLoading, passwordChangeRequired } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (!isLoading && (!token || user?.role !== 'admin')) {
+    if (
+      !isLoading &&
+      (!token || !user || user.role?.toUpperCase() !== 'ADMIN')
+    ) {
       // Redirect to login, preserving the intended destination
-      navigate('/admin/login', { 
+      navigate('/admin/login', {
         replace: true,
         state: { from: location.pathname }
       });
@@ -31,8 +35,13 @@ export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
   }
 
   // Don't render children if not authenticated
-  if (!token || user?.role !== 'admin') {
+  if (!token || !user || user.role?.toUpperCase() !== 'ADMIN') {
     return null;
+  }
+
+  // Require password change before allowing access
+  if (passwordChangeRequired) {
+    return <ChangePasswordScreen />;
   }
 
   return <>{children}</>;

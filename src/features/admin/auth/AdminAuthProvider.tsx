@@ -2,18 +2,20 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 export interface AdminUser {
   name: string;
-  role: 'admin';
+  role: 'ADMIN' | 'USER';
 }
 
 export interface AdminAuthState {
   token: string | null;
   user: AdminUser | null;
   isLoading: boolean;
+  passwordChangeRequired?: boolean;
 }
 
 export interface AdminAuthContextType extends AdminAuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
+  setPasswordChangeDone: () => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | null>(null);
@@ -30,6 +32,7 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
     token: null,
     user: null,
     isLoading: true,
+    passwordChangeRequired: false,
   });
 
   // Load persisted auth state on mount
@@ -72,6 +75,7 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
         role: response.role,
       },
       isLoading: false,
+      passwordChangeRequired: !!response.passwordChangeRequired,
     });
   };
 
@@ -92,10 +96,13 @@ export function AdminAuthProvider({ children }: AdminAuthProviderProps) {
     });
   };
 
+  const setPasswordChangeDone = () => setState(prev => ({...prev, passwordChangeRequired: false }));
+
   const contextValue: AdminAuthContextType = {
     ...state,
     signIn,
     signOut,
+    setPasswordChangeDone,
   };
 
   return (

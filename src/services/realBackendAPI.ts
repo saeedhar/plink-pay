@@ -1,7 +1,7 @@
 // Real Backend API Integration for Plink
 // This replaces the mock services with actual backend API calls
 
-import { apiUrl } from '../lib/api';
+import { apiUrl, API } from '../lib/api';
 
 // ==========================================
 // TYPE DEFINITIONS (Matching Backend)
@@ -189,6 +189,13 @@ export interface KybOptionsResponse {
   items: KybOption[];
 }
 
+export interface MeResponse {
+  id: string;
+  email?: string;
+  phoneE164?: string;
+  name?: string;
+}
+
 export interface ForgotPasswordRequest {
   // For ID/BOD flow
   idUnn?: string;
@@ -231,114 +238,27 @@ export interface ResetPasswordResponse {
 // ==========================================
 
 export async function sendOtp(request: SendOtpRequest): Promise<SendOtpResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/send-otp'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to send OTP: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/send-otp', request);
 }
 
 export async function verifyOtp(request: VerifyOtpRequest): Promise<VerifyOtpResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/verify-otp'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to verify OTP: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/verify-otp', request);
 }
 
 export async function setPassword(request: SetPasswordRequest): Promise<SetPasswordResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/set-password'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to set password: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/set-password', request);
 }
 
 export async function setPasscode(request: SetPasscodeRequest): Promise<SetPasscodeResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/set-passcode'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to set passcode: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/set-passcode', request);
 }
 
 export async function loginWithPassword(request: LoginPasswordRequest): Promise<LoginResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/login/password'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    // Try to get error message from response
-    let errorMessage = `Failed to login: ${response.status}`;
-    try {
-      const text = await response.text();
-      console.error('Login error response (raw):', text);
-      try {
-        const errorData = JSON.parse(text);
-        errorMessage = errorData.message || errorData.error || errorMessage;
-        console.error('Login error details:', errorData);
-      } catch (e) {
-        errorMessage = text || errorMessage;
-      }
-    } catch (e) {
-      console.error('Failed to read error response:', e);
-    }
-    throw new Error(errorMessage);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/login/password', request);
 }
 
 export async function verifyLoginOtp(request: VerifyLoginOtpRequest): Promise<LoginResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/login/verify-otp'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to verify login OTP: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/login/verify-otp', request);
 }
 
 export interface CallbackStatusResponse {
@@ -362,18 +282,7 @@ export interface CallbackCompleteResponse {
  * Check callback verification status
  */
 export async function checkCallbackStatus(callbackId: string): Promise<CallbackStatusResponse> {
-  const response = await fetch(apiUrl(`/api/v1/auth/callback-status/${callbackId}`), {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to check callback status: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.get(`/api/v1/auth/callback-status/${callbackId}`);
 }
 
 /**
@@ -392,73 +301,21 @@ export async function completeCallback(callbackId: string): Promise<CallbackComp
   console.log('📡 Calling callback complete endpoint:', `/api/v1/auth/callback-complete/${callbackId}`);
   console.log('📦 Request payload:', JSON.stringify(deviceInfo, null, 2));
 
-  const response = await fetch(apiUrl(`/api/v1/auth/callback-complete/${callbackId}`), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(deviceInfo),
-  });
-
-  console.log('📦 Response status:', response.status);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Callback complete failed:', errorText);
-    throw new Error(`Failed to complete callback: ${response.status}`);
-  }
-
-  const result = await response.json();
+  const result = await API.post(`/api/v1/auth/callback-complete/${callbackId}`, deviceInfo);
   console.log('📦 Response data:', JSON.stringify(result, null, 2));
   return result;
 }
 
 export async function checkPhoneUniqueness(request: PhoneUniquenessRequest): Promise<PhoneUniquenessResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/check-phone-uniqueness'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to check phone uniqueness: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/check-phone-uniqueness', request);
 }
 
 export async function forgotPassword(request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/forgot-password'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to request password reset: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/forgot-password', request);
 }
 
 export async function resetPassword(request: ResetPasswordRequest): Promise<ResetPasswordResponse> {
-  const response = await fetch(apiUrl('/api/v1/auth/reset-password'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to reset password: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/auth/reset-password', request);
 }
 
 // ==========================================
@@ -466,51 +323,15 @@ export async function resetPassword(request: ResetPasswordRequest): Promise<Rese
 // ==========================================
 
 export async function validateCrNumber(request: ValidateCrRequest): Promise<ValidateCrResponse> {
-  const response = await fetch(apiUrl('/api/v1/verification/validate-cr'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to validate CR number: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/verification/validate-cr', request);
 }
 
 export async function validateFreelancerLicense(request: ValidateFreelancerRequest): Promise<ValidateFreelancerResponse> {
-  const response = await fetch(apiUrl('/api/v1/verification/validate-freelancer-license'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to validate freelancer license: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/verification/validate-freelancer-license', request);
 }
 
 export async function validateIdNumber(request: ValidateIdRequest): Promise<ValidateIdResponse> {
-  const response = await fetch(apiUrl('/api/v1/verification/validate-id'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to validate ID number: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/verification/validate-id', request);
 }
 
 // ==========================================
@@ -518,34 +339,11 @@ export async function validateIdNumber(request: ValidateIdRequest): Promise<Vali
 // ==========================================
 
 export async function initiateNafath(request: NafathInitiateRequest): Promise<NafathInitiateResponse> {
-  const response = await fetch(apiUrl('/api/v1/nafath/initiate'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to initiate Nafath: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/nafath/initiate', request);
 }
 
 export async function getNafathStatus(sessionId: string): Promise<NafathStatusResponse> {
-  const response = await fetch(apiUrl(`/api/v1/nafath/status/${sessionId}`), {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to get Nafath status: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.get(`/api/v1/nafath/status/${sessionId}`);
 }
 
 // ==========================================
@@ -553,19 +351,7 @@ export async function getNafathStatus(sessionId: string): Promise<NafathStatusRe
 // ==========================================
 
 export async function createProfile(request: CreateProfileRequest): Promise<CreateProfileResponse> {
-  const response = await fetch(apiUrl('/api/v1/onboarding/profile'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to create profile: ${response.status}`);
-  }
-
-  return await response.json();
+  return API.post('/api/v1/onboarding/profile', request);
 }
 
 
@@ -574,16 +360,13 @@ export async function createProfile(request: CreateProfileRequest): Promise<Crea
 // ==========================================
 
 export async function getKybOptions(category: string, locale: string = 'en'): Promise<KybOptionsResponse> {
-  const response = await fetch(apiUrl(`/api/v1/kyb/options?category=${category}&locale=${locale}`), {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  return API.get(`/api/v1/kyb/options?category=${category}&locale=${locale}`);
+}
 
-  if (!response.ok) {
-    throw new Error(`Failed to get KYB options: ${response.status}`);
-  }
+// ==========================================
+// PROFILE APIs
+// ==========================================
 
-  return await response.json();
+export async function getCurrentUser(): Promise<MeResponse> {
+  return API.get('/api/v1/auth/me');
 }

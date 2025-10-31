@@ -7,13 +7,16 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  role: 'admin';
+  role: 'ADMIN' | 'USER';
   name: string;
+  email?: string;
+  passwordChangeRequired?: boolean;
 }
 
 export interface AdminProfile {
-  role: 'admin';
-  name: string;
+  role: 'ADMIN' | 'USER';
+  name?: string;
+  email?: string;
 }
 
 /**
@@ -34,7 +37,8 @@ export class AdminAuthService {
       sessionStorage.setItem('admin_token', response.token);
       sessionStorage.setItem('admin_user', JSON.stringify({
         role: response.role,
-        name: response.name
+        name: response.name,
+        email: response.email
       }));
     }
 
@@ -61,7 +65,7 @@ export class AdminAuthService {
    */
   isAuthenticated(): boolean {
     const token = sessionStorage.getItem('admin_token');
-    return !!token && token.startsWith('adm_');
+    return !!token; // JWT from backend
   }
 
   /**
@@ -74,6 +78,18 @@ export class AdminAuthService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Change admin password (used for temp/first login force-change)
+   */
+  async changePassword(oldPassword: string, newPassword: string): Promise<{ success: boolean; message?: string }> {
+    const res = await adminHttp<{ success: boolean; message?: string; error?: string }>('/api/admin/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ oldPassword, newPassword })
+    });
+    if (res.success) return res;
+    throw new Error(res.error || res.message || 'Failed to change password');
   }
 }
 

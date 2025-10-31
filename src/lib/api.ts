@@ -44,13 +44,24 @@ export function apiUrl(path: string) {
   return url
 }
 
+/** Token helpers (user portal) */
+function getAccessToken() {
+  return localStorage.getItem('accessToken') || ''
+}
+function getRefreshToken() {
+  return localStorage.getItem('refreshToken') || ''
+}
+function setTokens(accessToken: string, refreshToken?: string) {
+  if (accessToken) localStorage.setItem('accessToken', accessToken)
+  if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
+}
+
 /** Common headers – add Authorization once here, affects every request */
 function defaultHeaders() {
   const headers: Record<string, string> = {
     'Accept': 'application/json',
   }
-  // Example: bearer token from localStorage (optional)
-  const token = localStorage.getItem('accessToken')
+  const token = getAccessToken()
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
     // Debug: log token info (only first time)
@@ -66,6 +77,54 @@ function defaultHeaders() {
     }
   }
   return headers
+}
+
+/**
+ * Refresh access token using refresh token.
+ * Backend returns { accessToken, refreshToken, expiresIn }
+ */
+let refreshing: Promise<void> | null = null
+async function refreshAccessToken(): Promise<void> {
+  if (refreshing) return refreshing
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) throw new Error('No refresh token')
+
+  refreshing = fetch(apiUrl('/api/v1/auth/refresh-token'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken })
+  })
+    .then(async (res) => {
+      const text = await res.text()
+      if (!res.ok) {
+        let msg = text
+        try { msg = JSON.parse(text)?.message ?? msg } catch {}
+        throw new Error(msg || `HTTP ${res.status}`)
+      }
+      const data = text ? JSON.parse(text) : {}
+      if (data?.accessToken) setTokens(data.accessToken, data.refreshToken)
+    })
+    .finally(() => { refreshing = null })
+
+  return refreshing
+}
+
+/** Perform fetch with auth and auto-refresh on 401 once */
+async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit) {
+  const doFetch = () => fetch(input, init)
+  let res = await doFetch()
+  if (res.status !== 401) return res
+
+  // Attempt a single refresh and retry
+  try {
+    await refreshAccessToken()
+    const headers = new Headers(init?.headers)
+    headers.set('Authorization', `Bearer ${getAccessToken()}`)
+    res = await fetch(input, { ...init, headers })
+  } catch {
+    return res
+  }
+  return res
 }
 
 /** A small helper to throw on non-2xx and return JSON when available */
@@ -88,14 +147,14 @@ async function parseJsonOrThrow(res: Response) {
 /** A tiny typed wrapper you can expand (add put/patch/delete as needed). */
 export const API = {
   get: (p: string, init?: RequestInit) =>
-    fetch(apiUrl(p), {
+    fetchWithAuth(apiUrl(p), {
       ...init,
       method: 'GET',
       headers: { ...defaultHeaders(), ...(init?.headers as any) }
     }).then(parseJsonOrThrow),
 
   post: (p: string, body?: unknown, init?: RequestInit) =>
-    fetch(apiUrl(p), {
+    fetchWithAuth(apiUrl(p), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...defaultHeaders(), ...(init?.headers as any) },
       body: body == null ? undefined : JSON.stringify(body),
@@ -103,7 +162,7 @@ export const API = {
     }).then(parseJsonOrThrow),
 
   put: (p: string, body?: unknown, init?: RequestInit) =>
-    fetch(apiUrl(p), {
+    fetchWithAuth(apiUrl(p), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...defaultHeaders(), ...(init?.headers as any) },
       body: body == null ? undefined : JSON.stringify(body),
@@ -111,7 +170,7 @@ export const API = {
     }).then(parseJsonOrThrow),
 
   del: (p: string, init?: RequestInit) =>
-    fetch(apiUrl(p), {
+    fetchWithAuth(apiUrl(p), {
       ...init,
       method: 'DELETE',
       headers: { ...defaultHeaders(), ...(init?.headers as any) }

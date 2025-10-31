@@ -80,7 +80,7 @@ export function AdminLayout() {
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
-                  User Management
+                  Customer Management
                 </Link>
               </li>
               <li>

@@ -60,10 +60,10 @@ export function AdminHomePage() {
           <div className="mt-8">
             <h3 className="text-lg font-medium">
               <span className="absolute inset-0" aria-hidden="true" />
-              User Management
+              Customer Management
             </h3>
             <p className="mt-2 text-sm text-gray-500">
-              View, edit, and manage all users in the system. Lock/unlock accounts and monitor user activity.
+              View, edit, and manage all Customers in the system. Lock/unlock accounts and monitor Customer activity.
             </p>
           </div>
           <span
