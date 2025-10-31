@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoMailOutline } from 'react-icons/io5';
+import EmailIcon from '../../../assets/Profile/Email.svg';
 
 const UpdateEmail: React.FC = () => {
   const navigate = useNavigate();
@@ -86,14 +87,7 @@ const UpdateEmail: React.FC = () => {
               <div className="modal-content">
                 <div className="email-add-section">
                   <div className="email-add-icon">
-                    <div className="email-icon-container">
-                      <IoMailOutline size={32} color="#6B7280" />
-                      <div className="add-plus-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 5V19M5 12H19" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                    </div>
+                    <img src={EmailIcon} alt="Email" style={{ width: '50px', height: '50px' }} />
                   </div>
                   
                   <h3 className="email-add-title">Add Email</h3>

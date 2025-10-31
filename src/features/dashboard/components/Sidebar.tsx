@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logoMark from '../../../assets/logo-mark.svg';
 import dashboardIcon from '../../../assets/dashboard/dashboard.svg';
@@ -14,6 +14,16 @@ const Sidebar: React.FC = () => {
 
   const isActive = (path: string) => location.pathname === path;
   const isWalletActive = location.pathname === '/app/services/wallet';
+  
+  // Check if we're on any account settings page
+  const isAccountSettingsPage = location.pathname.startsWith('/app/account-settings');
+  
+  // Auto-collapse services when on account settings page
+  useEffect(() => {
+    if (isAccountSettingsPage) {
+      setServicesExpanded(false);
+    }
+  }, [isAccountSettingsPage]);
 
   return (
     <div className="sidebar">
@@ -67,8 +77,8 @@ const Sidebar: React.FC = () => {
         </div>
 
         <Link 
-          to="/settings" 
-          className={`nav-item ${isActive('/settings') ? 'active' : ''}`}
+          to="/app/account-settings" 
+          className={`nav-item ${isAccountSettingsPage ? 'active' : ''}`}
         >
           <img src={settingsIcon} alt="Settings" className="nav-icon" />
           <span>Settings</span>

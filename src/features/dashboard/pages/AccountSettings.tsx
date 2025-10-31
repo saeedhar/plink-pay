@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
+import { getCurrentUser } from '../../../services/realBackendAPI';
 import { 
   IoPhonePortraitOutline, 
   IoMailOutline, 
@@ -16,6 +17,9 @@ import {
 
 const AccountSettings: React.FC = () => {
   const navigate = useNavigate();
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -30,6 +34,23 @@ const AccountSettings: React.FC = () => {
         root.classList.remove('dashboard-root');
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setIsLoading(true);
+        const user = await getCurrentUser();
+        setName(user.name || '');
+        setEmail(user.email || '');
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserData();
   }, []);
 
   const handleMenuItemClick = (path: string) => {
@@ -65,8 +86,8 @@ const AccountSettings: React.FC = () => {
                 </div>
               </div>
               <div className="profile-info">
-                <h3 className="profile-name">Name</h3>
-                <p className="profile-email">plgmail@example.com</p>
+                <h3 className="profile-name">{isLoading ? 'Loading...' : (name || 'User')}</h3>
+                <p className="profile-email">{isLoading ? 'Loading...' : (email || 'No email')}</p>
               </div>
             </div>
 
@@ -109,7 +130,7 @@ const AccountSettings: React.FC = () => {
                     <div className="menu-item-icon">
                       <IoDocumentTextOutline size={24} color="#022466" />
                     </div>
-                    <span className="menu-item-text">Update KYC Form</span>
+                    <span className="menu-item-text">Update KYB Form</span>
                   </div>
                   <IoChevronForwardOutline size={20} color="#667085" />
                 </div>
@@ -162,7 +183,7 @@ const AccountSettings: React.FC = () => {
 
                 <div 
                   className="menu-item"
-                  onClick={() => handleMenuItemClick('/app/account-settings/address')}
+                  onClick={() => handleMenuItemClick('/app/account-settings/national-address')}
                 >
                   <div className="menu-item-content">
                     <div className="menu-item-icon">
@@ -173,7 +194,7 @@ const AccountSettings: React.FC = () => {
                   <IoChevronForwardOutline size={20} color="#667085" />
                 </div>
 
-                <div 
+                {/* <div 
                   className="menu-item"
                   onClick={() => handleMenuItemClick('/app/account-settings/limits')}
                 >
@@ -184,7 +205,7 @@ const AccountSettings: React.FC = () => {
                     <span className="menu-item-text">Limit Management</span>
                   </div>
                   <IoChevronForwardOutline size={20} color="#667085" />
-                </div>
+                </div> */}
 
                 <div 
                   className="menu-item"
