@@ -65,6 +65,7 @@ const AppNavigator: React.FC = () => {
             <Route path="wallet/otp" element={<WalletOTPPage />} />
             <Route path="wallet/limits" element={<LimitsConfiguration />} />
             <Route path="wallet/subwallet" element={<SubWallet />} />
+          {/** Top Up route handled at root level as /services/topup */}
             {/* Add more service routes here */}
           </Route>
       <Route path="/" element={<Dashboard />} />

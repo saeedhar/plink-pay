@@ -2300,6 +2300,14 @@ html::-webkit-scrollbar {
   margin: 0 -16px;
 }
 
+/* Disable hover effect for sections that opt-out */
+.wallet-section.no-hover:hover {
+  background-color: transparent;
+  padding: 20px 0;
+  margin: 0;
+  border-radius: 0;
+}
+
 .wallet-section:last-child {
   border-bottom: none;
 }

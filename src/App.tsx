@@ -32,6 +32,11 @@ import ForgotPasswordSelectionPage from './features/auth/pages/ForgotPasswordSel
 import AccountLockedPage from './features/auth/pages/AccountLockedPage';
 import { AppAdminRoutes } from './features/admin/AppAdminRoutes';
 import AppNavigator from './components/navigation/AppNavigator';
+import TopUp from './features/dashboard/pages/TopUp';
+import TopUpCard from './features/dashboard/pages/TopUpCard';
+import TopUpSelectMethod from './features/dashboard/pages/TopUpSelectMethod';
+import TopUpSelectExistingCard from './features/dashboard/pages/TopUpSelectExistingCard';
+import TopUpEnterCVV from './features/dashboard/pages/TopUpEnterCVV';
 
 function AppRoutes() {
   const security = useSecurity();
@@ -156,6 +161,13 @@ function AppRoutes() {
         {isAuthenticated && (
           <Route path="/app/*" element={<AppNavigator />} />
         )}
+
+        {/* Services - Top Up without app prefix */}
+        <Route path="/services/topup" element={<TopUp />} />
+        <Route path="/services/topup/card" element={<TopUpCard />} />
+        <Route path="/services/topup/card/select-method" element={<TopUpSelectMethod />} />
+        <Route path="/services/topup/card/select-existing" element={<TopUpSelectExistingCard />} />
+        <Route path="/services/topup/card/cvv" element={<TopUpEnterCVV />} />
       </Routes>
 
               {/* Session Warning Modal */}
