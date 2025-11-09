@@ -37,6 +37,10 @@ import TopUpCard from './features/dashboard/pages/TopUpCard';
 import TopUpSelectMethod from './features/dashboard/pages/TopUpSelectMethod';
 import TopUpSelectExistingCard from './features/dashboard/pages/TopUpSelectExistingCard';
 import TopUpEnterCVV from './features/dashboard/pages/TopUpEnterCVV';
+import TopUp3DSecure from './features/dashboard/pages/TopUp3DSecure';
+import TopUpSuccess from './features/dashboard/pages/TopUpSuccess';
+import TopUpVirtualIBAN from './features/dashboard/pages/TopUpVirtualIBAN';
+import TopUpAddNewCard from './features/dashboard/pages/TopUpAddNewCard';
 
 function AppRoutes() {
   const security = useSecurity();
@@ -165,9 +169,14 @@ function AppRoutes() {
         {/* Services - Top Up without app prefix */}
         <Route path="/services/topup" element={<TopUp />} />
         <Route path="/services/topup/card" element={<TopUpCard />} />
+        <Route path="/services/topup/card/add" element={<TopUpAddNewCard />} />
         <Route path="/services/topup/card/select-method" element={<TopUpSelectMethod />} />
         <Route path="/services/topup/card/select-existing" element={<TopUpSelectExistingCard />} />
         <Route path="/services/topup/card/cvv" element={<TopUpEnterCVV />} />
+        <Route path="/services/topup/card/3d-secure" element={<TopUp3DSecure />} />
+        <Route path="/services/topup/card/success" element={<TopUpSuccess />} />
+        <Route path="/services/topup/virtual-iban" element={<TopUpVirtualIBAN />} />
+        <Route path="/services/topup/add-new-card" element={<TopUpAddNewCard />} />
       </Routes>
 
               {/* Session Warning Modal */}

@@ -8,15 +8,14 @@ import addCardIcon from '../../../assets/topup/add-card.svg';
 const TopUpSelectMethod: React.FC = () => {
   const navigate = useNavigate();
 
-  const goBack = () => navigate('/services/topup/card');
+  const goBack = () => navigate('/services/topup');
 
   const handleUseExisting = () => {
     navigate('/services/topup/card/select-existing');
   };
 
   const handleAddNew = () => {
-    // Navigate to add new card flow (placeholder)
-    navigate('/services/topup');
+    navigate('/services/topup/card/add');
   };
 
   return (

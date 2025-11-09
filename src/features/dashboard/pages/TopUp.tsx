@@ -59,7 +59,7 @@ const TopUp: React.FC = () => {
                 </div>
               </div>
 
-              <div className="wallet-section">
+              <div className="wallet-section" onClick={() => navigate('/services/topup/virtual-iban')}>
                 <div className="wallet-section-content">
                   <div className="wallet-section-icon">
                     <img src={ibanIcon} alt="Virtual IBAN Top Up" className="wallet-section-icon-img" />

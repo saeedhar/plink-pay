@@ -71,7 +71,7 @@ const TopUpCard: React.FC = () => {
                     <div style={{ display: 'flex', gap: 16, marginTop: 20 }}>
                       <button
                         className="btn btn-secondary"
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate('/services/topup')}
                         style={{ flex: 1 }}
                       >
                         Back

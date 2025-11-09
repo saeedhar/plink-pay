@@ -12,13 +12,13 @@ const TopUpSelectExistingCard: React.FC = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<number | null>(0);
 
-  const goBack = () => navigate('/services/topup/card/select-method');
+  const goBack = () => navigate('/services/topup');
   const handleContinue = () => navigate('/services/topup/card/cvv');
 
   const cards = [
-    { id: 0, label: 'Visa', img: visaCard, last4: '2345' },
-    { id: 1, label: 'Mastercard', img: masterCard, last4: '2345' },
-    { id: 2, label: 'Visa Mada', img: visaMada, last4: '2345' },
+    { id: 0, label: 'Visa', img: visaCard, last4: '1111', expiry: '02/30' },
+    { id: 1, label: 'Mastercard', img: masterCard, last4: '2345', expiry: '02/30' },
+    { id: 2, label: 'Visa Mada', img: visaMada, last4: '2345', expiry: '02/30' },
   ];
 
   return (
@@ -111,10 +111,59 @@ const TopUpSelectExistingCard: React.FC = () => {
                         borderRadius: 12,
                         background: 'transparent',
                         cursor: 'pointer',
-                        overflow: 'visible'
+                        overflow: 'visible',
+                        position: 'relative'
                       }}
                     >
                       <img src={c.img} alt={c.label} style={{ width: 200, height: 120, display: 'block', borderRadius: 12 }} />
+                      
+                      {/* Card Number Overlay */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 45,
+                        left: 12,
+                        right: 12,
+                        color: '#FFFFFF',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        pointerEvents: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        <span >* * * *</span>
+                        <span >* * * *</span>
+                        <span >* * * *</span>
+                        <span style={{ letterSpacing: '3px', fontSize: 16, fontWeight: 500 }}>{c.last4}</span>
+                      </div>
+
+                      {/* Expiry Date Overlay */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 8,
+                        right: 12,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        pointerEvents: 'none'
+                      }}>
+                        <div style={{
+                          color: 'rgba(255, 255, 255, 0.95)',
+                          fontSize: 9,
+                          fontWeight: 300,
+                          marginBottom: 2
+                        }}>
+                          Expiry Date
+                        </div>
+                        <div style={{
+                          color: '#FFFFFF',
+                          fontSize: 12,
+                          fontWeight: 300
+                        }}>
+                          {c.expiry}
+                        </div>
+                      </div>
                     </button>
                   </div>
                 ))}

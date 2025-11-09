@@ -8,14 +8,33 @@ const TopUpEnterCVV: React.FC = () => {
   const [cvv, setCvv] = useState('');
   const [error, setError] = useState('');
 
-  const onBack = () => navigate('/services/topup/card/select-existing');
+  const onBack = () => navigate('/services/topup');
   const onContinue = () => {
     if (!/^\d{3,4}$/.test(cvv)) {
       setError('Please enter a valid 3 or 4 digit CVV');
       return;
     }
-    // Next step placeholder (e.g., OTP)
-    navigate('/services/topup/card');
+    // Navigate to 3D Secure verification
+    const now = new Date();
+    const timestamp = now
+      .toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      })
+      .replace(',', ' at');
+
+    navigate('/services/topup/card/3d-secure', {
+      state: {
+        cardType: 'Visa',
+        last4: '2345',
+        amount: '500',
+        timestamp
+      }
+    });
   };
 
   return (
