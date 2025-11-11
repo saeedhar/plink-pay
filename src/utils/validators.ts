@@ -56,14 +56,24 @@ export function validateSaudiPhone(phone: string): string | null {
  */
 export function formatPhoneNumber(input: string): string {
   const cleaned = convertArabicToEnglish(input).replace(/\D/g, '').substring(0, 10);
-  
-  if (cleaned.length >= 6) {
-    return `${cleaned.substring(0, 3)} ${cleaned.substring(3, 6)} ${cleaned.substring(6)}`;
-  } else if (cleaned.length >= 3) {
-    return `${cleaned.substring(0, 3)} ${cleaned.substring(3)}`;
+
+  const segments: string[] = [];
+
+  if (cleaned.length === 0) {
+    return '';
   }
-  
-  return cleaned;
+
+  segments.push(cleaned.substring(0, Math.min(3, cleaned.length)));
+
+  if (cleaned.length > 3) {
+    segments.push(cleaned.substring(3, Math.min(6, cleaned.length)));
+  }
+
+  if (cleaned.length > 6) {
+    segments.push(cleaned.substring(6));
+  }
+
+  return segments.join(' ');
 }
 
 // ==========================================

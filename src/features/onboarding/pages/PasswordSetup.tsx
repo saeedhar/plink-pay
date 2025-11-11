@@ -110,8 +110,6 @@ export default function PasswordSetup() {
            ]} 
            activeIndex={-1} 
            logoSrc={WhiteLogo}
-           showReloadButton={true}
-           onReload={handleReset}
          />
 
         {/* Right content */}
@@ -120,7 +118,7 @@ export default function PasswordSetup() {
             <img src={HeroLogo} alt="" className="h-12 w-12 mx-auto" />
           </div>
 
-          <div className="flex-1 flex items-start justify-center pt-16">
+          <div className="flex-1 flex items-start justify-center pt-6">
             <div className="max-w-md w-full px-8">
               {/* Header Section */}
               <div className="text-center mb-6">

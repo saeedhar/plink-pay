@@ -17,6 +17,7 @@ interface SignupInputProps {
   required?: boolean;
   error?: string;
   addLeftPadding?: boolean;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
 }
 
 export function SignupInput({
@@ -34,7 +35,8 @@ export function SignupInput({
   helper,
   required = false,
   error,
-  addLeftPadding = true
+  addLeftPadding = true,
+  onBlur
 }: SignupInputProps) {
   return (
     <FormField
@@ -55,8 +57,9 @@ export function SignupInput({
         autoComplete={autoComplete}
         leftIcon={leftIcon}
         rightIcon={rightIcon}
+        onBlur={onBlur}
         className={leftIcon && addLeftPadding ? "pl-16" : ""}
-        style={{ borderRadius: '20px', borderColor: '#023B67' }}
+        style={{ borderRadius: '20px' }}
       />
     </FormField>
   );

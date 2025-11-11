@@ -58,7 +58,11 @@ export function NafathModal() {
             <button
               onClick={handleGoToNafath}
               disabled={isInitializing}
-              className="w-full bg-[#023B67] text-white py-4 px-8 rounded-2xl font-bold text-lg hover:bg-[#023B67]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full py-4 px-8 rounded-2xl font-bold text-lg transition-all ${
+                isInitializing
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"
+                  : "gradient-button text-white shadow-sm hover:shadow-lg"
+              }`}
             >
               {isInitializing ? 'Initializing...' : 'Go to Nafath'}
             </button>
@@ -86,7 +90,8 @@ export function NafathModal() {
           <div className="flex justify-center">
             <button
               onClick={handleDone}
-              className="bg-[#2E248F] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#1a1a5a] transition-colors"
+              className="gradient-button text-white px-6 py-2 rounded-lg font-medium shadow-sm hover:shadow-lg transition-all"
+              style={{ width: 'auto' }}
             >
               Done
             </button>
@@ -132,7 +137,7 @@ export function NafathModal() {
             {/* Done Button */}
             <button
               onClick={handleDone}
-              className="w-full bg-[#023B67] text-white py-4 px-8 rounded-2xl font-bold text-lg hover:bg-[#023B67]/90 transition-colors"
+              className="w-full gradient-button text-white py-4 px-8 rounded-2xl font-bold text-lg transition-all hover:shadow-lg"
             >
               Done
             </button>
@@ -178,7 +183,7 @@ export function NafathModal() {
             {/* Done Button */}
             <button
               onClick={handleDone}
-              className="w-full bg-[#023B67] text-white py-4 px-8 rounded-2xl font-bold text-lg hover:bg-[#023B67]/90 transition-colors"
+              className="w-full gradient-button text-white py-4 px-8 rounded-2xl font-bold text-lg transition-all hover:shadow-lg"
             >
               Done
             </button>
@@ -207,7 +212,8 @@ export function NafathModal() {
         <div className="mt-4 text-center">
           <button
             onClick={handleResend}
-            className="bg-[#CE2E81] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#a8246a] transition-colors"
+            className="gradient-button text-white px-6 py-2 rounded-lg font-medium shadow-sm hover:shadow-lg transition-all"
+            style={{ width: 'auto' }}
           >
             Resend Code via Nafath
           </button>

@@ -17,16 +17,21 @@ export function SignupButton({
   children,
   className = ''
 }: SignupButtonProps) {
+  const isDisabled = disabled || isLoading;
+
   return (
     <div className="text-center">
       <button
         onClick={onClick}
-        disabled={disabled || isLoading}
-        className={`px-12 py-3 rounded-2xl font-semibold transition-colors text-lg w-full ${
-          disabled || isLoading
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-[#023B67] text-white hover:bg-[#023B67]/90"
+        disabled={isDisabled}
+        className={`px-12 py-3 rounded-2xl font-semibold text-lg w-full transition-all ${
+          isDisabled
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"
+            : "gradient-button text-white shadow-sm hover:shadow-lg"
         } ${className}`}
+        style={{
+          border: isDisabled ? undefined : 'none'
+        }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center gap-2">

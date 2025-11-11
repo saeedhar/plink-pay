@@ -7,10 +7,10 @@ import WhiteLogo from "../../../assets/select your buisness type assets/white-lo
 import heroLogo from "../../../assets/hero-logo-mini.svg";
 import WarningIcon from "../../../assets/warning.svg";
 // icons
-import SoleProprietorshipIcon from "../../../assets/select your buisness type assets/Vector.svg";
-import IndividualOwnerIcon from "../../../assets/select your buisness type assets/Vector-1.svg";
-import MultiOwnerIcon from "../../../assets/select your buisness type assets/Vector-2.svg";
-import FreelancerIcon from "../../../assets/select your buisness type assets/Vector-3.svg";
+import SoleProprietorshipIcon from "../../../assets/select your buisness type assets/Vector.svg?url";
+import IndividualOwnerIcon from "../../../assets/select your buisness type assets/Vector-1.svg?url";
+import MultiOwnerIcon from "../../../assets/select your buisness type assets/Vector-2.svg?url";
+import FreelancerIcon from "../../../assets/select your buisness type assets/Vector-3.svg?url";
 import StepSidebar from "../components/StepSidebar";
 import { BusinessTypeOption } from "../components/BusinessTypeOption";
 
@@ -123,10 +123,10 @@ export default function BusinessTypeSelection() {
           <div className="text-center">
             <button
               onClick={handleNext}
-              className={`font-medium transition-all text-lg border ${
+              className={`font-medium transition-all text-lg ${
                 selectedType
-                  ? "bg-[#023A66] text-white hover:bg-[#023A66]/90 border-[#023A66]"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300"
+                  ? "text-white border-none hover:opacity-90"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed border border-gray-300"
               }`}
               style={{
                 width: '362px',
@@ -136,7 +136,10 @@ export default function BusinessTypeSelection() {
                 paddingRight: '20px',
                 paddingBottom: '12px',
                 paddingLeft: '20px',
-                gap: '8px'
+                gap: '8px',
+                background: selectedType
+                  ? 'linear-gradient(90deg, #023A66 0%, #00BDFF 100%)'
+                  : undefined
               }}
               disabled={!selectedType}
             >
@@ -152,39 +155,29 @@ export default function BusinessTypeSelection() {
       <Modal
         isOpen={showBlockedModal}
         onClose={() => setShowBlockedModal(false)}
-        title={
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <img src={WarningIcon} alt="Warning" className="w-16 h-16" />
-            </div>
-            <h2 className="text-black mb-4" style={{
-              fontWeight: 700,
-              fontSize: '28px',
-              lineHeight: '40px',
-              letterSpacing: '0%',
-              textAlign: 'center'
-            }}>
-              Account Cannot be Opened
-            </h2>
-            <p className="text-gray-600" style={{
-              fontWeight: 400,
-              fontSize: '16px',
-              lineHeight: '26px',
-              letterSpacing: '0%',
-              textAlign: 'center'
-            }}>
-              Your request could not be completed. Please verify your details and try again.
-            </p>
-          </div>
-        }
+        title="Account Cannot be Opened"
+        icon={<img src={WarningIcon} alt="Warning" className="w-16 h-16" />}
         primaryButton={{
           label: "Close",
           onClick: () => setShowBlockedModal(false),
           variant: "primary"
         }}
         size="sm"
-        className="max-w-sm"
-      />
+        className="max-w-sm text-center"
+      >
+        <p
+          className="text-gray-600"
+          style={{
+            fontWeight: 400,
+            fontSize: "16px",
+            lineHeight: "26px",
+            letterSpacing: "0%",
+            textAlign: "center",
+          }}
+        >
+          Your request could not be completed. Please verify your details and try again.
+        </p>
+      </Modal>
     </>
   );
 }

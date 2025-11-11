@@ -60,14 +60,16 @@ input[type="checkbox"]:checked::before {
 
 /* Gradient button hover effect */
 .gradient-button {
-  background: linear-gradient(90deg, #023B67 0%, #00BDFF 100%);
-  transition: all 0.3s ease;
+  background: linear-gradient(90deg, #023A66 0%, #00BDFF 100%);
+  color: #ffffff;
+  border: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
 }
 
 .gradient-button:hover:not(:disabled) {
-  background: linear-gradient(90deg, #034a7a 0%, #1ac5ff 100%);
+  background: linear-gradient(90deg, #034a88 0%, #1acfff 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 189, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 189, 255, 0.35);
 }
 
 /* Import accessibility and RTL styles */

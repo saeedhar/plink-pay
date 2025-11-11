@@ -18,6 +18,7 @@ import { DevScenarioBar } from "../../../dev/DevScenarioBar";
 export default function PhoneNumberEntry() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [isTouched, setIsTouched] = useState(false);
   
   const navigate = useNavigate();
   const { state, dispatch, saveCheckpoint } = useOnboarding();
@@ -47,6 +48,7 @@ export default function PhoneNumberEntry() {
   };
 
   const handleNext = async () => {
+    setIsTouched(true);
     const validationResult = validateSaudiPhone(phoneNumber);
     if (validationResult) {
       return; // Validation handled by real-time validation
@@ -72,6 +74,9 @@ export default function PhoneNumberEntry() {
       // Other errors handled by useLoadingState
     }
   };
+
+  const fieldError = isTouched ? validationError : null;
+  const statusError = typeof error === 'string' ? error : null;
 
   return (
     <>
@@ -124,12 +129,14 @@ export default function PhoneNumberEntry() {
                     placeholder="05X XXX XXXX"
                     value={phoneNumber}
                     onChange={(e) => handlePhoneChange(e.target.value)}
-                    hasError={!!(error || validationError)}
+                  hasError={!!(fieldError || statusError)}
                     maxLength={12}
                     autoComplete="tel"
                     helper="Must start with 05 and be exactly 10 digits"
                     required
                     leftIcon={<span className="text-black font-medium">+966</span>}
+                  onBlur={() => setIsTouched(true)}
+                  error={(fieldError || statusError) ?? undefined}
                   />
                 </div>
 
@@ -190,7 +197,7 @@ export default function PhoneNumberEntry() {
               {/* Go to Login Button */}
               <button
                 onClick={() => navigate('/login')}
-                className="w-full bg-[#023B67] text-white py-4 px-8 rounded-2xl font-bold text-lg hover:bg-[#023B67]/90 transition-colors"
+                className="w-full gradient-button text-white py-4 px-8 rounded-2xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Go to Login
               </button>
