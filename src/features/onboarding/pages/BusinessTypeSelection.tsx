@@ -146,6 +146,11 @@ export default function BusinessTypeSelection() {
               Sign up
             </button>
           </div>
+
+          {/* Footer Copyright */}
+          <div className="mt-12 text-center text-gray-500 text-sm">
+            © 2025 Tyaseer Pay. All rights reserved
+          </div>
         </div>
       </main>
         </div>

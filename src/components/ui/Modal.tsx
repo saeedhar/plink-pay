@@ -37,6 +37,12 @@ export interface ModalProps {
   className?: string;
   /** Preferred focus element when modal opens */
   initialFocusRef?: React.RefObject<HTMLElement>;
+  /** Disable closing when clicking the backdrop */
+  disableBackdropClose?: boolean;
+  /** Disable closing when pressing the Escape key */
+  disableEscapeClose?: boolean;
+  /** Toggle close button visibility */
+  showCloseButton?: boolean;
 }
 
 export function Modal({
@@ -50,7 +56,10 @@ export function Modal({
   persistent = false,
   size = 'md',
   className = '',
-  initialFocusRef
+  initialFocusRef,
+  disableBackdropClose = false,
+  disableEscapeClose = false,
+  showCloseButton = true
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLElement>(null);
@@ -72,7 +81,7 @@ export function Modal({
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !persistent) {
+      if (e.key === 'Escape' && !persistent && !disableEscapeClose) {
         onClose();
         return;
       }
@@ -112,7 +121,7 @@ export function Modal({
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={persistent ? undefined : onClose}
+        onClick={persistent || disableBackdropClose ? undefined : onClose}
         aria-hidden="true"
       />
       
@@ -129,7 +138,7 @@ export function Modal({
         {(title || icon) && (
           <div className="relative p-6 pb-4">
             {/* Close button positioned absolutely in top right */}
-            {!persistent && (
+            {showCloseButton && !persistent && (
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors z-10"

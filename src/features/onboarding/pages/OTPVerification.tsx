@@ -9,6 +9,14 @@ import { Modal } from '../../../components/ui/Modal';
 import { convertArabicToEnglish, OTP_CONFIG } from '../../../utils/validators';
 import { verifyOTP, sendOTP } from '../../../services/onboardingAPI';
 
+const formatCountdown = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
+    .toString()
+    .padStart(2, '0')}`;
+};
+
 export default function OTPVerification() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState<number>(OTP_CONFIG.RESEND_SECONDS);
@@ -175,7 +183,7 @@ export default function OTPVerification() {
   };
 
   const handleClose = () => {
-    navigate('/onboarding/phone-number');
+    navigate('/onboarding/phone');
   };
 
   return (
@@ -183,16 +191,21 @@ export default function OTPVerification() {
       <Modal
         isOpen={true}
         onClose={handleClose}
-        title="Mobile Number OTP Verification"
+        title=""
         size="md"
+        disableBackdropClose
+        className="p-0"
       >
-        <div className="text-center">
-          <p className="text-gray-600 text-lg mb-6">
-            Enter the 6-digit code we sent to your phone
+        <div className="text-center px-10 pt-10 pb-8">
+          <h1 className="text-2xl md:text-[28px] font-semibold text-[#1F2933] mb-2">
+            Mobile Number OTP Verification
+          </h1>
+          <p className="text-base text-[#6B7280] mb-8">
+            Enter your OTP code
           </p>
 
           {/* OTP Input Fields */}
-          <div className="flex justify-center gap-3 mb-6">
+          <div className="flex justify-center gap-4 mb-6">
             {otp.map((digit, index) => (
               <input
                 key={index}
@@ -241,27 +254,37 @@ export default function OTPVerification() {
             </div>
           )}
 
-          {/* Resend Timer */}
-          <div className="text-center mb-6">
-            <p className="text-gray-600 text-sm">
-              {canResend ? (
-                'Didn\'t receive the code?'
-              ) : (
-                `Resend code in ${timeLeft}s`
-              )}
-            </p>
+          {/* Resend Link */}
+          <div className="flex items-center justify-center gap-2 mb-10 text-sm">
+            <span className="text-gray-500">Didn’t receive the code?</span>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={!canResend || isResending}
+              className={`font-semibold transition-colors ${
+                canResend && !isResending
+                  ? 'text-[#00BDFF] hover:text-[#0096d6]'
+                  : 'text-[#00BDFF]/60 cursor-not-allowed'
+              }`}
+            >
+              {isResending
+                ? 'Sending...'
+                : canResend
+                  ? 'Resend OTP'
+                  : `Resend in ${formatCountdown(timeLeft)}`}
+            </button>
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-3 flex flex-col items-center">
+          <div className="flex flex-col items-center">
             <button
               onClick={() => handleVerify()}
               disabled={otp.some(d => !d) || isVerifying}
               className={`
-                w-60 py-3 px-6 rounded-2xl font-semibold transition-all text-lg
+                w-full max-w-xs py-3 px-6 rounded-[24px] font-semibold transition-all text-lg
                 ${otp.some(d => !d) || isVerifying
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
-                  : 'gradient-button text-white shadow-sm hover:shadow-lg'
+                  : 'bg-[#022466] text-white shadow-[0_14px_30px_rgba(2,52,102,0.18)] hover:bg-[#022466]/90'
                 }
               `}
               style={{
@@ -278,22 +301,11 @@ export default function OTPVerification() {
               )}
             </button>
 
-            <button
-              onClick={handleResend}
-              disabled={!canResend || isResending}
-              className={`
-                w-60 py-3 px-6 rounded-2xl font-semibold transition-all text-lg
-                ${!canResend || isResending
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
-                  : 'gradient-button text-white shadow-sm hover:shadow-lg'
-                }
-              `}
-              style={{
-                border: !canResend || isResending ? undefined : 'none'
-              }}
-            >
-              {isResending ? 'Sending...' : 'Resend'}
-            </button>
+          </div>
+
+          {/* Footer Copyright */}
+          <div className="mt-10 text-center text-gray-400 text-sm">
+            © 2025 Tyaseer Pay. All rights reserved
           </div>
         </div>
       </Modal>

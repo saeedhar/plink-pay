@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
               We encountered an unexpected error. Please refresh the page or try again.
             </p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => window.location.assign('/onboarding/business-type')}
               className="bg-[#2E248F] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#1a1a5a] transition-colors"
             >
               Refresh Page

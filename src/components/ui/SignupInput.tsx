@@ -18,6 +18,7 @@ interface SignupInputProps {
   error?: string;
   addLeftPadding?: boolean;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void;
 }
 
 export function SignupInput({
@@ -36,7 +37,8 @@ export function SignupInput({
   required = false,
   error,
   addLeftPadding = true,
-  onBlur
+  onBlur,
+  onPaste
 }: SignupInputProps) {
   return (
     <FormField
@@ -58,6 +60,7 @@ export function SignupInput({
         leftIcon={leftIcon}
         rightIcon={rightIcon}
         onBlur={onBlur}
+        onPaste={onPaste}
         className={leftIcon && addLeftPadding ? "pl-16" : ""}
         style={{ borderRadius: '20px' }}
       />

@@ -164,6 +164,11 @@ export default function CRNumberEntry() {
                 >
                   Next
                 </SignupButton>
+
+                {/* Footer Copyright */}
+                <div className="mt-12 text-center text-gray-500 text-sm">
+                  © 2025 Tyaseer Pay. All rights reserved
+                </div>
               </div>
             </div>
           </main>

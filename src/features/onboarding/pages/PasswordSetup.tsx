@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BiHide, BiShow, BiCheck } from "react-icons/bi";
 import { useOnboarding } from "../../../store/OnboardingContext";
@@ -21,6 +21,23 @@ export default function PasswordSetup() {
   
   const { state, dispatch } = useOnboarding();
   const navigate = useNavigate();
+
+  // Prevent back navigation
+  useEffect(() => {
+    const preventBack = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    // Push initial state
+    window.history.pushState(null, '', window.location.href);
+    
+    // Listen for popstate (back button)
+    window.addEventListener('popstate', preventBack);
+
+    return () => {
+      window.removeEventListener('popstate', preventBack);
+    };
+  }, []);
 
   // Get password requirements status for live checklist
   const requirements = getPasswordRequirements(password);
@@ -118,7 +135,7 @@ export default function PasswordSetup() {
             <img src={HeroLogo} alt="" className="h-12 w-12 mx-auto" />
           </div>
 
-          <div className="flex-1 flex items-start justify-center pt-6">
+          <div className="flex-1 flex items-start justify-center pt-6 ">
             <div className="max-w-md w-full px-8">
               {/* Header Section */}
               <div className="text-center mb-6">
@@ -150,6 +167,7 @@ export default function PasswordSetup() {
                   type={showPassword ? "text" : "password"}
                    error={showErrors ? passwordError || undefined : undefined}
                   addLeftPadding={false}
+                  onPaste={(e) => e.preventDefault()}
                   rightIcon={
                     <button
                       type="button"
@@ -176,6 +194,7 @@ export default function PasswordSetup() {
                   type={showConfirmPassword ? "text" : "password"}
                    error={showErrors ? confirmPasswordError || undefined : undefined}
                   addLeftPadding={false}
+                  onPaste={(e) => e.preventDefault()}
                   rightIcon={
                     <button
                       type="button"
@@ -210,6 +229,11 @@ export default function PasswordSetup() {
               >
                 Next
               </SignupButton>
+
+              {/* Footer Copyright */}
+              <div className="mt-12 text-center text-gray-500 text-sm">
+                © 2025 Tyaseer Pay. All rights reserved
+              </div>
             </div>
           </div>
         </main>
