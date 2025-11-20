@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoMailOutline } from 'react-icons/io5';
 import EmailIcon from '../../../assets/Profile/Email.svg';
+import { UserManagementService } from '../../../services/userManagementService';
 
 const UpdateEmail: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -51,7 +53,7 @@ const UpdateEmail: React.FC = () => {
     navigate('/app/account-settings');
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const validationError = validateEmail(email);
     
     if (validationError) {
@@ -59,10 +61,29 @@ const UpdateEmail: React.FC = () => {
       return;
     }
     
-    // Navigate to OTP verification page
-    navigate('/app/account-settings/email/otp', {
-      state: { email }
-    });
+    try {
+      setIsSubmitting(true);
+      setError('');
+      
+      // Call API to initiate email update
+      const response = await UserManagementService.initiateEmailUpdate({
+        email
+      });
+      
+      // Navigate to OTP verification page with sessionId
+      navigate('/app/account-settings/email/otp', {
+        state: { 
+          email,
+          sessionId: response.sessionId,
+          otpCode: response.otpCode // For testing/display
+        }
+      });
+    } catch (error: any) {
+      console.error('Failed to initiate email update:', error);
+      setError(error.message || 'Failed to initiate email update. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -126,8 +147,9 @@ const UpdateEmail: React.FC = () => {
                 <button 
                   className="btn-primary"
                   onClick={handleNext}
+                  disabled={isSubmitting || !email.trim()}
                 >
-                  Next
+                  {isSubmitting ? 'Processing...' : 'Next'}
                 </button>
               </div>
             </div>

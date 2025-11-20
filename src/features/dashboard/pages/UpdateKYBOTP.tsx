@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
+import { UserManagementService } from '../../../services/userManagementService';
 
 const UpdateKYBOTP: React.FC = () => {
   const navigate = useNavigate();
@@ -11,23 +12,43 @@ const UpdateKYBOTP: React.FC = () => {
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedOTP, setGeneratedOTP] = useState('');
-
-  // Generate random OTP for testing
-  const generateOTP = () => {
-    const randomOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOTP(randomOTP);
-    return randomOTP;
-  };
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState<string>(''); // For testing/display
+  const [kybData, setKybData] = useState<any>(null);
 
   useEffect(() => {
-    // Generate OTP and focus first input
-    generateOTP();
+    // Get sessionId, otpCode, and kybData from navigation state
+    const state = location.state as { 
+      sessionId?: string; 
+      otpCode?: string;
+      kybData?: any;
+    };
+    
+    if (state?.sessionId) {
+      setSessionId(state.sessionId);
+    } else {
+      // If no sessionId, redirect back to start
+      setError('Session expired. Please start over.');
+      setTimeout(() => {
+        navigate('/app/account-settings/kyc');
+      }, 2000);
+      return;
+    }
+    
+    if (state?.otpCode) {
+      setOtpCode(state.otpCode);
+    }
+    
+    if (state?.kybData) {
+      setKybData(state.kybData);
+    }
+    
+    // Focus first input
     setTimeout(() => {
       const firstInput = document.getElementById('otp-0');
       firstInput?.focus();
     }, 100);
-  }, []);
+  }, [location, navigate]);
 
   // Timer countdown
   useEffect(() => {
@@ -64,21 +85,39 @@ const UpdateKYBOTP: React.FC = () => {
     }
   };
 
-  const handleResend = () => {
-    generateOTP();
-    setTimeLeft(30);
-    setIsResendDisabled(true);
-    setError('');
-    setOtp(['', '', '', '', '', '']);
+  const handleResend = async () => {
+    if (!kybData) {
+      setError('KYB data is missing. Please start over.');
+      return;
+    }
     
-    // Focus first input
-    setTimeout(() => {
-      const firstInput = document.getElementById('otp-0');
-      firstInput?.focus();
-    }, 100);
+    try {
+      setIsResendDisabled(true);
+      setError('');
+      setOtp(['', '', '', '', '', '']);
+      setTimeLeft(30);
+      
+      // Re-initiate KYB update to get new OTP
+      const response = await UserManagementService.initiateKybUpdate(kybData);
+      
+      setSessionId(response.sessionId);
+      if (response.otpCode) {
+        setOtpCode(response.otpCode);
+      }
+      
+      // Focus first input
+      setTimeout(() => {
+        const firstInput = document.getElementById('otp-0');
+        firstInput?.focus();
+      }, 100);
+    } catch (error: any) {
+      console.error('Failed to resend OTP:', error);
+      setError(error.message || 'Failed to resend OTP. Please try again.');
+      setIsResendDisabled(false);
+    }
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const otpValue = otp.join('');
@@ -87,19 +126,28 @@ const UpdateKYBOTP: React.FC = () => {
       return;
     }
 
+    if (!sessionId) {
+      setError('Session expired. Please start over.');
+      setTimeout(() => {
+        navigate('/app/account-settings/kyc');
+      }, 2000);
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      if (otpValue === generatedOTP) {
-        // Get KYB data from navigation state
-        const state = location.state as { kybData?: any };
+    try {
+      const response = await UserManagementService.verifyKybUpdate({
+        sessionId,
+        otp: otpValue
+      });
+      
+      if (response.success) {
         // Navigate to success page
-        navigate('/app/account-settings/kyb/success', {
-          state: state?.kybData ? { kybData: state.kybData } : {}
-        });
+        navigate('/app/account-settings/kyb/success');
       } else {
-        setError('Invalid OTP. Please try again.');
+        setError(response.message || 'Invalid OTP. Please try again.');
         setOtp(['', '', '', '', '', '']);
         // Focus first input
         setTimeout(() => {
@@ -107,8 +155,18 @@ const UpdateKYBOTP: React.FC = () => {
           firstInput?.focus();
         }, 100);
       }
+    } catch (error: any) {
+      console.error('Failed to verify KYB update:', error);
+      setError(error.message || 'Invalid OTP. Please try again.');
+      setOtp(['', '', '', '', '', '']);
+      // Focus first input
+      setTimeout(() => {
+        const firstInput = document.getElementById('otp-0');
+        firstInput?.focus();
+      }, 100);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleClose = () => {
@@ -154,10 +212,10 @@ const UpdateKYBOTP: React.FC = () => {
                 <h2 className="text-2xl font-bold text-[#022466] mb-2">KYB</h2>
                 <h3 className="text-xl font-bold text-[#022466] mb-2">OTP Verification</h3>
                 <p className="text-gray-600">We've sent a 6-digit code for KYB verification</p>
-                {generatedOTP && (
+                {otpCode && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-600 mb-1">Generated OTP for testing:</p>
-                    <p className="text-lg font-bold text-blue-800">{generatedOTP}</p>
+                    <p className="text-sm text-blue-600 mb-1">OTP Code for testing:</p>
+                    <p className="text-lg font-bold text-blue-800">{otpCode}</p>
                   </div>
                 )}
               </div>

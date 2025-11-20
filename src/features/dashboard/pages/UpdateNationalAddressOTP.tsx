@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import logo from '../../../assets/logo-mark.svg';
+import { UserManagementService } from '../../../services/userManagementService';
 
 const UpdateNationalAddressOTP: React.FC = () => {
   const navigate = useNavigate();
@@ -12,29 +13,42 @@ const UpdateNationalAddressOTP: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<any>(null);
-  const [generatedOTP, setGeneratedOTP] = useState('');
-
-  // Generate random OTP for testing
-  const generateOTP = () => {
-    const randomOTP = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOTP(randomOTP);
-    return randomOTP;
-  };
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState<string>(''); // For testing/display
 
   useEffect(() => {
-    // Get form data from navigation state
-    const state = location.state as { formData?: any };
+    // Get sessionId, otpCode, and formData from navigation state
+    const state = location.state as { 
+      sessionId?: string; 
+      otpCode?: string;
+      formData?: any;
+    };
+    
+    if (state?.sessionId) {
+      setSessionId(state.sessionId);
+    } else {
+      // If no sessionId, redirect back to start
+      setError('Session expired. Please start over.');
+      setTimeout(() => {
+        navigate('/app/account-settings/national-address');
+      }, 2000);
+      return;
+    }
+    
+    if (state?.otpCode) {
+      setOtpCode(state.otpCode);
+    }
+    
     if (state?.formData) {
       setFormData(state.formData);
     }
     
-    // Generate OTP and focus first input
-    generateOTP();
+    // Focus first input
     setTimeout(() => {
       const firstInput = document.getElementById('otp-0');
       firstInput?.focus();
     }, 100);
-  }, [location]);
+  }, [location, navigate]);
 
   // Timer countdown
   useEffect(() => {
@@ -71,21 +85,39 @@ const UpdateNationalAddressOTP: React.FC = () => {
     }
   };
 
-  const handleResend = () => {
-    generateOTP();
-    setTimeLeft(30);
-    setIsResendDisabled(true);
-    setError('');
-    setOtp(['', '', '', '', '', '']);
+  const handleResend = async () => {
+    if (!formData) {
+      setError('Address data is missing. Please start over.');
+      return;
+    }
     
-    // Focus first input
-    setTimeout(() => {
-      const firstInput = document.getElementById('otp-0');
-      firstInput?.focus();
-    }, 100);
+    try {
+      setIsResendDisabled(true);
+      setError('');
+      setOtp(['', '', '', '', '', '']);
+      setTimeLeft(30);
+      
+      // Re-initiate address update to get new OTP
+      const response = await UserManagementService.initiateAddressUpdate(formData);
+      
+      setSessionId(response.sessionId);
+      if (response.otpCode) {
+        setOtpCode(response.otpCode);
+      }
+      
+      // Focus first input
+      setTimeout(() => {
+        const firstInput = document.getElementById('otp-0');
+        firstInput?.focus();
+      }, 100);
+    } catch (error: any) {
+      console.error('Failed to resend OTP:', error);
+      setError(error.message || 'Failed to resend OTP. Please try again.');
+      setIsResendDisabled(false);
+    }
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const otpValue = otp.join('');
@@ -94,17 +126,28 @@ const UpdateNationalAddressOTP: React.FC = () => {
       return;
     }
 
+    if (!sessionId) {
+      setError('Session expired. Please start over.');
+      setTimeout(() => {
+        navigate('/app/account-settings/national-address');
+      }, 2000);
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      if (otpValue === generatedOTP) {
+    try {
+      const response = await UserManagementService.verifyAddressUpdate({
+        sessionId,
+        otp: otpValue
+      });
+      
+      if (response.success) {
         // Navigate to success page
-        navigate('/app/account-settings/national-address/success', {
-          state: { formData }
-        });
+        navigate('/app/account-settings/national-address/success');
       } else {
-        setError('Invalid OTP. Please try again.');
+        setError(response.message || 'Invalid OTP. Please try again.');
         setOtp(['', '', '', '', '', '']);
         // Focus first input
         setTimeout(() => {
@@ -112,8 +155,18 @@ const UpdateNationalAddressOTP: React.FC = () => {
           firstInput?.focus();
         }, 100);
       }
+    } catch (error: any) {
+      console.error('Failed to verify address update:', error);
+      setError(error.message || 'Invalid OTP. Please try again.');
+      setOtp(['', '', '', '', '', '']);
+      // Focus first input
+      setTimeout(() => {
+        const firstInput = document.getElementById('otp-0');
+        firstInput?.focus();
+      }, 100);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleClose = () => {
@@ -159,10 +212,10 @@ const UpdateNationalAddressOTP: React.FC = () => {
                 <h2 className="text-2xl font-bold text-[#022466] mb-2">National Address</h2>
                 <h3 className="text-xl font-bold text-[#022466] mb-2">OTP Verification</h3>
                 <p className="text-gray-600">We've sent a 6-digit code to verify your address update</p>
-                {generatedOTP && (
+                {otpCode && (
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-600 mb-1">Generated OTP for testing:</p>
-                    <p className="text-lg font-bold text-blue-800">{generatedOTP}</p>
+                    <p className="text-sm text-blue-600 mb-1">OTP Code for testing:</p>
+                    <p className="text-lg font-bold text-blue-800">{otpCode}</p>
                   </div>
                 )}
               </div>

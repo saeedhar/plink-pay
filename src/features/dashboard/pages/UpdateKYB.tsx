@@ -4,6 +4,7 @@ import { Sidebar, Header } from '../components';
 import { IoDocumentTextOutline } from 'react-icons/io5';
 import KYBIcon from '../../../assets/KYB.svg';
 import { fetchAllKybOptions, type PublicKybOption } from '../../onboarding/api/kybPublicService';
+import { UserManagementService } from '../../../services/userManagementService';
 
 const UpdateKYB: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +16,9 @@ const UpdateKYB: React.FC = () => {
   const [purposeOther, setPurposeOther] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [usePasscode, setUsePasscode] = useState(false);
+  const [passcode, setPasscode] = useState('');
   
   const [kybOptions, setKybOptions] = useState<{
     sourceOfFunds: PublicKybOption[];
@@ -114,25 +118,62 @@ const UpdateKYB: React.FC = () => {
     navigate('/app/account-settings');
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!validateForm()) {
       return;
     }
     
-    // Prepare KYB data to pass to OTP screen
-    const kybData = {
-      sourceOfFunds: sourceOfFunds === 'other' ? { value: 'other', other: sourceOfFundsOther } : sourceOfFunds,
-      expectedTransactionType,
-      expectedMonthlyVolume,
-      purposeOfAccount: purposeOfAccount.includes('other') 
-        ? { values: purposeOfAccount, other: purposeOther } 
-        : purposeOfAccount
-    };
+    // Validate passcode if using passcode method
+    if (usePasscode) {
+      if (!passcode || passcode.length !== 6) {
+        setErrors({ ...errors, passcode: 'Please enter a 6-digit passcode' });
+        return;
+      }
+    }
     
-    // Navigate to OTP screen
-    navigate('/app/account-settings/kyb/otp', {
-      state: { kybData }
-    });
+    try {
+      setIsSubmitting(true);
+      setErrors({});
+      
+      // Map form fields to API request
+      const kybRequest = {
+        sourceOfFunds: sourceOfFunds === 'other' ? sourceOfFundsOther : sourceOfFunds,
+        businessActivity: expectedTransactionType,
+        annualRevenue: expectedMonthlyVolume,
+        accountPurpose: purposeOfAccount.join(', ') + (purposeOfAccount.includes('other') && purposeOther ? `, ${purposeOther}` : '')
+      };
+      
+      if (usePasscode) {
+        // Use passcode-based update (no OTP)
+        const response = await UserManagementService.updateKybWithPasscode({
+          ...kybRequest,
+          passcode
+        });
+        
+        if (response.success) {
+          navigate('/app/account-settings/kyb/success');
+        } else {
+          setErrors({ general: response.message || 'Failed to update KYB information' });
+        }
+      } else {
+        // Use OTP-based update
+        const response = await UserManagementService.initiateKybUpdate(kybRequest);
+        
+        // Navigate to OTP screen
+        navigate('/app/account-settings/kyb/otp', {
+          state: { 
+            kybData: kybRequest,
+            sessionId: response.sessionId,
+            otpCode: response.otpCode
+          }
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to initiate KYB update:', error);
+      setErrors({ general: error.message || 'Failed to initiate KYB update. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -381,20 +422,83 @@ const UpdateKYB: React.FC = () => {
                       )}
                     </div>
 
+                    {/* Passcode Option */}
+                    <div className="form-section" style={{ alignItems: 'flex-start', marginTop: '24px', marginBottom: '16px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginLeft: '8px' }}>
+                        <input
+                          type="checkbox"
+                          checked={usePasscode}
+                          onChange={(e) => {
+                            setUsePasscode(e.target.checked);
+                            setPasscode('');
+                            if (errors.passcode) {
+                              setErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors.passcode;
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontFamily: 'Hanken Grotesk', fontSize: '14px', color: '#374151' }}>
+                          Use passcode instead of OTP
+                        </span>
+                      </label>
+                      
+                      {usePasscode && (
+                        <div style={{ width: '100%', marginTop: '12px' }}>
+                          <label className="form-label" style={{ marginLeft: '8px', marginBottom: '8px' }}>Passcode</label>
+                          <input
+                            type="password"
+                            value={passcode}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                              setPasscode(value);
+                              if (errors.passcode) {
+                                setErrors(prev => {
+                                  const newErrors = { ...prev };
+                                  delete newErrors.passcode;
+                                  return newErrors;
+                                });
+                              }
+                            }}
+                            placeholder="Enter 6-digit passcode"
+                            className={`email-input ${errors.passcode ? 'email-input-error' : ''}`}
+                            style={{ width: '100%' }}
+                            maxLength={6}
+                          />
+                          {errors.passcode && (
+                            <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
+                              {errors.passcode}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* General Error Message */}
+                    {errors.general && (
+                      <div className="error-message" style={{ marginLeft: '8px', marginTop: '8px', marginBottom: '16px' }}>
+                        {errors.general}
+                      </div>
+                    )}
+
                     {/* Buttons */}
-                    <div className="modal-footer" style={{ marginTop: '100px', width: '100%' }}>
+                    <div className="modal-footer" style={{ marginTop: '24px', width: '100%' }}>
                       <button 
                         className="btn-secondary"
                         onClick={handleClose}
+                        disabled={isSubmitting}
                       >
                         Close
                       </button>
                       <button 
                         className="btn-primary"
                         onClick={handleNext}
-                        disabled={isLoadingOptions}
+                        disabled={isLoadingOptions || isSubmitting}
                       >
-                        Next
+                        {isSubmitting ? 'Processing...' : 'Next'}
                       </button>
                     </div>
                   </div>

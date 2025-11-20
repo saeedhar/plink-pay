@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import PasswordIcon from '../../../assets/password.svg';
+import { UserManagementService } from '../../../services/userManagementService';
 
 const SetPassword: React.FC = () => {
   const navigate = useNavigate();
@@ -11,7 +12,8 @@ const SetPassword: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<{ newPassword?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<{ newPassword?: string; confirmPassword?: string; general?: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -84,8 +86,8 @@ const SetPassword: React.FC = () => {
     navigate('/app/account-settings');
   };
 
-  const handleNext = () => {
-    const newErrors: { newPassword?: string; confirmPassword?: string } = {};
+  const handleNext = async () => {
+    const newErrors: { newPassword?: string; confirmPassword?: string; general?: string } = {};
     
     // Validate new password
     const passwordValidation = validatePassword(newPassword);
@@ -105,17 +107,37 @@ const SetPassword: React.FC = () => {
       return;
     }
     
-    // Prepare password data to pass to OTP screen
-    const passwordData = {
-      newPassword,
-      confirmPassword,
-      currentPassword: location.state?.currentPassword
-    };
+    // Get current password from location state
+    const currentPassword = location.state?.currentPassword as string | undefined;
     
-    // Navigate to OTP screen
-    navigate('/app/account-settings/password/otp', {
-      state: { passwordData }
-    });
+    if (!currentPassword) {
+      setErrors({ general: 'Current password is required. Please start over.' });
+      setTimeout(() => {
+        navigate('/app/account-settings/password');
+      }, 2000);
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      setErrors({});
+      
+      // Call API to change password
+      await UserManagementService.changePassword({
+        currentPassword,
+        newPassword
+      });
+      
+      // Navigate to success page
+      navigate('/app/account-settings/password/success');
+    } catch (error: any) {
+      console.error('Failed to change password:', error);
+      setErrors({ 
+        general: error.message || 'Failed to change password. Please check your current password and try again.' 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const passwordValidation = validatePassword(newPassword);
@@ -325,6 +347,13 @@ const SetPassword: React.FC = () => {
                       </li>
                     </ul>
                   </div>
+                  
+                  {/* General Error Message */}
+                  {errors.general && (
+                    <div className="error-message" style={{ marginLeft: '8px', textAlign: 'left', marginTop: '12px' }}>
+                      {errors.general}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -333,15 +362,16 @@ const SetPassword: React.FC = () => {
                 <button 
                   className="btn-secondary"
                   onClick={handleClose}
+                  disabled={isSubmitting}
                 >
                   Close
                 </button>
                 <button 
                   className="btn-primary"
                   onClick={handleNext}
-                  disabled={!newPassword || !confirmPassword || !passwordValidation.isValid || newPassword !== confirmPassword}
+                  disabled={isSubmitting || !newPassword || !confirmPassword || !passwordValidation.isValid || newPassword !== confirmPassword}
                 >
-                  Next
+                  {isSubmitting ? 'Changing Password...' : 'Next'}
                 </button>
               </div>
             </div>

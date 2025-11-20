@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoPhonePortraitOutline } from 'react-icons/io5';
+import { UserManagementService } from '../../../services/userManagementService';
 
 const UpdateMobileNumber: React.FC = () => {
   const navigate = useNavigate();
   const [mobileNumber, setMobileNumber] = useState('');
   const [countryCode, setCountryCode] = useState('+966');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -60,7 +62,7 @@ const UpdateMobileNumber: React.FC = () => {
     navigate('/app/account-settings');
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const validationError = validateMobileNumber(mobileNumber);
     
     if (validationError) {
@@ -68,10 +70,32 @@ const UpdateMobileNumber: React.FC = () => {
       return;
     }
     
-    // Navigate to OTP verification page
-    navigate('/app/account-settings/mobile/otp', {
-      state: { mobileNumber }
-    });
+    try {
+      setIsSubmitting(true);
+      setError('');
+      
+      // Construct full phone number in E.164 format
+      const fullPhoneNumber = `${countryCode}${mobileNumber}`;
+      
+      // Call API to initiate mobile update
+      const response = await UserManagementService.initiateMobileUpdate({
+        newPhoneNumber: fullPhoneNumber
+      });
+      
+      // Navigate to OTP verification page with sessionId
+      navigate('/app/account-settings/mobile/otp', {
+        state: { 
+          mobileNumber: fullPhoneNumber,
+          sessionId: response.sessionId,
+          otpCode: response.otpCode // For testing/display
+        }
+      });
+    } catch (error: any) {
+      console.error('Failed to initiate mobile update:', error);
+      setError(error.message || 'Failed to initiate mobile update. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -134,8 +158,9 @@ const UpdateMobileNumber: React.FC = () => {
                 <button 
                   className="btn-primary"
                   onClick={handleNext}
+                  disabled={isSubmitting || !mobileNumber.trim()}
                 >
-                  Next
+                  {isSubmitting ? 'Processing...' : 'Next'}
                 </button>
               </div>
             </div>

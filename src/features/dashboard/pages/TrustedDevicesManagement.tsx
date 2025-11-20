@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoShieldCheckmarkOutline, IoPhonePortraitOutline } from 'react-icons/io5';
+import { UserManagementService, DeviceResponse } from '../../../services/userManagementService';
 
 interface Device {
   id: string;
@@ -13,22 +14,9 @@ interface Device {
 
 const TrustedDevicesManagement: React.FC = () => {
   const navigate = useNavigate();
-  const [devices, setDevices] = useState<Device[]>([
-    {
-      id: '1',
-      name: 'iPhone 14 Pro Max',
-      os: 'iOS',
-      lastLogin: '02 Oct 2025-10:22 AM',
-      status: 'trusted'
-    },
-    {
-      id: '2',
-      name: 'iPhone 14 Pro Max',
-      os: 'iOS',
-      lastLogin: '02 Oct 2025-10:22 AM',
-      status: 'trusted'
-    }
-  ]);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -43,6 +31,53 @@ const TrustedDevicesManagement: React.FC = () => {
         root.classList.remove('dashboard-root');
       }
     };
+  }, []);
+
+  // Load devices on mount
+  useEffect(() => {
+    const loadDevices = async () => {
+      try {
+        setIsLoading(true);
+        setError('');
+        const apiDevices = await UserManagementService.getDevices();
+        
+        // Map API response to UI format
+        const mappedDevices: Device[] = apiDevices.map((device: DeviceResponse) => {
+          // Format device name from platform
+          const deviceName = device.platform 
+            ? device.platform.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+            : 'Unknown Device';
+          
+          // Format last seen date
+          const lastLogin = device.lastSeenAt 
+            ? new Date(device.lastSeenAt).toLocaleDateString('en-US', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
+            : 'Never';
+          
+          return {
+            id: device.id,
+            name: deviceName,
+            os: device.platform || 'Unknown',
+            lastLogin,
+            status: device.trusted ? 'trusted' : 'deactivated'
+          };
+        });
+        
+        setDevices(mappedDevices);
+      } catch (error) {
+        console.error('Failed to load devices:', error);
+        setError('Failed to load devices. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDevices();
   }, []);
 
   const handleDeactivate = (deviceId: string) => {
@@ -101,7 +136,20 @@ const TrustedDevicesManagement: React.FC = () => {
 
               {/* Device List */}
               <div style={{ padding: '0 24px 24px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {devices.map((device) => (
+                {isLoading ? (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <p style={{ color: '#6B7280', fontSize: '14px' }}>Loading devices...</p>
+                  </div>
+                ) : error ? (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <p style={{ color: '#EF4444', fontSize: '14px' }}>{error}</p>
+                  </div>
+                ) : devices.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <p style={{ color: '#6B7280', fontSize: '14px' }}>No devices found</p>
+                  </div>
+                ) : (
+                  devices.map((device) => (
                   <div 
                     key={device.id} 
                     style={{
@@ -197,7 +245,8 @@ const TrustedDevicesManagement: React.FC = () => {
                       </button>
                     )}
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>

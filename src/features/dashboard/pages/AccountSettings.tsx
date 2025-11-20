@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
-import { getCurrentUser } from '../../../services/realBackendAPI';
+import { UserManagementService } from '../../../services/userManagementService';
 import { 
   IoPhonePortraitOutline, 
   IoMailOutline, 
@@ -40,11 +40,14 @@ const AccountSettings: React.FC = () => {
     const fetchUserData = async () => {
       try {
         setIsLoading(true);
-        const user = await getCurrentUser();
-        setName(user.name || '');
-        setEmail(user.email || '');
+        const profile = await UserManagementService.getProfile();
+        setName(profile.name || profile.email || 'User');
+        setEmail(profile.email || 'No email');
       } catch (error) {
         console.error('Failed to fetch user data:', error);
+        // Set default values on error
+        setName('User');
+        setEmail('No email');
       } finally {
         setIsLoading(false);
       }

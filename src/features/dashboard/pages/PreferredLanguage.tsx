@@ -2,11 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoMailOutline, IoGlobeOutline ,IoLanguageOutline} from 'react-icons/io5';
+import { UserManagementService } from '../../../services/userManagementService';
 
 const PreferredLanguage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedLanguage, setSelectedLanguage] = useState('english');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -23,6 +26,29 @@ const PreferredLanguage: React.FC = () => {
     };
   }, []);
 
+  // Load language preference on mount
+  useEffect(() => {
+    const loadLanguage = async () => {
+      try {
+        setIsLoading(true);
+        const lang = await UserManagementService.getLanguagePreference();
+        // Map API response to local state
+        if (lang.language === 'ar' || lang.language === 'arabic') {
+          setSelectedLanguage('arabic');
+        } else {
+          setSelectedLanguage('english');
+        }
+      } catch (error) {
+        console.error('Failed to load language preference:', error);
+        // Keep default value on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadLanguage();
+  }, []);
+
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setSelectedLanguage(value);
@@ -36,12 +62,24 @@ const PreferredLanguage: React.FC = () => {
     navigate('/app/account-settings');
   };
 
-  const handleConfirm = () => {
-    // TODO: Submit language preference to backend
-    console.log('Selected language:', selectedLanguage);
-    
-    // Navigate back to account settings
-    navigate('/app/account-settings');
+  const handleConfirm = async () => {
+    try {
+      setIsSubmitting(true);
+      setError('');
+      
+      await UserManagementService.updateLanguagePreference({
+        language: selectedLanguage === 'arabic' ? 'ar' : 'en',
+        locale: selectedLanguage === 'arabic' ? 'ar-SA' : 'en-US'
+      });
+      
+      // Navigate back to account settings on success
+      navigate('/app/account-settings');
+    } catch (error: any) {
+      console.error('Failed to update language preference:', error);
+      setError(error.message || 'Failed to update language preference. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -83,6 +121,7 @@ const PreferredLanguage: React.FC = () => {
                       onChange={handleLanguageChange}
                       className={`email-input ${error ? 'email-input-error' : ''}`}
                       style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
+                      disabled={isLoading || isSubmitting}
                     >
                       <option value="english">English</option>
                       <option value="arabic">Arabic</option>
@@ -112,8 +151,9 @@ const PreferredLanguage: React.FC = () => {
                 <button 
                   className="btn-primary"
                   onClick={handleConfirm}
+                  disabled={isLoading || isSubmitting}
                 >
-                  Confirm
+                  {isSubmitting ? 'Saving...' : 'Confirm'}
                 </button>
               </div>
             </div>

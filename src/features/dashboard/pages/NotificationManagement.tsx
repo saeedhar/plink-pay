@@ -4,11 +4,14 @@ import { Sidebar, Header } from '../components';
 import { IoNotificationsOutline, IoMailOutline, IoMegaphoneOutline } from 'react-icons/io5';
 import NotificationsIcon from '../../../assets/Profile/notification-managment.svg';
 import EmailIcon from '../../../assets/Profile/Email.svg';
+import { UserManagementService } from '../../../services/userManagementService';
 
 const NotificationManagement: React.FC = () => {
   const navigate = useNavigate();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingNotifications, setMarketingNotifications] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -25,14 +28,67 @@ const NotificationManagement: React.FC = () => {
     };
   }, []);
 
-  const handleEmailToggle = () => {
-    setEmailNotifications(!emailNotifications);
-    // TODO: Update email notification preference in backend
+  // Load notification preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        setIsLoading(true);
+        const prefs = await UserManagementService.getNotificationPreferences();
+        setEmailNotifications(prefs.emailNotifications);
+        setMarketingNotifications(prefs.marketingNotifications || false);
+      } catch (error) {
+        console.error('Failed to load notification preferences:', error);
+        // Keep default values on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadPreferences();
+  }, []);
+
+  const handleEmailToggle = async () => {
+    const newValue = !emailNotifications;
+    const previousValue = emailNotifications;
+    
+    // Optimistically update UI
+    setEmailNotifications(newValue);
+    setIsUpdating(true);
+    
+    try {
+      await UserManagementService.updateNotificationPreferences({
+        emailNotifications: newValue
+      });
+    } catch (error) {
+      console.error('Failed to update email notifications:', error);
+      // Revert on error
+      setEmailNotifications(previousValue);
+      alert('Failed to update email notification preference. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleMarketingToggle = () => {
-    setMarketingNotifications(!marketingNotifications);
-    // TODO: Update marketing notification preference in backend
+  const handleMarketingToggle = async () => {
+    const newValue = !marketingNotifications;
+    const previousValue = marketingNotifications;
+    
+    // Optimistically update UI
+    setMarketingNotifications(newValue);
+    setIsUpdating(true);
+    
+    try {
+      await UserManagementService.updateNotificationPreferences({
+        marketingNotifications: newValue
+      });
+    } catch (error) {
+      console.error('Failed to update marketing notifications:', error);
+      // Revert on error
+      setMarketingNotifications(previousValue);
+      alert('Failed to update marketing notification preference. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -74,6 +130,7 @@ const NotificationManagement: React.FC = () => {
                         type="checkbox"
                         checked={emailNotifications}
                         onChange={handleEmailToggle}
+                        disabled={isLoading || isUpdating}
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -99,6 +156,7 @@ const NotificationManagement: React.FC = () => {
                         type="checkbox"
                         checked={marketingNotifications}
                         onChange={handleMarketingToggle}
+                        disabled={isLoading || isUpdating}
                       />
                       <span className="toggle-slider"></span>
                     </label>
