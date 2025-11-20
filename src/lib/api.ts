@@ -81,31 +81,12 @@ function defaultHeaders() {
 
 /**
  * Show session expired message and clear tokens
+ * Uses a custom event to trigger the modal without importing it
  */
 function showSessionExpiredMessage() {
-  // Import and trigger the session expired modal
-  // Use dynamic import to avoid circular dependencies
-  import('../components/modals/SessionExpiredModal').then((module) => {
-    module.triggerSessionExpired();
-  }).catch((error) => {
-    console.error('Failed to trigger session expired modal:', error);
-    // Fallback to alert if modal fails
-    alert('Your session has expired. Please login again.');
-    
-    // Clear all tokens and user data
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('callbackId');
-    localStorage.removeItem('deviceId');
-    
-    // Redirect to login page
-    const currentPath = window.location.pathname;
-    const publicPaths = ['/login', '/login/verify-otp', '/forgot-password', '/account-locked', '/'];
-    if (!publicPaths.some(path => currentPath.startsWith(path))) {
-      window.location.href = '/login';
-    }
-  });
+  // Dispatch a custom event that App.tsx listens to
+  // This avoids circular dependencies and build warnings
+  window.dispatchEvent(new CustomEvent('session-expired'));
 }
 
 /**

@@ -2835,7 +2835,7 @@ html::-webkit-scrollbar {
 .update-mobile-modal.kyb-modal {
   padding: 24px;
   gap: 16px;
-  max-width: 900px;
+  max-width: 1200px;
 }
 
 .kyb-form-grid .email-add-section {
@@ -2877,11 +2877,21 @@ html::-webkit-scrollbar {
   gap: 0;
 }
 
+/* Specific spacing for Update Mobile Number screen only (exclude KYB modal) */
+.update-mobile-modal:not(.kyb-modal) .modal-content {
+  gap: 24px;
+}
+
 .modal-subtitle-section {
   text-align: center;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* Specific spacing for Update Mobile Number subtitle section (exclude KYB modal) */
+.update-mobile-modal:not(.kyb-modal) .modal-subtitle-section {
+  margin-bottom: 0;
 }
 
 .modal-subtitle {
@@ -2908,6 +2918,11 @@ html::-webkit-scrollbar {
   gap: 8px;
   align-items: center;
   position: relative;
+  margin-bottom: 0;
+}
+
+/* Specific spacing for Update Mobile Number form section (exclude KYB modal) */
+.update-mobile-modal:not(.kyb-modal) .form-section {
   margin-bottom: 0;
 }
 
@@ -3494,7 +3509,7 @@ html::-webkit-scrollbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .email-icon-container {
@@ -3527,18 +3542,18 @@ html::-webkit-scrollbar {
   font-family: 'Manrope', sans-serif;
   font-weight: 600;
   font-size: 20px;
-  line-height: 28px;
+  line-height: 20px;
   color: #022466;
   margin: 0 0 8px 0;
 }
 
 .email-add-description {
   font-family: 'Hanken Grotesk', sans-serif;
-  font-weight: 400;
-  font-size: 14px;
+  font-weight: 300;
+  font-size: 18px;
   line-height: 20px;
-  color: #9CA3AF;
-  margin: 0;
+  color: #2C2C2C;
+  margin-top: 10px;
 }
 
 .email-input {
@@ -3627,35 +3642,43 @@ html::-webkit-scrollbar {
   cursor: not-allowed;
 }
 
-/* KYB Form Grid Styles */
-.kyb-form-grid {
+/* KYB Form Grid Styles - Scoped to KYB modal only */
+.update-mobile-modal.kyb-modal .kyb-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   width: 100%;
   box-sizing: border-box;
+  align-items: stretch; /* Make columns stretch to same height */
 }
 
-.kyb-form-column {
+.update-mobile-modal.kyb-modal .kyb-form-column {
   width: 100% !important;
   min-width: 0;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  background: #B9BEC01A;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  align-self: stretch; /* Stretch to match grid row height */
+  height: 100%; /* Fill available height */
 }
 
-.kyb-form-column .form-section {
+.update-mobile-modal.kyb-modal .kyb-form-column .form-section {
   width: 100% !important;
   box-sizing: border-box;
   min-width: 0;
 }
 
-.kyb-form-column .form-label {
+.update-mobile-modal.kyb-modal .kyb-form-column .form-label {
   align-self: flex-start;
   margin-left: 0;
 }
 
-.kyb-form-column .kyb-select-wrapper {
+.update-mobile-modal.kyb-modal .kyb-form-column .kyb-select-wrapper {
   width: 100% !important;
   max-width: 100%;
   box-sizing: border-box;
@@ -3663,20 +3686,79 @@ html::-webkit-scrollbar {
   min-width: 0;
 }
 
-.kyb-form-column .kyb-select-wrapper select,
-.kyb-form-column select,
-.kyb-form-column .email-input,
-.kyb-form-column input[type="text"],
-.kyb-form-column input[type="email"],
-.kyb-form-column textarea {
+.update-mobile-modal.kyb-modal .kyb-form-column .kyb-select-wrapper select {
+  border: 1px solid #02246633 !important;
+}
+
+.update-mobile-modal.kyb-modal .kyb-form-column .kyb-select-wrapper select,
+.update-mobile-modal.kyb-modal .kyb-form-column select,
+.update-mobile-modal.kyb-modal .kyb-form-column .email-input,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="text"],
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="email"],
+.update-mobile-modal.kyb-modal .kyb-form-column textarea {
   width: 100% !important;
   max-width: 100%;
   box-sizing: border-box;
   min-width: 0;
+  background: #FFFFFF;
+  border: 1px solid #02246633;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #374151;
+  transition: all 0.2s ease;
 }
 
-/* KYB Other Field Animation */
-.kyb-other-field {
+.update-mobile-modal.kyb-modal .kyb-form-column .kyb-select-wrapper select:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column select:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column .email-input:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="text"]:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="email"]:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column textarea:focus {
+  outline: none;
+  border-color: #02246633;
+  box-shadow: 0 0 0 3px rgba(2, 36, 102, 0.1);
+}
+
+.update-mobile-modal.kyb-modal .kyb-form-column .kyb-select-wrapper select::placeholder,
+.update-mobile-modal.kyb-modal .kyb-form-column select::placeholder,
+.update-mobile-modal.kyb-modal .kyb-form-column .email-input::placeholder,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="text"]::placeholder,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="email"]::placeholder,
+.update-mobile-modal.kyb-modal .kyb-form-column textarea::placeholder {
+  color: #9CA3AF;
+}
+
+.update-mobile-modal.kyb-modal .kyb-form-column .email-input-error,
+.update-mobile-modal.kyb-modal .kyb-form-column .kyb-select-wrapper select.email-input-error,
+.update-mobile-modal.kyb-modal .kyb-form-column select.email-input-error,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="text"].email-input-error,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="email"].email-input-error,
+.update-mobile-modal.kyb-modal .kyb-form-column textarea.email-input-error {
+  border: none;
+  box-shadow: 0 0 0 1px #EF4444;
+}
+
+.update-mobile-modal.kyb-modal .kyb-form-column .email-input-error:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column .kyb-select-wrapper select.email-input-error:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column select.email-input-error:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="text"].email-input-error:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column input[type="email"].email-input-error:focus,
+.update-mobile-modal.kyb-modal .kyb-form-column textarea.email-input-error:focus {
+  border: none;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.update-mobile-modal.kyb-modal .kyb-form-column textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* KYB Other Field Animation - Scoped to KYB modal only */
+.update-mobile-modal.kyb-modal .kyb-other-field {
   animation: slideDown 0.3s ease-out;
   overflow: hidden;
   width: 100%;
@@ -3694,6 +3776,99 @@ html::-webkit-scrollbar {
     max-height: 200px;
     transform: translateY(0);
   }
+}
+
+/* National Address Form Grid Styles - Separate from KYB */
+.address-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.address-form-column {
+  width: 100% !important;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.address-form-column .form-section {
+  width: 100% !important;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.address-form-column .form-label {
+  align-self: flex-start;
+  margin-left: 0;
+}
+
+.address-select-wrapper {
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  min-width: 0;
+}
+
+/* National Address Input Fields - Light Blue Borders */
+.address-form-column .address-select-wrapper select,
+.address-form-column select,
+.address-form-column .email-input,
+.address-form-column input[type="text"],
+.address-form-column input[type="email"] {
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  background: #FFFFFF;
+  border: 1px solid #BBD2EC;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.address-form-column .address-select-wrapper select:focus,
+.address-form-column select:focus,
+.address-form-column .email-input:focus,
+.address-form-column input[type="text"]:focus,
+.address-form-column input[type="email"]:focus {
+  outline: none;
+  border-color: #BBD2EC;
+  box-shadow: 0 0 0 3px rgba(187, 210, 236, 0.1);
+}
+
+.address-form-column .address-select-wrapper select::placeholder,
+.address-form-column select::placeholder,
+.address-form-column .email-input::placeholder,
+.address-form-column input[type="text"]::placeholder,
+.address-form-column input[type="email"]::placeholder {
+  color: #9CA3AF;
+}
+
+.address-form-column .email-input-error,
+.address-form-column .address-select-wrapper select.email-input-error,
+.address-form-column select.email-input-error,
+.address-form-column input[type="text"].email-input-error,
+.address-form-column input[type="email"].email-input-error {
+  border-color: #EF4444;
+}
+
+.address-form-column .email-input-error:focus,
+.address-form-column .address-select-wrapper select.email-input-error:focus,
+.address-form-column select.email-input-error:focus,
+.address-form-column input[type="text"].email-input-error:focus,
+.address-form-column input[type="email"].email-input-error:focus {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 /* Notification Management Styles */

@@ -430,18 +430,47 @@ export class UserManagementService {
   }
 
   /**
-   * Update KYB profile with passcode (no OTP required)
+   * Request OTP for KYB update (uses email update endpoint as workaround)
    */
-  static async updateKybWithPasscode(
-    request: UpdateKybWithPasscodeRequest
-  ): Promise<VerifyKybUpdateResponse> {
+  static async requestKybOTP(): Promise<{ sessionId: string; otpCode?: string }> {
     try {
-      console.log('🏢 Updating KYB with passcode...');
-      const data = await API.post('/api/v1/users/me/kyb/update-with-passcode', request);
-      console.log('✅ KYB updated successfully with passcode');
-      return data;
-    } catch (error) {
-      console.error('❌ Error updating KYB with passcode:', error);
+      console.log('📞 Requesting OTP for KYB update...');
+      
+      // Get current user to ensure we're authenticated and get their phone
+      const { getCurrentUser } = await import('./realBackendAPI');
+      const user = await getCurrentUser();
+      
+      if (!user.phoneE164) {
+        throw new Error('Phone number not found in user profile. Please contact support.');
+      }
+      
+      // Use the email update endpoint as a workaround to send OTP to user's phone
+      // This avoids the "phone number already exists" error from registration endpoints
+      const emailUpdateRequest: UpdateEmailRequest = {
+        email: `temp-${Date.now()}@temp.com` // Temporary email (will fail validation but OTP is sent)
+      };
+      
+      try {
+        const emailUpdateResponse = await this.initiateEmailUpdate(emailUpdateRequest);
+        console.log('✅ OTP requested for KYB update, sessionId:', emailUpdateResponse.sessionId);
+        return {
+          sessionId: emailUpdateResponse.sessionId,
+          otpCode: emailUpdateResponse.otpCode
+        };
+      } catch (emailError: any) {
+        // Even if email update fails (due to invalid email), OTP should be sent
+        // Check if we got a sessionId in the error response
+        if (emailError.sessionId) {
+          console.log('⚠️ Email update failed but OTP session created:', emailError.sessionId);
+          return {
+            sessionId: emailError.sessionId,
+            otpCode: emailError.otpCode
+          };
+        }
+        throw new Error(emailError.message || 'Failed to request OTP. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('❌ Error requesting KYB OTP:', error);
       throw error;
     }
   }

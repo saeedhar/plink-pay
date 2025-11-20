@@ -50,11 +50,23 @@ function AppRoutes() {
   const security = useSecurity();
   const [showSessionExpired, setShowSessionExpired] = React.useState(false);
 
-  // Set up the session expired handler
+  // Listen for session expired events from API client
   React.useEffect(() => {
+    const handleSessionExpired = () => {
+      setShowSessionExpired(true);
+    };
+
+    // Listen for custom event from api.ts
+    window.addEventListener('session-expired', handleSessionExpired);
+
+    // Also keep the callback system for backward compatibility
     setSessionExpiredHandler(() => {
       setShowSessionExpired(true);
     });
+
+    return () => {
+      window.removeEventListener('session-expired', handleSessionExpired);
+    };
   }, []);
 
   return (

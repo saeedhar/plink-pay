@@ -4,12 +4,15 @@ import { Sidebar, Header } from '../components';
 import { IoMailOutline } from 'react-icons/io5';
 import EmailIcon from '../../../assets/Profile/Email.svg';
 import { UserManagementService } from '../../../services/userManagementService';
+import { getCurrentUser } from '../../../services/realBackendAPI';
 
 const UpdateEmail: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasExistingEmail, setHasExistingEmail] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -24,6 +27,26 @@ const UpdateEmail: React.FC = () => {
         root.classList.remove('dashboard-root');
       }
     };
+  }, []);
+
+  // Fetch user profile to check if they have an email
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        setIsLoadingProfile(true);
+        const user = await getCurrentUser();
+        if (user.email) {
+          setHasExistingEmail(true);
+          setEmail(user.email);
+        }
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadUserProfile();
   }, []);
 
   const validateEmail = (email: string): string => {
@@ -111,8 +134,15 @@ const UpdateEmail: React.FC = () => {
                     <img src={EmailIcon} alt="Email" style={{ width: '50px', height: '50px' }} />
                   </div>
                   
-                  <h3 className="email-add-title">Add Email</h3>
-                  <p className="email-add-description">You have not added an email yet</p>
+                  <h3 className="email-add-title">
+                    {hasExistingEmail ? 'Update Email Address' : 'Add Email'}
+                  </h3>
+                  <p className="email-add-description">
+                    {hasExistingEmail 
+                      ? 'Update your email address to receive alerts and notifications'
+                      : 'You have not added an email yet'
+                    }
+                  </p>
                 </div>
 
                 <div className="form-section">
@@ -130,9 +160,11 @@ const UpdateEmail: React.FC = () => {
                     </div>
                   )}
                   
-                  <p className="email-help-text">
-                    Please add your email to receive alerts and notifications
-                  </p>
+                  {!hasExistingEmail && (
+                    <p className="email-help-text">
+                      Please add your email to receive alerts and notifications
+                    </p>
+                  )}
                 </div>
               </div>
 

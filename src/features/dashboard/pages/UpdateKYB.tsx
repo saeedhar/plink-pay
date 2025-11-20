@@ -18,8 +18,6 @@ const UpdateKYB: React.FC = () => {
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [usePasscode, setUsePasscode] = useState(false);
-  const [passcode, setPasscode] = useState('');
   
   const [kybOptions, setKybOptions] = useState<{
     sourceOfFunds: PublicKybOption[];
@@ -84,11 +82,12 @@ const UpdateKYB: React.FC = () => {
         
         // Pre-fill source of funds
         if (profile.sourceOfFunds) {
+          const sourceOfFunds = profile.sourceOfFunds;
           // Check if the value matches any option code or label
           const matchingOption = kybOptions.sourceOfFunds.find(
-            opt => opt.code === profile.sourceOfFunds || 
-                   opt.label.toLowerCase() === profile.sourceOfFunds.toLowerCase() ||
-                   (opt.code && profile.sourceOfFunds.toLowerCase().includes(opt.code.toLowerCase()))
+            opt => opt.code === sourceOfFunds || 
+                   opt.label.toLowerCase() === sourceOfFunds.toLowerCase() ||
+                   (opt.code && sourceOfFunds.toLowerCase().includes(opt.code.toLowerCase()))
           );
           
           if (matchingOption) {
@@ -97,39 +96,41 @@ const UpdateKYB: React.FC = () => {
           } else {
             // If no match, treat as "other"
             setSourceOfFunds('other');
-            setSourceOfFundsOther(profile.sourceOfFunds);
+            setSourceOfFundsOther(sourceOfFunds);
           }
         }
         
         // Pre-fill business activity (expected transaction type)
         if (profile.businessActivity) {
+          const businessActivity = profile.businessActivity;
           const matchingOption = kybOptions.businessActivity.find(
-            opt => opt.code === profile.businessActivity ||
-                   opt.label.toLowerCase() === profile.businessActivity.toLowerCase() ||
-                   (opt.code && profile.businessActivity.toLowerCase().includes(opt.code.toLowerCase()))
+            opt => opt.code === businessActivity ||
+                   opt.label.toLowerCase() === businessActivity.toLowerCase() ||
+                   (opt.code && businessActivity.toLowerCase().includes(opt.code.toLowerCase()))
           );
           
           if (matchingOption) {
             const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
             setExpectedTransactionType(optionValue);
           } else {
-            setExpectedTransactionType(profile.businessActivity);
+            setExpectedTransactionType(businessActivity);
           }
         }
         
         // Pre-fill annual revenue (expected monthly volume)
         if (profile.annualRevenue) {
+          const annualRevenue = profile.annualRevenue;
           const matchingOption = kybOptions.annualRevenue.find(
-            opt => opt.code === profile.annualRevenue ||
-                   opt.label.toLowerCase() === profile.annualRevenue.toLowerCase() ||
-                   (opt.code && profile.annualRevenue.toLowerCase().includes(opt.code.toLowerCase()))
+            opt => opt.code === annualRevenue ||
+                   opt.label.toLowerCase() === annualRevenue.toLowerCase() ||
+                   (opt.code && annualRevenue.toLowerCase().includes(opt.code.toLowerCase()))
           );
           
           if (matchingOption) {
             const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
             setExpectedMonthlyVolume(optionValue);
           } else {
-            setExpectedMonthlyVolume(profile.annualRevenue);
+            setExpectedMonthlyVolume(annualRevenue);
           }
         }
         
@@ -250,14 +251,6 @@ const UpdateKYB: React.FC = () => {
       return;
     }
     
-    // Validate passcode if using passcode method
-    if (usePasscode) {
-      if (!passcode || passcode.length !== 6) {
-        setErrors({ ...errors, passcode: 'Please enter a 6-digit passcode' });
-        return;
-      }
-    }
-    
     try {
       setIsSubmitting(true);
       setErrors({});
@@ -270,34 +263,21 @@ const UpdateKYB: React.FC = () => {
         accountPurpose: purposeOfAccount.join(', ') + (purposeOfAccount.includes('other') && purposeOther ? `, ${purposeOther}` : '')
       };
       
-      if (usePasscode) {
-        // Use passcode-based update (no OTP)
-        const response = await UserManagementService.updateKybWithPasscode({
-          ...kybRequest,
-          passcode
-        });
-        
-        if (response.success) {
-          navigate('/app/account-settings/kyb/success', { replace: true });
-        } else {
-          setErrors({ general: response.message || 'Failed to update KYB information' });
+      // Request OTP first (like wallet activation)
+      console.log('📞 Requesting OTP for KYB update...');
+      const otpResponse = await UserManagementService.requestKybOTP();
+      
+      // Navigate to OTP screen with KYB data and session ID
+      navigate('/app/account-settings/kyb/otp', {
+        state: { 
+          kybData: kybRequest,
+          sessionId: otpResponse.sessionId,
+          otpCode: otpResponse.otpCode
         }
-      } else {
-        // Use OTP-based update
-        const response = await UserManagementService.initiateKybUpdate(kybRequest);
-        
-        // Navigate to OTP screen
-        navigate('/app/account-settings/kyb/otp', {
-          state: { 
-            kybData: kybRequest,
-            sessionId: response.sessionId,
-            otpCode: response.otpCode
-          }
-        });
-      }
+      });
     } catch (error: any) {
-      console.error('Failed to initiate KYB update:', error);
-      setErrors({ general: error.message || 'Failed to initiate KYB update. Please try again.' });
+      console.error('❌ Failed to request KYB OTP:', error);
+      setErrors({ general: error.message || 'Failed to request OTP. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -312,7 +292,7 @@ const UpdateKYB: React.FC = () => {
           <h1 className="dashboard-title">Account & Settings</h1>
           
           <div className="update-mobile-container">
-            <div className="update-mobile-modal kyb-modal" style={{ maxWidth: '800px' }}>
+            <div className="update-mobile-modal kyb-modal" style={{ maxWidth: '1000px' }}>
               {/* Header */}
               <div className="modal-header">
                 <div className="modal-header-icon">
@@ -326,7 +306,7 @@ const UpdateKYB: React.FC = () => {
                 {/* Icon and Title Section */}
                 <div className="email-add-section">
                   <div className="email-add-icon">
-                    <img src={KYBIcon} alt="KYB" style={{ width: '50px', height: '50px' }} />
+                    <img src={KYBIcon} alt="KYB" style={{ width: '52px', height: '58.75324630737305px' }} />
                   </div>
                   
                   <h3 className="email-add-title">Business Verification <span style={{ color: '#00BDFF' }}>(KYB)</span></h3>
@@ -334,8 +314,8 @@ const UpdateKYB: React.FC = () => {
                 </div>
 
                 {/* Form Fields */}
-                <div className="kyb-form-grid" style={{ marginTop: '24px' }}>
-                  {/* Left Column */}
+                <div className="kyb-form-grid" style={{ marginTop: '10px' }}>
+                  {/* Left Column - KYB Details */}
                   <div className="kyb-form-column">
                     {/* Source of Funds */}
                     <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -393,7 +373,7 @@ const UpdateKYB: React.FC = () => {
                                 setErrors(prev => ({ ...prev, sourceOfFundsOther: '' }));
                               }
                             }}
-                            placeholder="Please describe your source of funds"
+                            placeholder="Please describe your source of funds....."
                             className={`email-input ${errors.sourceOfFundsOther ? 'email-input-error' : ''}`}
                             style={{ width: '100%', minHeight: '60px', resize: 'vertical', padding: '12px 16px' }}
                             disabled={isLoadingOptions || isLoadingProfile}
@@ -409,6 +389,81 @@ const UpdateKYB: React.FC = () => {
                       )}
                     </div>
 
+                    {/* Expected Transaction Type */}
+                    <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '16px' }}>
+                      <label className="form-label" style={{ marginLeft: '8px' }}>Expected Transaction Type</label>
+                      <div className="kyb-select-wrapper" style={{ position: 'relative', width: '100%' }}>
+                        <select
+                          value={expectedTransactionType}
+                          onChange={(e) => {
+                            setExpectedTransactionType(e.target.value);
+                            if (errors.expectedTransactionType) {
+                              setErrors(prev => ({ ...prev, expectedTransactionType: '' }));
+                            }
+                          }}
+                          className={`email-input ${errors.expectedTransactionType ? 'email-input-error' : ''}`}
+                          style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
+                          disabled={isLoadingOptions || isLoadingProfile}
+                        >
+                          <option value="">Expected Transaction Type</option>
+                          {kybOptions.businessActivity.map((option) => (
+                            <option key={option.id} value={option.code || option.label.toLowerCase().replace(/\s+/g, '-')}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#98A2B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      </div>
+                      {errors.expectedTransactionType && (
+                        <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
+                          {errors.expectedTransactionType}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Expected Monthly Volume */}
+                    <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '0' }}>
+                      <label className="form-label" style={{ marginLeft: '8px' }}>Expected monthly volume and value</label>
+                      <div className="kyb-select-wrapper" style={{ position: 'relative', width: '100%' }}>
+                        <select
+                          value={expectedMonthlyVolume}
+                          onChange={(e) => {
+                            setExpectedMonthlyVolume(e.target.value);
+                            if (errors.expectedMonthlyVolume) {
+                              setErrors(prev => ({ ...prev, expectedMonthlyVolume: '' }));
+                            }
+                          }}
+                          className={`email-input ${errors.expectedMonthlyVolume ? 'email-input-error' : ''}`}
+                          style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
+                          disabled={isLoadingOptions || isLoadingProfile}
+                        >
+                          <option value="">Select volume range</option>
+                          {kybOptions.annualRevenue.map((option) => (
+                            <option key={option.id} value={option.code || option.label.toLowerCase().replace(/\s+/g, '-')}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#98A2B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      </div>
+                      {errors.expectedMonthlyVolume && (
+                        <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
+                          {errors.expectedMonthlyVolume}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column - Purpose of Account */}
+                  <div className="kyb-form-column">
                     {/* Purpose of Account - Checkboxes */}
                     <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '0' }}>
                       <label className="form-label" style={{ marginLeft: '8px', marginBottom: '12px' }}>Purpose of the Digital Wallet Account</label>
@@ -459,7 +514,7 @@ const UpdateKYB: React.FC = () => {
                                 setErrors(prev => ({ ...prev, purposeOther: '' }));
                               }
                             }}
-                            placeholder="Please Enter Other Purpose..."
+                            placeholder="Please Enter Other Purpose....."
                             className={`email-input ${errors.purposeOther ? 'email-input-error' : ''}`}
                             style={{ width: '100%' }}
                             disabled={isLoadingOptions || isLoadingProfile}
@@ -474,160 +529,35 @@ const UpdateKYB: React.FC = () => {
                       )}
                     </div>
                   </div>
+                </div>
 
-                  {/* Right Column */}
-                  <div className="kyb-form-column">
-                    {/* Expected Transaction Type */}
-                    <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '16px' }}>
-                      <label className="form-label" style={{ marginLeft: '8px' }}>Expected Transaction Type</label>
-                      <div className="kyb-select-wrapper" style={{ position: 'relative', width: '100%' }}>
-                        <select
-                          value={expectedTransactionType}
-                          onChange={(e) => {
-                            setExpectedTransactionType(e.target.value);
-                            if (errors.expectedTransactionType) {
-                              setErrors(prev => ({ ...prev, expectedTransactionType: '' }));
-                            }
-                          }}
-                          className={`email-input ${errors.expectedTransactionType ? 'email-input-error' : ''}`}
-                          style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
-                          disabled={isLoadingOptions || isLoadingProfile}
-                        >
-                          <option value="">Expected Transaction Type</option>
-                          {kybOptions.businessActivity.map((option) => (
-                            <option key={option.id} value={option.code || option.label.toLowerCase().replace(/\s+/g, '-')}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#98A2B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                      </div>
-                      {errors.expectedTransactionType && (
-                        <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
-                          {errors.expectedTransactionType}
-                        </div>
-                      )}
-                    </div>
+                {/* General Error Message */}
+                {errors.general && (
+                  <div className="error-message" style={{ marginLeft: '8px', marginTop: '8px', marginBottom: '16px', textAlign: 'center' }}>
+                    {errors.general}
+                  </div>
+                )}
 
-                    {/* Expected Monthly Volume */}
-                    <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '0' }}>
-                      <label className="form-label" style={{ marginLeft: '8px' }}>Expected monthly payroll volume and value</label>
-                      <div className="kyb-select-wrapper" style={{ position: 'relative', width: '100%' }}>
-                        <select
-                          value={expectedMonthlyVolume}
-                          onChange={(e) => {
-                            setExpectedMonthlyVolume(e.target.value);
-                            if (errors.expectedMonthlyVolume) {
-                              setErrors(prev => ({ ...prev, expectedMonthlyVolume: '' }));
-                            }
-                          }}
-                          className={`email-input ${errors.expectedMonthlyVolume ? 'email-input-error' : ''}`}
-                          style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
-                          disabled={isLoadingOptions || isLoadingProfile}
-                        >
-                          <option value="">Select volume range</option>
-                          {kybOptions.annualRevenue.map((option) => (
-                            <option key={option.id} value={option.code || option.label.toLowerCase().replace(/\s+/g, '-')}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 1.5L6 6.5L11 1.5" stroke="#98A2B3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                      </div>
-                      {errors.expectedMonthlyVolume && (
-                        <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
-                          {errors.expectedMonthlyVolume}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Passcode Option */}
-                    <div className="form-section" style={{ alignItems: 'flex-start', marginTop: '24px', marginBottom: '16px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginLeft: '8px' }}>
-                        <input
-                          type="checkbox"
-                          checked={usePasscode}
-                          onChange={(e) => {
-                            setUsePasscode(e.target.checked);
-                            setPasscode('');
-                            if (errors.passcode) {
-                              setErrors(prev => {
-                                const newErrors = { ...prev };
-                                delete newErrors.passcode;
-                                return newErrors;
-                              });
-                            }
-                          }}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                        />
-                        <span style={{ fontFamily: 'Hanken Grotesk', fontSize: '14px', color: '#374151' }}>
-                          Use passcode instead of OTP
-                        </span>
-                      </label>
-                      
-                      {usePasscode && (
-                        <div style={{ width: '100%', marginTop: '12px' }}>
-                          <label className="form-label" style={{ marginLeft: '8px', marginBottom: '8px' }}>Passcode</label>
-                          <input
-                            type="password"
-                            value={passcode}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                              setPasscode(value);
-                              if (errors.passcode) {
-                                setErrors(prev => {
-                                  const newErrors = { ...prev };
-                                  delete newErrors.passcode;
-                                  return newErrors;
-                                });
-                              }
-                            }}
-                            placeholder="Enter 6-digit passcode"
-                            className={`email-input ${errors.passcode ? 'email-input-error' : ''}`}
-                            style={{ width: '100%' }}
-                            maxLength={6}
-                          />
-                          {errors.passcode && (
-                            <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
-                              {errors.passcode}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* General Error Message */}
-                    {errors.general && (
-                      <div className="error-message" style={{ marginLeft: '8px', marginTop: '8px', marginBottom: '16px' }}>
-                        {errors.general}
-                      </div>
-                    )}
-
-                    {/* Buttons */}
-                    <div className="modal-footer" style={{ marginTop: '24px', width: '100%' }}>
-                      <button 
-                        className="btn-secondary"
-                        onClick={handleClose}
-                        disabled={isSubmitting}
-                      >
-                        Close
-                      </button>
-                      <button 
-                        className="btn-primary"
-                        onClick={handleNext}
-                        disabled={isLoadingOptions || isLoadingProfile || isSubmitting}
-                      >
-                        {isSubmitting ? 'Processing...' : 'Next'}
-                      </button>
-                    </div>
+                {/* Buttons - Centered under purpose container (right column) */}
+                <div style={{ marginTop: '32px', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div></div>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+                    <button 
+                      className="btn-secondary"
+                      onClick={handleClose}
+                      disabled={isSubmitting}
+                      style={{ minWidth: '200px' }}
+                    >
+                      Back
+                    </button>
+                    <button 
+                      className="btn-primary"
+                      onClick={handleNext}
+                      disabled={isLoadingOptions || isLoadingProfile || isSubmitting}
+                      style={{ minWidth: '200px' }}
+                    >
+                      {isSubmitting ? 'Processing...' : 'Next'}
+                    </button>
                   </div>
                 </div>
 
@@ -648,4 +578,3 @@ const UpdateKYB: React.FC = () => {
 };
 
 export default UpdateKYB;
-

@@ -6,7 +6,9 @@ import flowbiteReact from 'flowbite-react/plugin/vite'
 export default defineConfig({
   base: '/',                           // ensure asset paths work on OBS
   plugins: [react(), tailwindcss(), flowbiteReact()],
-  build: { sourcemap: true },          // helps debug if prod crashes
+  build: { 
+    sourcemap: false,                  // Disable source maps for production (reduces build size)
+  },
   server: {
     proxy: {
       // dev only: Vite forwards /api/v1 to your backend

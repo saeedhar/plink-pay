@@ -52,12 +52,21 @@ const UpdateNationalAddress: React.FC = () => {
       
       try {
         setIsLoadingAddress(true);
+        console.log('🔍 Fetching national address...');
         const address = await UserManagementService.getNationalAddress();
         
-        console.log('🔍 Raw address response:', address);
+        console.log('✅ Raw address response:', address);
+        console.log('📋 Address fields:', {
+          city: address?.city,
+          district: address?.district,
+          street: address?.street,
+          buildingNumber: address?.buildingNumber,
+          postalCode: address?.postalCode,
+          additionalNumber: address?.additionalNumber
+        });
         
         // Pre-fill form fields with address data
-        if (address) {
+        if (address && (address.city || address.district || address.street || address.buildingNumber)) {
           // Helper function to capitalize first letter of each word
           const capitalizeWords = (str: string): string => {
             return str
@@ -287,7 +296,7 @@ const UpdateNationalAddress: React.FC = () => {
           <h1 className="dashboard-title">Account & Settings</h1>
           
           <div className="update-mobile-container">
-            <div className="update-mobile-modal kyb-modal">
+            <div className="update-mobile-modal" style={{ maxWidth: '800px' }}>
               {/* Header */}
               <div className="modal-header">
                 <div className="modal-header-icon">
@@ -311,12 +320,12 @@ const UpdateNationalAddress: React.FC = () => {
                 </div>
 
                 {/* Form Section */}
-                <div className="kyb-form-grid" style={{ marginTop: '24px' }}>
+                <div className="address-form-grid" >
                   {/* Left Column */}
-                  <div className="kyb-form-column">
+                  <div className="address-form-column">
                     <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '16px' }}>
                       <label className="form-label" style={{ marginLeft: '8px' }}>Region</label>
-                      <div className="kyb-select-wrapper" style={{ position: 'relative', width: '100%' }}>
+                      <div className="address-select-wrapper" style={{ position: 'relative', width: '100%' }}>
                         <select
                           value={formData.region}
                           onChange={(e) => handleInputChange('region', e.target.value)}
@@ -344,7 +353,7 @@ const UpdateNationalAddress: React.FC = () => {
 
                     <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '16px' }}>
                       <label className="form-label" style={{ marginLeft: '8px' }}>City</label>
-                      <div className="kyb-select-wrapper" style={{ position: 'relative', width: '100%' }}>
+                      <div className="address-select-wrapper" style={{ position: 'relative', width: '100%' }}>
                         <select
                           value={formData.city}
                           onChange={(e) => handleInputChange('city', e.target.value)}
@@ -372,7 +381,7 @@ const UpdateNationalAddress: React.FC = () => {
 
                     <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '16px' }}>
                       <label className="form-label" style={{ marginLeft: '8px' }}>District</label>
-                      <div className="kyb-select-wrapper" style={{ position: 'relative', width: '100%' }}>
+                      <div className="address-select-wrapper" style={{ position: 'relative', width: '100%' }}>
                         <select
                           value={formData.district}
                           onChange={(e) => handleInputChange('district', e.target.value)}
@@ -417,7 +426,7 @@ const UpdateNationalAddress: React.FC = () => {
                   </div>
 
                   {/* Right Column */}
-                  <div className="kyb-form-column">
+                  <div className="address-form-column">
                     <div className="form-section" style={{ alignItems: 'flex-start', marginBottom: '16px' }}>
                       <label className="form-label" style={{ marginLeft: '8px' }}>Building Number</label>
                       <input
@@ -469,8 +478,6 @@ const UpdateNationalAddress: React.FC = () => {
                       )}
                     </div>
 
-
-
                     {/* General Error Message */}
                     {errors.general && (
                       <div className="error-message" style={{ marginLeft: '8px', marginTop: '8px', marginBottom: '16px' }}>
@@ -478,19 +485,21 @@ const UpdateNationalAddress: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Buttons */}
-                    <div className="modal-footer" style={{ marginTop: '24px' }}>
+                    {/* Buttons - Under Additional Number */}
+                    <div className="modal-footer" style={{ marginTop: '32px', width: '100%', display: 'flex', justifyContent: 'center', gap: '16px' }}>
                       <button 
                         className="btn-secondary"
                         onClick={handleClose}
                         disabled={isSubmitting}
+                        style={{ minWidth: '150px' }}
                       >
-                        Close
+                        Back
                       </button>
                       <button 
                         className="btn-primary"
                         onClick={handleNext}
                         disabled={isLoadingAddress || isSubmitting}
+                        style={{ minWidth: '150px' }}
                       >
                         {isSubmitting ? 'Processing...' : 'Next'}
                       </button>

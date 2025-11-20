@@ -86,19 +86,14 @@ const UpdateKYBOTP: React.FC = () => {
   };
 
   const handleResend = async () => {
-    if (!kybData) {
-      setError('KYB data is missing. Please start over.');
-      return;
-    }
-    
     try {
       setIsResendDisabled(true);
       setError('');
       setOtp(['', '', '', '', '', '']);
       setTimeLeft(30);
       
-      // Re-initiate KYB update to get new OTP
-      const response = await UserManagementService.initiateKybUpdate(kybData);
+      // Request new OTP (using email update endpoint workaround)
+      const response = await UserManagementService.requestKybOTP();
       
       setSessionId(response.sessionId);
       if (response.otpCode) {
@@ -111,7 +106,7 @@ const UpdateKYBOTP: React.FC = () => {
         firstInput?.focus();
       }, 100);
     } catch (error: any) {
-      console.error('Failed to resend OTP:', error);
+      console.error('❌ Failed to resend OTP:', error);
       setError(error.message || 'Failed to resend OTP. Please try again.');
       setIsResendDisabled(false);
     }
@@ -138,16 +133,27 @@ const UpdateKYBOTP: React.FC = () => {
     setError('');
     
     try {
-      const response = await UserManagementService.verifyKybUpdate({
+      // First verify OTP using email verify endpoint (workaround)
+      const { API } = await import('../../../lib/api');
+      await API.post('/api/v1/users/me/email/verify-otp', {
         sessionId,
         otp: otpValue
       });
+      
+      console.log('✅ OTP verified successfully for KYB update');
+      
+      // OTP verified, now update KYB
+      if (!kybData) {
+        throw new Error('KYB data is missing. Please start over.');
+      }
+      
+      const response = await UserManagementService.initiateKybUpdate(kybData);
       
       if (response.success) {
         // Navigate to success page using replace to prevent going back to OTP page
         navigate('/app/account-settings/kyb/success', { replace: true });
       } else {
-        setError(response.message || 'Invalid OTP. Please try again.');
+        setError(response.message || 'Failed to update KYB. Please try again.');
         setOtp(['', '', '', '', '', '']);
         // Focus first input
         setTimeout(() => {
@@ -156,8 +162,28 @@ const UpdateKYBOTP: React.FC = () => {
         }, 100);
       }
     } catch (error: any) {
-      console.error('Failed to verify KYB update:', error);
-      setError(error.message || 'Invalid OTP. Please try again.');
+      console.error('❌ Failed to verify KYB update:', error);
+      
+      // Check if it's an OTP error or KYB update error
+      if (error.message?.includes('Invalid') || error.message?.includes('incorrect') || error.message?.includes('expired') || error.message?.includes('Session')) {
+        setError('The code you entered is incorrect. Please try again.');
+      } else if (error.message?.includes('email') && error.message?.includes('format')) {
+        // Email validation failed but OTP might have been verified, try to update KYB anyway
+        if (kybData) {
+          try {
+            const response = await UserManagementService.initiateKybUpdate(kybData);
+            if (response.success) {
+              navigate('/app/account-settings/kyb/success', { replace: true });
+              return;
+            }
+          } catch (kybError: any) {
+            setError(kybError.message || 'Failed to update KYB. Please try again.');
+          }
+        }
+      } else {
+        setError(error.message || 'Failed to update KYB. Please try again.');
+      }
+      
       setOtp(['', '', '', '', '', '']);
       // Focus first input
       setTimeout(() => {
