@@ -80,12 +80,37 @@ function defaultHeaders() {
 }
 
 /**
+ * Show session expired message and clear tokens
+ */
+function showSessionExpiredMessage() {
+  // Show alert message
+  alert('Your session has expired. Please login again.')
+  
+  // Clear all tokens and user data
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  localStorage.removeItem('userId')
+  localStorage.removeItem('callbackId')
+  localStorage.removeItem('deviceId')
+  
+  // Redirect to login page
+  const currentPath = window.location.pathname
+  const publicPaths = ['/login', '/login/verify-otp', '/forgot-password', '/account-locked', '/']
+  if (!publicPaths.some(path => currentPath.startsWith(path))) {
+    // Use window.location to ensure a full page reload and clear any state
+    window.location.href = '/login'
+  }
+}
+
+/**
  * Clear tokens and logout user
  */
 function clearTokensAndLogout(sessionExpired: boolean = false) {
   localStorage.removeItem('accessToken')
   localStorage.removeItem('refreshToken')
   localStorage.removeItem('userId')
+  localStorage.removeItem('callbackId')
+  localStorage.removeItem('deviceId')
   
   // Only redirect if we're not already on a public page
   const currentPath = window.location.pathname
@@ -216,14 +241,14 @@ async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit) {
     }
   }
   
-  // Handle 403 (Forbidden) - treat as session expiration if we have a token
-  // This could mean the token is invalid or the user doesn't have permission
+  // Handle 403 (Forbidden) - treat as session expiration
+  // Show message, clear tokens, and redirect to login
   if (res.status === 403) {
     const token = getAccessToken()
     if (token) {
       // If we have a token but got 403, likely session expired or token invalid
       console.warn('⚠️ Forbidden (403) with token present - treating as session expiration')
-      // Try to refresh token first
+      // Try to refresh token first (one attempt)
       try {
         console.log('🔄 Attempting token refresh due to 403...')
         await refreshAccessToken()
@@ -236,20 +261,26 @@ async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit) {
         }
         res = await fetch(input, { ...init, headers })
         
-        // If still 403 after refresh, logout
+        // If still 403 after refresh, show message and logout
         if (res.status === 403) {
-          console.warn('⚠️ Still forbidden after token refresh, logging out')
-          clearTokensAndLogout(true) // Pass sessionExpired flag
+          console.warn('⚠️ Still forbidden after token refresh - session expired')
+          showSessionExpiredMessage()
+          // Return the response so the error can be handled, but redirect will happen
+          return res
         }
       } catch (error: any) {
-        // If refresh failed, logout
+        // If refresh failed, show message and logout
         console.error('❌ Failed to refresh token on 403:', error)
-        clearTokensAndLogout(true) // Pass sessionExpired flag
+        showSessionExpiredMessage()
+        // Return the response so the error can be handled, but redirect will happen
+        return res
       }
     } else {
-      // No token but got 403 - redirect to login
+      // No token but got 403 - show message and redirect to login
       console.warn('⚠️ Forbidden (403) without token - redirecting to login')
-      clearTokensAndLogout(true) // Pass sessionExpired flag
+      showSessionExpiredMessage()
+      // Return the response so the error can be handled, but redirect will happen
+      return res
     }
   }
   
@@ -260,17 +291,32 @@ async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit) {
 async function parseJsonOrThrow(res: Response) {
   const text = await res.text()
   if (!res.ok) {
-    // Handle 403 and 401 as session expiration
-    if (res.status === 403 || res.status === 401) {
+    // Handle 403 as session expiration - show message and redirect
+    if (res.status === 403) {
+      const token = getAccessToken()
+      // fetchWithAuth should have already handled 403, but if we're here,
+      // it means the refresh failed or we're still forbidden
+      if (token) {
+        console.warn('⚠️ 403 error with token - session expired, showing message and redirecting')
+        showSessionExpiredMessage()
+        // Throw a special error that indicates redirect is happening
+        const redirectError = new Error('Session expired - redirecting to login')
+        ;(redirectError as any).status = res.status
+        ;(redirectError as any).redirecting = true
+        throw redirectError
+      }
+    }
+    
+    // Handle 401 as session expiration
+    if (res.status === 401) {
       const token = getAccessToken()
       if (token) {
-        // If we have a token but got 403/401, session likely expired
+        // If we have a token but got 401, session likely expired
         // The fetchWithAuth should have already tried to refresh, but if we're here,
         // it means the refresh failed or we're still unauthorized
-        console.warn(`⚠️ ${res.status} error with token - session expired, redirecting to login`)
+        console.warn('⚠️ 401 error with token - session expired, redirecting to login')
         clearTokensAndLogout(true)
         // Throw a special error that indicates redirect is happening
-        // This prevents further error handling but the redirect will happen
         const redirectError = new Error('Session expired - redirecting to login')
         ;(redirectError as any).status = res.status
         ;(redirectError as any).redirecting = true
