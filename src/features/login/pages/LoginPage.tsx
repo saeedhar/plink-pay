@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
+import { AlertModal } from '../../../components/ui/Modal';
 import logo from '../../../assets/logo-mark.svg';
 import profileIcon from '../../../assets/ion_person-circle-sharp.svg';
 import { loginWithPassword, completeCallback } from '../../../services/realBackendAPI';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     idUnn: '',
     password: ''
@@ -14,6 +16,21 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
+
+  // Check for session expired parameter on mount
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const sessionExpired = searchParams.get('sessionExpired') === 'true';
+    if (sessionExpired) {
+      setShowSessionExpiredModal(true);
+      // Remove the parameter from URL after showing modal
+      searchParams.delete('sessionExpired');
+      const newSearch = searchParams.toString();
+      const newUrl = newSearch ? `${location.pathname}?${newSearch}` : location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search, location.pathname]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -88,6 +105,9 @@ export default function LoginPage() {
         console.log('🔄 Auto-completing callback verification for development...');
         
         try {
+          if (!response.callbackId) {
+            throw new Error('No callback ID provided');
+          }
           const callbackResponse = await completeCallback(response.callbackId);
           console.log('✅ Callback verification completed:', callbackResponse);
           
@@ -144,7 +164,7 @@ export default function LoginPage() {
       console.error('Login error:', error);
       
       // Check if account is locked
-      if (error.message.includes('locked') || error.message.includes('call center')) {
+      if (error.message?.includes('locked') || error.message?.includes('call center')) {
         navigate('/account-locked', {
           state: {
             lockType: error.message.includes('call center') ? 'hard' : 'soft',
@@ -155,12 +175,12 @@ export default function LoginPage() {
         return;
       }
       
-      if (error.message.includes('401') || error.message.includes('403')) {
-        setError('Invalid phone/email or password. Please try again.');
-      } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+      // Show user-friendly error message for login failures
+      if (error.message?.includes('Network') || error.message?.includes('fetch') || error.message?.includes('Failed to fetch')) {
         setError('Unable to connect to server. Please check your connection.');
       } else {
-        setError(error.message || 'Login failed. Please try again.');
+        // For authentication errors (401, 403, user not found, etc.), show the specific message
+        setError('User not found. Please check your mobile number or UNN');
       }
     } finally {
       setIsLoading(false);
@@ -175,7 +195,10 @@ export default function LoginPage() {
     <div className="min-h-screen relative overflow-hidden">
       {/* Background */}
       <div 
-        className="absolute inset-0 bg-blue-50"
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at top left, #B3E5FC 0%, #B3E5FC 30%, transparent 50%), #F8FAFC'
+        }}
       />
 
       {/* Main content */}
@@ -190,7 +213,12 @@ export default function LoginPage() {
 
           {/* Login Card */}
           <div 
-            className="bg-white rounded-3xl p-8 shadow-lg relative"
+            className="rounded-3xl p-8 shadow-lg relative"
+            style={{
+              background: 'linear-gradient(to bottom right, #E0F5FF, #F8FAFC)',
+              borderRight: '2px solid #022466',
+              borderBottom: '2px solid #022466'
+            }}
           >
             {/* User Icon */}
             <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
@@ -334,6 +362,21 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Session Expired Modal */}
+      <AlertModal
+        isOpen={showSessionExpiredModal}
+        onClose={() => setShowSessionExpiredModal(false)}
+        title="Session Expired"
+        message="Your session has ended. Please login again to continue."
+        buttonLabel="OK"
+        variant="danger"
+        icon={
+          <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        }
+      />
     </div>
   );
 }

@@ -22,7 +22,7 @@ export function convertArabicToEnglish(input: string): string {
 
 /**
  * Validates Saudi phone number format
- * Must start with "05" and be exactly 10 digits (BRD)
+ * Must start with "05" (10 digits) or "5" (9 digits) (BRD)
  */
 export function validateSaudiPhone(phone: string): string | null {
   if (!phone.trim()) {
@@ -32,45 +32,73 @@ export function validateSaudiPhone(phone: string): string | null {
   // Convert Arabic numerals and remove non-digits
   const cleanPhone = convertArabicToEnglish(phone).replace(/\D/g, '');
   
-  if (cleanPhone.length !== 10) {
-    return "Phone number must be exactly 10 digits";
-  }
-  
-  if (!cleanPhone.startsWith('05')) {
-    return "Phone number must start with 05";
-  }
-  
-  // Additional Saudi mobile operator validation
-  const validPrefixes = ['050', '051', '052', '053', '054', '055', '056', '057', '058', '059'];
-  const prefix = cleanPhone.substring(0, 3);
-  
-  if (!validPrefixes.includes(prefix)) {
-    return "Invalid Saudi mobile operator";
+  // Check if it starts with "05" (10 digits) or "5" (9 digits)
+  if (cleanPhone.startsWith('05')) {
+    // Must be exactly 10 digits
+    if (cleanPhone.length !== 10) {
+      return "Phone number starting with 05 must be exactly 10 digits";
+    }
+    
+    // Additional Saudi mobile operator validation
+    const validPrefixes = ['050', '051', '052', '053', '054', '055', '056', '057', '058', '059'];
+    const prefix = cleanPhone.substring(0, 3);
+    
+    if (!validPrefixes.includes(prefix)) {
+      return "Invalid Saudi mobile operator";
+    }
+  } else if (cleanPhone.startsWith('5')) {
+    // Must be exactly 9 digits
+    if (cleanPhone.length !== 9) {
+      return "Phone number starting with 5 must be exactly 9 digits";
+    }
+  } else {
+    return "Phone number must start with 05 or 5";
   }
   
   return null;
 }
 
 /**
- * Formats phone number as user types: 05X XXX XXXX
+ * Formats phone number as user types: 05X XXX XXXX or 5XX XXX XXX
  */
 export function formatPhoneNumber(input: string): string {
-  const cleaned = convertArabicToEnglish(input).replace(/\D/g, '').substring(0, 10);
+  const cleaned = convertArabicToEnglish(input).replace(/\D/g, '');
+  
+  // Determine max length based on whether it starts with "05" or "5"
+  const maxLength = cleaned.startsWith('05') ? 10 : 9;
+  const limited = cleaned.substring(0, maxLength);
 
   const segments: string[] = [];
 
-  if (cleaned.length === 0) {
+  if (limited.length === 0) {
     return '';
   }
 
-  segments.push(cleaned.substring(0, Math.min(3, cleaned.length)));
+  // If starts with "05", format as 05X XXX XXXX (3-3-4)
+  if (limited.startsWith('05')) {
+    segments.push(limited.substring(0, Math.min(3, limited.length)));
 
-  if (cleaned.length > 3) {
-    segments.push(cleaned.substring(3, Math.min(6, cleaned.length)));
-  }
+    if (limited.length > 3) {
+      segments.push(limited.substring(3, Math.min(6, limited.length)));
+    }
 
-  if (cleaned.length > 6) {
-    segments.push(cleaned.substring(6));
+    if (limited.length > 6) {
+      segments.push(limited.substring(6));
+    }
+  } else if (limited.startsWith('5')) {
+    // If starts with "5", format as 5XX XXX XXX (3-3-3)
+    segments.push(limited.substring(0, Math.min(3, limited.length)));
+
+    if (limited.length > 3) {
+      segments.push(limited.substring(3, Math.min(6, limited.length)));
+    }
+
+    if (limited.length > 6) {
+      segments.push(limited.substring(6));
+    }
+  } else {
+    // If doesn't start with 5, just return the digits
+    return limited;
   }
 
   return segments.join(' ');

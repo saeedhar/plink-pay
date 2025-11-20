@@ -370,3 +370,25 @@ export async function getKybOptions(category: string, locale: string = 'en'): Pr
 export async function getCurrentUser(): Promise<MeResponse> {
   return API.get('/api/v1/auth/me');
 }
+
+/**
+ * Logout - Clear session and revoke tokens on backend
+ */
+export async function logout(): Promise<void> {
+  try {
+    // Call logout API to invalidate session on backend
+    await API.post('/api/v1/auth/logout', {});
+    console.log('✅ Logout API called successfully');
+  } catch (error: any) {
+    // Even if API call fails, we still want to clear local storage
+    console.warn('⚠️ Logout API call failed, but clearing local storage anyway:', error.response?.data || error.message);
+  } finally {
+    // Always clear local storage regardless of API call result
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('callbackId');
+    localStorage.removeItem('deviceId');
+    console.log('✅ Local storage cleared');
+  }
+}

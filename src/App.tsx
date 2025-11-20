@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { OnboardingProvider } from './store/OnboardingContext';
 import { RouteGuard } from './components/navigation/RouteGuard';
+import { ProtectedRoute } from './components/navigation/ProtectedRoute';
+import { PublicRoute } from './components/navigation/PublicRoute';
 import { SessionWarningModal } from './components/security/SessionWarningModal';
 import { NafathModal } from './components/modals/NafathModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -44,9 +46,6 @@ import TopUpAddNewCard from './features/dashboard/pages/TopUpAddNewCard';
 
 function AppRoutes() {
   const security = useSecurity();
-  
-  // Mock authentication status - set to true for testing
-  const isAuthenticated = true;
 
   return (
     <>
@@ -54,23 +53,100 @@ function AppRoutes() {
         {/* Main route - Splash screen */}
         <Route path="/" element={<Splash />} />
         
-        {/* Auth routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/login/verify-otp" element={<LoginOTPPage />} />
+        {/* Auth routes - Public routes (redirect if authenticated) */}
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/login/verify-otp" 
+          element={
+            <PublicRoute>
+              <LoginOTPPage />
+            </PublicRoute>
+          } 
+        />
         <Route path="/account-locked" element={<AccountLockedPage />} />
-        <Route path="/otp-verification" element={<OTPVerificationPage />} />
+        <Route 
+          path="/otp-verification" 
+          element={
+            <PublicRoute>
+              <OTPVerificationPage />
+            </PublicRoute>
+          } 
+        />
         
-        {/* Forgot Password routes */}
-        <Route path="/forgot-password" element={<ForgotPasswordSelectionPage />} />
-        <Route path="/forgot-password/id-bod" element={<ForgotPasswordPage />} />
-        <Route path="/forgot-password/id-bod/otp" element={<ForgotPasswordOTPPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/reset-password-success" element={<ResetPasswordSuccessPage />} />
+        {/* Forgot Password routes - Public routes */}
+        <Route 
+          path="/forgot-password" 
+          element={
+            <PublicRoute>
+              <ForgotPasswordSelectionPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/forgot-password/id-bod" 
+          element={
+            <PublicRoute>
+              <ForgotPasswordPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/forgot-password/id-bod/otp" 
+          element={
+            <PublicRoute>
+              <ForgotPasswordOTPPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/reset-password" 
+          element={
+            <PublicRoute>
+              <ResetPasswordPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/reset-password-success" 
+          element={
+            <PublicRoute>
+              <ResetPasswordSuccessPage />
+            </PublicRoute>
+          } 
+        />
         
         {/* Forgot Password routes - Phone flow */}
-        <Route path="/forgot-password/phone" element={<ForgotPasswordPhonePage />} />
-        <Route path="/forgot-password/phone/otp" element={<ForgotPasswordPhoneOTPPage />} />
-        <Route path="/forgot-password/phone/set-password" element={<SetPasswordPage />} />
+        <Route 
+          path="/forgot-password/phone" 
+          element={
+            <PublicRoute>
+              <ForgotPasswordPhonePage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/forgot-password/phone/otp" 
+          element={
+            <PublicRoute>
+              <ForgotPasswordPhoneOTPPage />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path="/forgot-password/phone/set-password" 
+          element={
+            <PublicRoute>
+              <SetPasswordPage />
+            </PublicRoute>
+          } 
+        />
         
         {/* Admin routes */}
         {(import.meta.env.VITE_ADMIN_ENABLED === 'true' || import.meta.env.PROD) && (
@@ -161,22 +237,97 @@ function AppRoutes() {
           />
         </Route>
         
-        {/* Authenticated App Routes */}
-        {isAuthenticated && (
-          <Route path="/app/*" element={<AppNavigator />} />
-        )}
+        {/* Authenticated App Routes - Protected */}
+        <Route 
+          path="/app/*" 
+          element={
+            <ProtectedRoute>
+              <AppNavigator />
+            </ProtectedRoute>
+          } 
+        />
 
-        {/* Services - Top Up without app prefix */}
-        <Route path="/services/topup" element={<TopUp />} />
-        <Route path="/services/topup/card" element={<TopUpCard />} />
-        <Route path="/services/topup/card/add" element={<TopUpAddNewCard />} />
-        <Route path="/services/topup/card/select-method" element={<TopUpSelectMethod />} />
-        <Route path="/services/topup/card/select-existing" element={<TopUpSelectExistingCard />} />
-        <Route path="/services/topup/card/cvv" element={<TopUpEnterCVV />} />
-        <Route path="/services/topup/card/3d-secure" element={<TopUp3DSecure />} />
-        <Route path="/services/topup/card/success" element={<TopUpSuccess />} />
-        <Route path="/services/topup/virtual-iban" element={<TopUpVirtualIBAN />} />
-        <Route path="/services/topup/add-new-card" element={<TopUpAddNewCard />} />
+        {/* Services - Top Up - Protected */}
+        <Route 
+          path="/services/topup" 
+          element={
+            <ProtectedRoute>
+              <TopUp />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/card" 
+          element={
+            <ProtectedRoute>
+              <TopUpCard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/card/add" 
+          element={
+            <ProtectedRoute>
+              <TopUpAddNewCard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/card/select-method" 
+          element={
+            <ProtectedRoute>
+              <TopUpSelectMethod />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/card/select-existing" 
+          element={
+            <ProtectedRoute>
+              <TopUpSelectExistingCard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/card/cvv" 
+          element={
+            <ProtectedRoute>
+              <TopUpEnterCVV />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/card/3d-secure" 
+          element={
+            <ProtectedRoute>
+              <TopUp3DSecure />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/card/success" 
+          element={
+            <ProtectedRoute>
+              <TopUpSuccess />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/virtual-iban" 
+          element={
+            <ProtectedRoute>
+              <TopUpVirtualIBAN />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/services/topup/add-new-card" 
+          element={
+            <ProtectedRoute>
+              <TopUpAddNewCard />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
 
               {/* Session Warning Modal */}

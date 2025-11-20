@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoHomeOutline } from 'react-icons/io5';
@@ -16,9 +16,16 @@ const UpdateNationalAddress: React.FC = () => {
     additionalNumber: ''
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usePasscode, setUsePasscode] = useState(false);
   const [passcode, setPasscode] = useState('');
+  const addressLoadedRef = useRef(false);
+  
+  // Dynamic options for cities and districts from API
+  const [cityOptions, setCityOptions] = useState<string[]>(['Riyadh', 'Jeddah', 'Dammam', 'Mecca', 'Medina']);
+  const [districtOptions, setDistrictOptions] = useState<string[]>(['Al Olaya', 'Al Malaz', 'Al Nakheel', 'King Fahd District']);
+  const [regionOptions, setRegionOptions] = useState<string[]>(['Riyadh', 'Makkah', 'Eastern Province', 'Qassim', 'Medina']);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -33,6 +40,143 @@ const UpdateNationalAddress: React.FC = () => {
         root.classList.remove('dashboard-root');
       }
     };
+  }, []);
+
+  // Fetch national address and pre-fill form fields
+  useEffect(() => {
+    const loadNationalAddress = async () => {
+      // Only load once
+      if (addressLoadedRef.current) return;
+      
+      addressLoadedRef.current = true;
+      
+      try {
+        setIsLoadingAddress(true);
+        const address = await UserManagementService.getNationalAddress();
+        
+        console.log('🔍 Raw address response:', address);
+        
+        // Pre-fill form fields with address data
+        if (address) {
+          // Helper function to capitalize first letter of each word
+          const capitalizeWords = (str: string): string => {
+            return str
+              .toLowerCase()
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+          };
+          
+          // Helper function to find matching option or prepare to add if not found
+          const findOrPrepareOption = (
+            value: string | undefined | null, 
+            currentOptions: string[]
+          ): { match: string; shouldAdd: boolean; newValue: string } => {
+            if (!value || typeof value !== 'string') {
+              return { match: '', shouldAdd: false, newValue: '' };
+            }
+            
+            const normalizedValue = value.trim();
+            if (!normalizedValue) return { match: '', shouldAdd: false, newValue: '' };
+            
+            // Capitalize the value for display
+            const capitalizedValue = capitalizeWords(normalizedValue);
+            
+            // Try to find exact match (case-insensitive)
+            const match = currentOptions.find(opt => 
+              opt.toLowerCase() === normalizedValue.toLowerCase()
+            );
+            
+            if (match) {
+              return { match, shouldAdd: false, newValue: match };
+            } else {
+              console.log(`➕ Will add new option: "${capitalizedValue}" to dropdown`);
+              return { match: '', shouldAdd: true, newValue: capitalizedValue };
+            }
+          };
+          
+          // Process city
+          const cityResult = findOrPrepareOption(address.city, cityOptions);
+          const processedCity = cityResult.match || cityResult.newValue;
+          if (cityResult.shouldAdd && cityResult.newValue) {
+            setCityOptions(prev => [...prev, cityResult.newValue]);
+          }
+          
+          // Process district
+          const districtResult = findOrPrepareOption(address.district, districtOptions);
+          const processedDistrict = districtResult.match || districtResult.newValue;
+          if (districtResult.shouldAdd && districtResult.newValue) {
+            setDistrictOptions(prev => [...prev, districtResult.newValue]);
+          }
+          
+          // Infer region from city (try to match or infer)
+          let processedRegion = '';
+          if (processedCity) {
+            const cityToRegionMap: { [key: string]: string } = {
+              'Riyadh': 'Riyadh',
+              'Jeddah': 'Makkah',
+              'Dammam': 'Eastern Province',
+              'Mecca': 'Makkah',
+              'Medina': 'Medina',
+              'Jubail': 'Eastern Province' // Add mapping for Jubail
+            };
+            
+            processedRegion = cityToRegionMap[processedCity] || '';
+            
+            // If no mapping found, try to add region to options if city suggests a region
+            if (!processedRegion && processedCity) {
+              // For now, leave region empty or add a default mapping
+              // You can extend this logic based on your needs
+            }
+          }
+          
+          // Prepare the new form data
+          const newFormData = {
+            region: processedRegion,
+            city: processedCity,
+            district: processedDistrict,
+            buildingNumber: address.buildingNumber || '',
+            streetName: address.street || '',
+            postalCode: address.postalCode || '',
+            additionalNumber: address.additionalNumber || ''
+          };
+          
+          console.log('📝 Setting form data:', newFormData);
+          
+          // Set all form data at once
+          setFormData(prev => ({
+            ...prev,
+            ...newFormData
+          }));
+          
+          // Debug logging
+          console.log('✅ Address mapping complete:', {
+            apiResponse: {
+              city: address.city,
+              district: address.district,
+              street: address.street,
+              buildingNumber: address.buildingNumber,
+              postalCode: address.postalCode,
+              additionalNumber: address.additionalNumber
+            },
+            processed: {
+              city: processedCity,
+              district: processedDistrict,
+              region: processedRegion
+            }
+          });
+        } else {
+          console.log('⚠️ Address response is empty or null');
+        }
+      } catch (error) {
+        console.error('❌ Failed to load national address:', error);
+        // Don't show error to user, just log it - form can still be filled manually
+      } finally {
+        setIsLoadingAddress(false);
+      }
+    };
+
+    loadNationalAddress();
   }, []);
 
   const handleInputChange = (field: string, value: string) => {
@@ -109,7 +253,7 @@ const UpdateNationalAddress: React.FC = () => {
         });
         
         if (response.success) {
-          navigate('/app/account-settings/national-address/success');
+          navigate('/app/account-settings/national-address/success', { replace: true });
         } else {
           setErrors({ general: response.message || 'Failed to update address' });
         }
@@ -178,13 +322,12 @@ const UpdateNationalAddress: React.FC = () => {
                           onChange={(e) => handleInputChange('region', e.target.value)}
                           className={`email-input ${errors.region ? 'email-input-error' : ''}`}
                           style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
+                          disabled={isLoadingAddress}
                         >
                           <option value="">Select Region</option>
-                          <option value="Riyadh">Riyadh</option>
-                          <option value="Makkah">Makkah</option>
-                          <option value="Eastern Province">Eastern Province</option>
-                          <option value="Qassim">Qassim</option>
-                          <option value="Medina">Medina</option>
+                          {regionOptions.map((region) => (
+                            <option key={region} value={region}>{region}</option>
+                          ))}
                         </select>
                         <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -207,13 +350,12 @@ const UpdateNationalAddress: React.FC = () => {
                           onChange={(e) => handleInputChange('city', e.target.value)}
                           className={`email-input ${errors.city ? 'email-input-error' : ''}`}
                           style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
+                          disabled={isLoadingAddress}
                         >
                           <option value="">Select City</option>
-                          <option value="Riyadh">Riyadh</option>
-                          <option value="Jeddah">Jeddah</option>
-                          <option value="Dammam">Dammam</option>
-                          <option value="Mecca">Mecca</option>
-                          <option value="Medina">Medina</option>
+                          {cityOptions.map((city) => (
+                            <option key={city} value={city}>{city}</option>
+                          ))}
                         </select>
                         <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -236,12 +378,12 @@ const UpdateNationalAddress: React.FC = () => {
                           onChange={(e) => handleInputChange('district', e.target.value)}
                           className={`email-input ${errors.district ? 'email-input-error' : ''}`}
                           style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
+                          disabled={isLoadingAddress}
                         >
                           <option value="">Select District</option>
-                          <option value="Al Olaya">Al Olaya</option>
-                          <option value="Al Malaz">Al Malaz</option>
-                          <option value="Al Nakheel">Al Nakheel</option>
-                          <option value="King Fahd District">King Fahd District</option>
+                          {districtOptions.map((district) => (
+                            <option key={district} value={district}>{district}</option>
+                          ))}
                         </select>
                         <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -264,6 +406,7 @@ const UpdateNationalAddress: React.FC = () => {
                         onChange={(e) => handleInputChange('streetName', e.target.value)}
                         placeholder="Enter Street Name"
                         className={`email-input ${errors.streetName ? 'email-input-error' : ''}`}
+                        disabled={isLoadingAddress}
                       />
                       {errors.streetName && (
                         <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
@@ -283,6 +426,7 @@ const UpdateNationalAddress: React.FC = () => {
                         onChange={(e) => handleInputChange('buildingNumber', e.target.value)}
                         placeholder="Enter Building Number"
                         className={`email-input ${errors.buildingNumber ? 'email-input-error' : ''}`}
+                        disabled={isLoadingAddress}
                       />
                       {errors.buildingNumber && (
                         <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
@@ -299,6 +443,7 @@ const UpdateNationalAddress: React.FC = () => {
                         onChange={(e) => handleInputChange('postalCode', e.target.value)}
                         placeholder="Enter Postal Code"
                         className={`email-input ${errors.postalCode ? 'email-input-error' : ''}`}
+                        disabled={isLoadingAddress}
                       />
                       {errors.postalCode && (
                         <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
@@ -315,6 +460,7 @@ const UpdateNationalAddress: React.FC = () => {
                         onChange={(e) => handleInputChange('additionalNumber', e.target.value)}
                         placeholder="Enter Additional Number"
                         className={`email-input ${errors.additionalNumber ? 'email-input-error' : ''}`}
+                        disabled={isLoadingAddress}
                       />
                       {errors.additionalNumber && (
                         <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
@@ -323,60 +469,7 @@ const UpdateNationalAddress: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Passcode Option */}
-                    <div className="form-section" style={{ alignItems: 'flex-start', marginTop: '24px', marginBottom: '16px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginLeft: '8px' }}>
-                        <input
-                          type="checkbox"
-                          checked={usePasscode}
-                          onChange={(e) => {
-                            setUsePasscode(e.target.checked);
-                            setPasscode('');
-                            if (errors.passcode) {
-                              setErrors(prev => {
-                                const newErrors = { ...prev };
-                                delete newErrors.passcode;
-                                return newErrors;
-                              });
-                            }
-                          }}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                        />
-                        <span style={{ fontFamily: 'Hanken Grotesk', fontSize: '14px', color: '#374151' }}>
-                          Use passcode instead of OTP
-                        </span>
-                      </label>
-                      
-                      {usePasscode && (
-                        <div style={{ width: '100%', marginTop: '12px' }}>
-                          <label className="form-label" style={{ marginLeft: '8px', marginBottom: '8px' }}>Passcode</label>
-                          <input
-                            type="password"
-                            value={passcode}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                              setPasscode(value);
-                              if (errors.passcode) {
-                                setErrors(prev => {
-                                  const newErrors = { ...prev };
-                                  delete newErrors.passcode;
-                                  return newErrors;
-                                });
-                              }
-                            }}
-                            placeholder="Enter 6-digit passcode"
-                            className={`email-input ${errors.passcode ? 'email-input-error' : ''}`}
-                            style={{ width: '100%' }}
-                            maxLength={6}
-                          />
-                          {errors.passcode && (
-                            <div className="error-message" style={{ marginLeft: '8px', marginTop: '4px' }}>
-                              {errors.passcode}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+
 
                     {/* General Error Message */}
                     {errors.general && (
@@ -397,13 +490,21 @@ const UpdateNationalAddress: React.FC = () => {
                       <button 
                         className="btn-primary"
                         onClick={handleNext}
-                        disabled={isSubmitting}
+                        disabled={isLoadingAddress || isSubmitting}
                       >
                         {isSubmitting ? 'Processing...' : 'Next'}
                       </button>
                     </div>
                   </div>
                 </div>
+
+                {isLoadingAddress && (
+                  <div style={{ textAlign: 'center', marginTop: '24px' }}>
+                    <p style={{ color: '#6B7280', fontFamily: 'Manrope', fontSize: '14px' }}>
+                      Loading your address data...
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -144,8 +144,8 @@ const UpdateNationalAddressOTP: React.FC = () => {
       });
       
       if (response.success) {
-        // Navigate to success page
-        navigate('/app/account-settings/national-address/success');
+        // Navigate to success page using replace to prevent going back to OTP page
+        navigate('/app/account-settings/national-address/success', { replace: true });
       } else {
         setError(response.message || 'Invalid OTP. Please try again.');
         setOtp(['', '', '', '', '', '']);
@@ -233,11 +233,9 @@ const UpdateNationalAddressOTP: React.FC = () => {
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     disabled={isLoading}
-                    className="w-14 h-14 text-3xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-14 h-14 text-4xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       border: '1px solid #2C2C2CB2',
-                      WebkitTextStroke: '1px #2C2C2CB2',
-                      textShadow: '1px 1px 0 #2C2C2CB2, -1px -1px 0 #2C2C2CB2, 1px -1px 0 #2C2C2CB2, -1px 1px 0 #2C2C2CB2'
                     }}
                     required
                   />

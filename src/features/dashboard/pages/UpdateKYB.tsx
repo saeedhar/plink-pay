@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoDocumentTextOutline } from 'react-icons/io5';
@@ -16,6 +16,7 @@ const UpdateKYB: React.FC = () => {
   const [purposeOther, setPurposeOther] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usePasscode, setUsePasscode] = useState(false);
   const [passcode, setPasscode] = useState('');
@@ -31,6 +32,8 @@ const UpdateKYB: React.FC = () => {
     businessActivity: [],
     annualRevenue: []
   });
+  
+  const profileLoadedRef = useRef(false);
 
   useEffect(() => {
     // Add dashboard-root class to root element
@@ -63,6 +66,130 @@ const UpdateKYB: React.FC = () => {
 
     loadOptions();
   }, []);
+
+  // Fetch user profile and pre-fill KYB data
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      // Wait for options to be loaded first, and only load profile once
+      if (isLoadingOptions || profileLoadedRef.current) return;
+      
+      // Check if we have options loaded
+      if (kybOptions.sourceOfFunds.length === 0) return;
+      
+      profileLoadedRef.current = true;
+      
+      try {
+        setIsLoadingProfile(true);
+        const profile = await UserManagementService.getProfile();
+        
+        // Pre-fill source of funds
+        if (profile.sourceOfFunds) {
+          // Check if the value matches any option code or label
+          const matchingOption = kybOptions.sourceOfFunds.find(
+            opt => opt.code === profile.sourceOfFunds || 
+                   opt.label.toLowerCase() === profile.sourceOfFunds.toLowerCase() ||
+                   (opt.code && profile.sourceOfFunds.toLowerCase().includes(opt.code.toLowerCase()))
+          );
+          
+          if (matchingOption) {
+            const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
+            setSourceOfFunds(optionValue);
+          } else {
+            // If no match, treat as "other"
+            setSourceOfFunds('other');
+            setSourceOfFundsOther(profile.sourceOfFunds);
+          }
+        }
+        
+        // Pre-fill business activity (expected transaction type)
+        if (profile.businessActivity) {
+          const matchingOption = kybOptions.businessActivity.find(
+            opt => opt.code === profile.businessActivity ||
+                   opt.label.toLowerCase() === profile.businessActivity.toLowerCase() ||
+                   (opt.code && profile.businessActivity.toLowerCase().includes(opt.code.toLowerCase()))
+          );
+          
+          if (matchingOption) {
+            const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
+            setExpectedTransactionType(optionValue);
+          } else {
+            setExpectedTransactionType(profile.businessActivity);
+          }
+        }
+        
+        // Pre-fill annual revenue (expected monthly volume)
+        if (profile.annualRevenue) {
+          const matchingOption = kybOptions.annualRevenue.find(
+            opt => opt.code === profile.annualRevenue ||
+                   opt.label.toLowerCase() === profile.annualRevenue.toLowerCase() ||
+                   (opt.code && profile.annualRevenue.toLowerCase().includes(opt.code.toLowerCase()))
+          );
+          
+          if (matchingOption) {
+            const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
+            setExpectedMonthlyVolume(optionValue);
+          } else {
+            setExpectedMonthlyVolume(profile.annualRevenue);
+          }
+        }
+        
+        // Pre-fill purpose of account (comma-separated, can be multiple checkboxes)
+        if (profile.accountPurpose) {
+          const purposes = profile.accountPurpose.split(',').map(p => p.trim()).filter(p => p);
+          const selectedPurposes: string[] = [];
+          let otherPurpose = '';
+          
+          purposes.forEach(purpose => {
+            // Check if this purpose matches any option
+            const matchingOption = kybOptions.purposeOfAccount.find(
+              opt => opt.code === purpose ||
+                     opt.label.toLowerCase() === purpose.toLowerCase() ||
+                     (opt.code && purpose.toLowerCase().includes(opt.code.toLowerCase())) ||
+                     purpose.toLowerCase().includes(opt.label.toLowerCase())
+            );
+            
+            if (matchingOption) {
+              const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
+              if (!selectedPurposes.includes(optionValue)) {
+                selectedPurposes.push(optionValue);
+              }
+            } else if (purpose.toLowerCase().includes('other')) {
+              // Extract the "other" text
+              const otherMatch = purpose.match(/other[:\s]+(.+)/i);
+              if (otherMatch) {
+                otherPurpose = otherMatch[1].trim();
+              }
+              if (!selectedPurposes.includes('other')) {
+                selectedPurposes.push('other');
+              }
+            } else {
+              // If no match and not "other", treat as "other" text
+              if (!selectedPurposes.includes('other')) {
+                selectedPurposes.push('other');
+              }
+              if (!otherPurpose) {
+                otherPurpose = purpose;
+              } else {
+                otherPurpose += ', ' + purpose;
+              }
+            }
+          });
+          
+          setPurposeOfAccount(selectedPurposes);
+          if (otherPurpose) {
+            setPurposeOther(otherPurpose);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+        // Don't show error to user, just log it - form can still be filled manually
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadUserProfile();
+  }, [isLoadingOptions, kybOptions.sourceOfFunds.length]);
 
   const handleCheckboxChange = (value: string) => {
     setPurposeOfAccount(prev => {
@@ -151,7 +278,7 @@ const UpdateKYB: React.FC = () => {
         });
         
         if (response.success) {
-          navigate('/app/account-settings/kyb/success');
+          navigate('/app/account-settings/kyb/success', { replace: true });
         } else {
           setErrors({ general: response.message || 'Failed to update KYB information' });
         }
@@ -234,7 +361,7 @@ const UpdateKYB: React.FC = () => {
                           }}
                           className={`email-input ${errors.sourceOfFunds ? 'email-input-error' : ''}`}
                           style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
-                          disabled={isLoadingOptions}
+                          disabled={isLoadingOptions || isLoadingProfile}
                         >
                           <option value="">Select your Source of Funds</option>
                           {kybOptions.sourceOfFunds.map((option) => (
@@ -269,7 +396,7 @@ const UpdateKYB: React.FC = () => {
                             placeholder="Please describe your source of funds"
                             className={`email-input ${errors.sourceOfFundsOther ? 'email-input-error' : ''}`}
                             style={{ width: '100%', minHeight: '60px', resize: 'vertical', padding: '12px 16px' }}
-                            disabled={isLoadingOptions}
+                            disabled={isLoadingOptions || isLoadingProfile}
                             rows={3}
                             maxLength={200}
                           />
@@ -296,7 +423,7 @@ const UpdateKYB: React.FC = () => {
                                 checked={isChecked}
                                 onChange={() => handleCheckboxChange(optionValue)}
                                 className="kyb-checkbox"
-                                disabled={isLoadingOptions}
+                                disabled={isLoadingOptions || isLoadingProfile}
                                 style={{
                                   accentColor: '#00BDFF',
                                   border: isChecked ? 'none' : '1px solid #E5E5E5',
@@ -335,7 +462,7 @@ const UpdateKYB: React.FC = () => {
                             placeholder="Please Enter Other Purpose..."
                             className={`email-input ${errors.purposeOther ? 'email-input-error' : ''}`}
                             style={{ width: '100%' }}
-                            disabled={isLoadingOptions}
+                            disabled={isLoadingOptions || isLoadingProfile}
                             maxLength={100}
                           />
                           {errors.purposeOther && (
@@ -364,7 +491,7 @@ const UpdateKYB: React.FC = () => {
                           }}
                           className={`email-input ${errors.expectedTransactionType ? 'email-input-error' : ''}`}
                           style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
-                          disabled={isLoadingOptions}
+                          disabled={isLoadingOptions || isLoadingProfile}
                         >
                           <option value="">Expected Transaction Type</option>
                           {kybOptions.businessActivity.map((option) => (
@@ -400,7 +527,7 @@ const UpdateKYB: React.FC = () => {
                           }}
                           className={`email-input ${errors.expectedMonthlyVolume ? 'email-input-error' : ''}`}
                           style={{ width: '100%', appearance: 'none', paddingRight: '40px' }}
-                          disabled={isLoadingOptions}
+                          disabled={isLoadingOptions || isLoadingProfile}
                         >
                           <option value="">Select volume range</option>
                           {kybOptions.annualRevenue.map((option) => (
@@ -496,7 +623,7 @@ const UpdateKYB: React.FC = () => {
                       <button 
                         className="btn-primary"
                         onClick={handleNext}
-                        disabled={isLoadingOptions || isSubmitting}
+                        disabled={isLoadingOptions || isLoadingProfile || isSubmitting}
                       >
                         {isSubmitting ? 'Processing...' : 'Next'}
                       </button>
@@ -504,9 +631,11 @@ const UpdateKYB: React.FC = () => {
                   </div>
                 </div>
 
-                {isLoadingOptions && (
+                {(isLoadingOptions || isLoadingProfile) && (
                   <div style={{ textAlign: 'center', marginTop: '24px' }}>
-                    <p style={{ color: '#6B7280', fontFamily: 'Manrope', fontSize: '14px' }}>Loading options...</p>
+                    <p style={{ color: '#6B7280', fontFamily: 'Manrope', fontSize: '14px' }}>
+                      {isLoadingOptions ? 'Loading options...' : 'Loading your KYB data...'}
+                    </p>
                   </div>
                 )}
               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
+import { AlertModal } from '../../../components/ui/Modal';
 import logo from '../../../assets/logo-mark.svg';
 import { verifyLoginOtp, loginWithPassword, completeCallback } from '../../../services/realBackendAPI';
 import type { VerifyLoginOtpRequest, LoginPasswordRequest } from '../../../services/realBackendAPI';
@@ -18,6 +19,8 @@ export default function LoginOTPPage() {
   const [phoneOrEmail, setPhoneOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [testOTP, setTestOTP] = useState<string>('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [showMaxAttemptsModal, setShowMaxAttemptsModal] = useState(false);
 
   // Get data from navigation state
   useEffect(() => {
@@ -29,6 +32,14 @@ export default function LoginOTPPage() {
       otpCode?: string;
     };
     
+    // Check if user is already authenticated (shouldn't be on OTP page)
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      console.warn('User already authenticated, redirecting to dashboard');
+      navigate('/app/dashboard', { replace: true });
+      return;
+    }
+    
     if (state?.userId && state?.phoneOrEmail) {
       setUserId(state.userId);
       setPhoneOrEmail(state.phoneOrEmail);
@@ -39,9 +50,23 @@ export default function LoginOTPPage() {
     } else {
       // If no data, redirect to login
       console.warn('No login data provided, redirecting to login');
-      navigate('/login');
+      navigate('/login', { replace: true });
     }
   }, [location, navigate]);
+
+  // Prevent browser back button from going back to OTP page after completion
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        // User is authenticated, prevent going back to OTP page
+        navigate('/app/dashboard', { replace: true });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigate]);
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -114,8 +139,12 @@ export default function LoginOTPPage() {
         console.log('📞 Device ID:', response.deviceId);
         
         // Store callback info for later use
-        localStorage.setItem('callbackId', response.callbackId);
-        localStorage.setItem('deviceId', response.deviceId);
+        if (response.callbackId) {
+          localStorage.setItem('callbackId', response.callbackId);
+        }
+        if (response.deviceId) {
+          localStorage.setItem('deviceId', response.deviceId);
+        }
         
         // Mobile app approach: Wait 7 seconds for MOCK callback to auto-confirm
         console.log('🔄 Waiting 7 seconds for callback auto-confirmation (mobile app approach)...');
@@ -126,6 +155,9 @@ export default function LoginOTPPage() {
         setIsCallbackWaiting(false);
         
         try {
+          if (!response.callbackId) {
+            throw new Error('No callback ID provided');
+          }
           console.log('📞 Attempting to complete callback verification after delay...');
           const callbackResponse = await completeCallback(response.callbackId);
           console.log('✅ Callback verification completed:', callbackResponse);
@@ -180,16 +212,19 @@ export default function LoginOTPPage() {
       
       localStorage.setItem('userId', response.userId);
       
+      // Reset failed attempts on successful login
+      setFailedAttempts(0);
+      
       console.log('✅ Login successful with 2FA:', response.userId);
       
-      // Navigate to dashboard
-      navigate('/app/dashboard');
+      // Navigate to dashboard using replace to prevent going back to OTP page
+      navigate('/app/dashboard', { replace: true });
       
     } catch (error: any) {
       console.error('❌ OTP verification error:', error);
       
       // Check if account is locked
-      if (error.message.includes('locked') || error.message.includes('call center')) {
+      if (error.message?.includes('locked') || error.message?.includes('call center')) {
         navigate('/account-locked', {
           state: {
             lockType: error.message.includes('call center') ? 'hard' : 'soft',
@@ -200,12 +235,29 @@ export default function LoginOTPPage() {
         return;
       }
       
-      if (error.message.includes('400') || error.message.includes('Invalid')) {
-        setError(error.message || 'Invalid verification code. Please try again.');
-      } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+      // Increment failed attempts for ANY OTP verification error (except account locked)
+      const newFailedAttempts = failedAttempts + 1;
+      console.log(`⚠️ Failed attempt ${newFailedAttempts} of 3`);
+      setFailedAttempts(newFailedAttempts);
+      
+      // Show modal if 3 failed attempts reached
+      if (newFailedAttempts >= 3) {
+        console.log('🚫 Maximum attempts reached, showing modal');
+        setShowMaxAttemptsModal(true);
+        setError('');
+        // Clear OTP fields
+        setOtp(['', '', '', '', '', '']);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Show error message for attempts less than 3
+      // Check if it's a network error
+      if (error.message?.includes('Network') || error.message?.includes('fetch') || error.message?.includes('Failed to fetch')) {
         setError('Unable to connect to server. Please check your connection.');
       } else {
-        setError(error.message || 'Verification failed. Please try again.');
+        // For OTP verification errors, show a consistent message
+        setError('The code you entered is incorrect. ');
       }
     } finally {
       setIsLoading(false);
@@ -245,6 +297,8 @@ export default function LoginOTPPage() {
       setTimeLeft(30);
       setIsResendDisabled(true);
       setOtp(['', '', '', '', '', '']);
+      // Reset failed attempts when resending OTP
+      setFailedAttempts(0);
       
       // Focus first input
       const firstInput = document.getElementById('otp-0');
@@ -302,7 +356,7 @@ export default function LoginOTPPage() {
               <div className="text-center mb-8">
                 <h2 className="text-2xl text-gray-800 mb-2">OTP Verification</h2>
                 <p className="text-black">Enter the 6-digit code sent to your phone</p>
-                {isCallbackWaiting && (
+                {/* {isCallbackWaiting && (
                   <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div className="flex items-center justify-center mb-2">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-600 mr-2"></div>
@@ -310,7 +364,7 @@ export default function LoginOTPPage() {
                     </div>
                     <p className="text-xs text-yellow-600">Please wait while we complete the verification process</p>
                   </div>
-                )}
+                )} */}
               </div>
 
               {/* OTP Input Fields */}
@@ -325,12 +379,10 @@ export default function LoginOTPPage() {
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    disabled={isLoading || isCallbackWaiting}
-                    className="w-14 h-14 text-3xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isLoading || isCallbackWaiting || showMaxAttemptsModal}
+                    className="w-14 h-14 text-4xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       border: '1px solid #2C2C2CB2',
-                      WebkitTextStroke: '1px #2C2C2CB2',
-                      textShadow: '1px 1px 0 #2C2C2CB2, -1px -1px 0 #2C2C2CB2, 1px -1px 0 #2C2C2CB2, -1px 1px 0 #2C2C2CB2'
                     }}
                     required
                   />
@@ -353,7 +405,7 @@ export default function LoginOTPPage() {
               )}
 
               {/* Error Message */}
-              {error && (
+              {error && !showMaxAttemptsModal && (
                 <div className="flex items-center justify-center mb-4">
                   <div className="flex items-center gap-2 text-red-600">
                     <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
@@ -363,6 +415,8 @@ export default function LoginOTPPage() {
                   </div>
                 </div>
               )}
+              
+              
 
               {/* Helper Text */}
               <div className="text-center mb-8">
@@ -388,7 +442,7 @@ export default function LoginOTPPage() {
               <Button 
                 type="submit" 
                 className="w-full max-w-xs" 
-                disabled={isLoading || isCallbackWaiting || otp.some(digit => !digit)}
+                disabled={isLoading || isCallbackWaiting || otp.some(digit => !digit) || showMaxAttemptsModal}
               >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
@@ -415,6 +469,28 @@ export default function LoginOTPPage() {
           </div>
         </div>
       </div>
+
+      {/* Max Attempts Error Modal */}
+      <AlertModal
+        isOpen={showMaxAttemptsModal}
+        onClose={() => {
+          setShowMaxAttemptsModal(false);
+          navigate('/login');
+        }}
+        onConfirm={() => {
+          setShowMaxAttemptsModal(false);
+          navigate('/login');
+        }}
+        title="Maximum Attempts Exceeded"
+        message="You have exceeded the maximum number of attempts. Please try again later."
+        buttonLabel="Return to Login"
+        variant="danger"
+        icon={
+          <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        }
+      />
     </div>
   );
 }

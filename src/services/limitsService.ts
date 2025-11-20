@@ -92,6 +92,7 @@ export interface LimitsOTPResponse {
   success: boolean;
   message: string;
   otpCode?: string; // OTP code for testing/display
+  sessionId?: string; // Session ID for OTP verification
 }
 
 /**
@@ -211,27 +212,64 @@ export class LimitsService {
 
   /**
    * Request OTP for limits operations
+   * Uses authenticated email update endpoint to send OTP to current user's phone
+   * This is a workaround since there's no limits-specific OTP endpoint
    */
   static async requestOTP(request: LimitsOTPRequest): Promise<LimitsOTPResponse> {
     try {
       console.log('🔍 Requesting OTP for limits operation:', request.action);
       
-      // Get user's phone number from localStorage
-      const phoneNumber = localStorage.getItem('phoneNumber') || '+966501234567';
+      // Get current user to ensure we're authenticated and get their current email
+      const { getCurrentUser } = await import('./realBackendAPI');
+      const user = await getCurrentUser();
       
-      // Use the existing auth OTP API
-      const data = await API.post('/api/v1/auth/send-otp', {
-        phoneNumber: phoneNumber,
-        provider: 'freelancer' // Default provider for limits operations
+      if (!user.phoneE164) {
+        throw new Error('Phone number not found in user profile. Please contact support.');
+      }
+      
+      // Use email update endpoint as a workaround to send OTP to current user's phone
+      // This is an authenticated endpoint that works for existing users
+      // We'll use the current email (if exists) or a temp email to trigger OTP sending
+      // The OTP will be sent to the user's current phone number
+      const tempEmail = user.email ? `temp-${Date.now()}@${user.email.split('@')[1]}` : `limits-${Date.now()}@temp.com`;
+      
+      try {
+        const data = await API.post('/api/v1/users/me/email/update', {
+          email: tempEmail
       });
       
-      console.log('✅ Limits OTP requested successfully:', data);
+        console.log('✅ OTP requested successfully via email update endpoint:', data);
       return {
         success: data.success || true,
         message: data.message || 'OTP sent successfully',
-        otpCode: data.otpCode
+          otpCode: data.otpCode,
+          sessionId: data.sessionId // Return session ID for OTP verification
       };
-    } catch (error) {
+      } catch (emailError: any) {
+        // Check if OTP was sent despite the error (some validation errors still send OTP)
+        if (emailError.response?.data?.otpCode) {
+          console.log('✅ OTP received despite validation error:', emailError.response.data);
+          return {
+            success: true,
+            message: 'OTP sent successfully',
+            otpCode: emailError.response.data.otpCode
+          };
+        }
+        
+        // If it's a phone-related error, rethrow with clearer message
+        if (emailError.message?.includes('phone') || emailError.message?.includes('Phone')) {
+          throw new Error('Failed to send OTP to your phone. Please contact support.');
+        }
+        
+        // For other errors, check if it's the "already exists" error from auth endpoint
+        if (emailError.message?.includes('already registered') || 
+            emailError.message?.includes('already exists')) {
+          throw new Error('Unable to send OTP. Please ensure you are logged in correctly.');
+        }
+        
+        throw new Error(emailError.message || 'Failed to request OTP. Please try again.');
+      }
+    } catch (error: any) {
       console.error('Error requesting limits OTP:', error);
       throw error;
     }

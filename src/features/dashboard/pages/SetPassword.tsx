@@ -128,8 +128,8 @@ const SetPassword: React.FC = () => {
         newPassword
       });
       
-      // Navigate to success page
-      navigate('/app/account-settings/password/success');
+      // Navigate to success page using replace to prevent going back
+      navigate('/app/account-settings/password/success', { replace: true });
     } catch (error: any) {
       console.error('Failed to change password:', error);
       setErrors({ 

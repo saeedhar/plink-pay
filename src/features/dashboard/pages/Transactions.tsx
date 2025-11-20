@@ -69,6 +69,11 @@ const Transactions: React.FC = () => {
     loadTransactions();
   }, [pagination.currentPage, pagination.pageSize]);
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, currentPage: 0 }));
+  }, [filters.status, filters.transactionType, filters.merchant]);
+
   // Apply frontend filtering
   useEffect(() => {
     let filtered = [...transactions];
@@ -76,23 +81,26 @@ const Transactions: React.FC = () => {
     // Filter by status
     if (filters.status) {
       filtered = filtered.filter(t => 
-        t.status === filters.status
+        t.status.toUpperCase() === filters.status.toUpperCase()
       );
     }
 
-    // Filter by transaction type
+    // Filter by transaction type - compare enum codes directly
     if (filters.transactionType) {
       filtered = filtered.filter(t => 
-        TransactionService.formatTransactionType(t.transactionType).toLowerCase() === filters.transactionType.toLowerCase()
+        t.transactionType.toUpperCase() === filters.transactionType.toUpperCase()
       );
     }
 
-    // Filter by merchant/beneficiary (search in description)
+    // Filter by merchant/beneficiary (search in description, reference number, and formatted transaction type)
     if (filters.merchant) {
-      filtered = filtered.filter(t => 
-        t.description?.toLowerCase().includes(filters.merchant.toLowerCase()) ||
-        t.referenceNumber?.toLowerCase().includes(filters.merchant.toLowerCase())
-      );
+      const searchTerm = filters.merchant.toLowerCase();
+      filtered = filtered.filter(t => {
+        const descriptionMatch = t.description?.toLowerCase().includes(searchTerm) || false;
+        const referenceMatch = t.referenceNumber?.toLowerCase().includes(searchTerm) || false;
+        const typeMatch = TransactionService.formatTransactionType(t.transactionType).toLowerCase().includes(searchTerm);
+        return descriptionMatch || referenceMatch || typeMatch;
+      });
     }
 
     setFilteredTransactions(filtered);
@@ -168,7 +176,7 @@ const Transactions: React.FC = () => {
                       <>
                         <option value="">All Transaction Types</option>
                         {transactionTypes.map((filter) => (
-                          <option key={filter.id} value={filter.label}>
+                          <option key={filter.id} value={filter.code}>
                             {filter.label}
                           </option>
                         ))}
@@ -192,10 +200,10 @@ const Transactions: React.FC = () => {
                 </div>
 
                 <div className="filter-actions">
-                  <button className="filter-button apply-filter" onClick={handleApplyFilters}>
+                  {/* <button className="filter-button apply-filter" onClick={handleApplyFilters}>
                     <FiFilter className="button-icon" />
                     Filter
-                  </button>
+                  </button> */}
                   <button className="filter-button clear-filter" onClick={handleClearFilters}>
                     <FiRefreshCw className="button-icon" />
                     Clear
@@ -349,6 +357,14 @@ const Transactions: React.FC = () => {
                 </>
               )}
             </div>
+
+            {/* Backdrop for mobile */}
+            {selectedTransaction && (
+              <div 
+                className="transaction-details-backdrop"
+                onClick={() => setSelectedTransaction(null)}
+              />
+            )}
           </div>
         </div>
       </div>

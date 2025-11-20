@@ -16,8 +16,19 @@ const DeactivateDeviceSuccess: React.FC = () => {
     }
   }, [location]);
 
+  // Prevent browser back button from going back to success screen
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      // Prevent going back to success screen
+      navigate('/app/account-settings/devices', { replace: true });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigate]);
+
   const handleDone = () => {
-    navigate('/app/account-settings/devices');
+    navigate('/app/account-settings/devices', { replace: true });
   };
 
   const getCurrentDate = () => {

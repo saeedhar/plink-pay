@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { IoPhonePortraitOutline } from 'react-icons/io5';
 import { UserManagementService } from '../../../services/userManagementService';
+import { validateSaudiPhone, formatPhoneNumber } from '../../../utils/validators';
 
 const UpdateMobileNumber: React.FC = () => {
   const navigate = useNavigate();
@@ -27,30 +28,16 @@ const UpdateMobileNumber: React.FC = () => {
   }, []);
 
   const validateMobileNumber = (number: string): string => {
-    if (!number.trim()) {
-      return 'Mobile number is required';
-    }
-    
-    if (number.length !== 10) {
-      return 'Mobile number must be exactly 10 digits';
-    }
-    
-    if (!number.startsWith('05')) {
-      return 'Mobile number must start with 05';
-    }
-    
-    if (!/^\d+$/.test(number)) {
-      return 'Mobile number must contain only digits';
-    }
-    
-    return '';
+    const validationError = validateSaudiPhone(number);
+    return validationError || '';
   };
 
   const handleMobileNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only allow digits and limit to 10 characters
-    const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
-    setMobileNumber(digitsOnly);
+    // Format the phone number using the validator's formatter
+    const formatted = formatPhoneNumber(value);
+    // Store formatted value (with spaces for display)
+    setMobileNumber(formatted);
     
     // Clear error when user starts typing
     if (error) {
@@ -74,8 +61,10 @@ const UpdateMobileNumber: React.FC = () => {
       setIsSubmitting(true);
       setError('');
       
+      // Remove spaces from mobile number before constructing E.164 format
+      const cleanMobileNumber = mobileNumber.replace(/\s/g, '');
       // Construct full phone number in E.164 format
-      const fullPhoneNumber = `${countryCode}${mobileNumber}`;
+      const fullPhoneNumber = `${countryCode}${cleanMobileNumber}`;
       
       // Call API to initiate mobile update
       const response = await UserManagementService.initiateMobileUpdate({
@@ -134,9 +123,9 @@ const UpdateMobileNumber: React.FC = () => {
                       type="tel"
                       value={mobileNumber}
                       onChange={handleMobileNumberChange}
-                      placeholder="0512345678"
+                      placeholder="05X XXX XXXX or 5XX XXX XXX"
                       className={`phone-input ${error ? 'phone-input-error' : ''}`}
-                      maxLength={10}
+                      maxLength={12}
                     />
                   </div>
                   {error && (

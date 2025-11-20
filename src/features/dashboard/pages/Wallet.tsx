@@ -58,6 +58,24 @@ const Wallet: React.FC = () => {
     }
   }, []);
 
+  // Close modals when navigating back or away
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      // Close any open modals when navigating back
+      setShowDeactivateModal(false);
+      setShowActivateModal(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    // Also close modals when component unmounts (navigating away)
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      setShowDeactivateModal(false);
+      setShowActivateModal(false);
+    };
+  }, []);
+
   // Load wallet data from API
   const loadWalletData = async () => {
     try {

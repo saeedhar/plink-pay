@@ -80,14 +80,46 @@ function defaultHeaders() {
 }
 
 /**
+ * Clear tokens and logout user
+ */
+function clearTokensAndLogout(sessionExpired: boolean = false) {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  localStorage.removeItem('userId')
+  
+  // Only redirect if we're not already on a public page
+  const currentPath = window.location.pathname
+  const publicPaths = ['/login', '/login/verify-otp', '/forgot-password', '/account-locked', '/']
+  if (!publicPaths.some(path => currentPath.startsWith(path))) {
+    // Use window.location to ensure a full page reload and clear any state
+    // Pass session expired flag via URL parameter
+    const redirectUrl = sessionExpired ? '/login?sessionExpired=true' : '/login'
+    window.location.href = redirectUrl
+  } else if (sessionExpired && currentPath.startsWith('/login')) {
+    // If already on login page, add the parameter
+    const url = new URL(window.location.href)
+    url.searchParams.set('sessionExpired', 'true')
+    window.history.replaceState({}, '', url.toString())
+  }
+}
+
+/**
  * Refresh access token using refresh token.
  * Backend returns { accessToken, refreshToken, expiresIn }
  */
 let refreshing: Promise<void> | null = null
 async function refreshAccessToken(): Promise<void> {
-  if (refreshing) return refreshing
+  // If already refreshing, wait for that promise
+  if (refreshing) {
+    return refreshing
+  }
+  
   const refreshToken = getRefreshToken()
-  if (!refreshToken) throw new Error('No refresh token')
+  if (!refreshToken) {
+    console.warn('⚠️ No refresh token available')
+    clearTokensAndLogout(true) // Pass sessionExpired flag
+    throw new Error('No refresh token')
+  }
 
   refreshing = fetch(apiUrl('/api/v1/auth/refresh-token'), {
     method: 'POST',
@@ -96,34 +128,131 @@ async function refreshAccessToken(): Promise<void> {
   })
     .then(async (res) => {
       const text = await res.text()
+      
+      // If refresh token endpoint returns 401, refresh token is expired/invalid
+      if (res.status === 401) {
+        console.warn('⚠️ Refresh token expired or invalid')
+        clearTokensAndLogout(true) // Pass sessionExpired flag
+        throw new Error('Refresh token expired')
+      }
+      
       if (!res.ok) {
         let msg = text
         try { msg = JSON.parse(text)?.message ?? msg } catch {}
+        console.error('❌ Token refresh failed:', msg)
+        // If refresh fails for other reasons, clear tokens and logout
+        clearTokensAndLogout(true) // Pass sessionExpired flag
         throw new Error(msg || `HTTP ${res.status}`)
       }
+      
       const data = text ? JSON.parse(text) : {}
-      if (data?.accessToken) setTokens(data.accessToken, data.refreshToken)
+      if (data?.accessToken) {
+        setTokens(data.accessToken, data.refreshToken)
+        console.log('✅ Token refreshed successfully')
+      } else {
+        console.error('❌ No access token in refresh response')
+        clearTokensAndLogout(true) // Pass sessionExpired flag
+        throw new Error('Invalid refresh response')
+      }
     })
-    .finally(() => { refreshing = null })
+    .catch((error) => {
+      // If refresh fails, clear tokens and logout
+      console.error('❌ Token refresh error:', error)
+      if (error.message !== 'Refresh token expired') {
+        clearTokensAndLogout(true) // Pass sessionExpired flag
+      }
+      throw error
+    })
+    .finally(() => { 
+      refreshing = null 
+    })
 
   return refreshing
 }
 
-/** Perform fetch with auth and auto-refresh on 401 once */
+/** Perform fetch with auth and auto-refresh on 401/403 once */
 async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit) {
-  const doFetch = () => fetch(input, init)
-  let res = await doFetch()
-  if (res.status !== 401) return res
-
-  // Attempt a single refresh and retry
-  try {
-    await refreshAccessToken()
-    const headers = new Headers(init?.headers)
-    headers.set('Authorization', `Bearer ${getAccessToken()}`)
-    res = await fetch(input, { ...init, headers })
-  } catch {
-    return res
+  // Don't retry refresh token endpoint itself
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : ''
+  if (url.includes('/auth/refresh-token')) {
+    return fetch(input, init)
   }
+  
+  const doFetch = () => {
+    const headers = new Headers(init?.headers)
+    const token = getAccessToken()
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`)
+    }
+    return fetch(input, { ...init, headers })
+  }
+  
+  let res = await doFetch()
+  
+  // Handle 401 (Unauthorized) - token expired
+  if (res.status === 401) {
+    // Attempt a single refresh and retry
+    try {
+      console.log('🔄 Access token expired (401), refreshing...')
+      await refreshAccessToken()
+      
+      // Retry the original request with new token
+      const headers = new Headers(init?.headers)
+      const newToken = getAccessToken()
+      if (newToken) {
+        headers.set('Authorization', `Bearer ${newToken}`)
+      }
+      res = await fetch(input, { ...init, headers })
+      
+      // If still 401 after refresh, logout
+      if (res.status === 401) {
+        console.warn('⚠️ Still unauthorized after token refresh, logging out')
+        clearTokensAndLogout(true) // Pass sessionExpired flag
+      }
+    } catch (error: any) {
+      // If refresh failed, the error handler already logged out the user
+      console.error('❌ Failed to refresh token:', error)
+      // Return the original 401 response
+    }
+  }
+  
+  // Handle 403 (Forbidden) - treat as session expiration if we have a token
+  // This could mean the token is invalid or the user doesn't have permission
+  if (res.status === 403) {
+    const token = getAccessToken()
+    if (token) {
+      // If we have a token but got 403, likely session expired or token invalid
+      console.warn('⚠️ Forbidden (403) with token present - treating as session expiration')
+      // Try to refresh token first
+      try {
+        console.log('🔄 Attempting token refresh due to 403...')
+        await refreshAccessToken()
+        
+        // Retry the original request with new token
+        const headers = new Headers(init?.headers)
+        const newToken = getAccessToken()
+        if (newToken) {
+          headers.set('Authorization', `Bearer ${newToken}`)
+        }
+        res = await fetch(input, { ...init, headers })
+        
+        // If still 403 after refresh, logout
+        if (res.status === 403) {
+          console.warn('⚠️ Still forbidden after token refresh, logging out')
+          clearTokensAndLogout(true) // Pass sessionExpired flag
+        }
+      } catch (error: any) {
+        // If refresh failed, logout
+        console.error('❌ Failed to refresh token on 403:', error)
+        clearTokensAndLogout(true) // Pass sessionExpired flag
+      }
+    } else {
+      // No token but got 403 - redirect to login
+      console.warn('⚠️ Forbidden (403) without token - redirecting to login')
+      clearTokensAndLogout(true) // Pass sessionExpired flag
+    }
+  }
+  
   return res
 }
 
@@ -131,6 +260,24 @@ async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit) {
 async function parseJsonOrThrow(res: Response) {
   const text = await res.text()
   if (!res.ok) {
+    // Handle 403 and 401 as session expiration
+    if (res.status === 403 || res.status === 401) {
+      const token = getAccessToken()
+      if (token) {
+        // If we have a token but got 403/401, session likely expired
+        // The fetchWithAuth should have already tried to refresh, but if we're here,
+        // it means the refresh failed or we're still unauthorized
+        console.warn(`⚠️ ${res.status} error with token - session expired, redirecting to login`)
+        clearTokensAndLogout(true)
+        // Throw a special error that indicates redirect is happening
+        // This prevents further error handling but the redirect will happen
+        const redirectError = new Error('Session expired - redirecting to login')
+        ;(redirectError as any).status = res.status
+        ;(redirectError as any).redirecting = true
+        throw redirectError
+      }
+    }
+    
     // Try to parse JSON error, fall back to raw text
     let message = text
     try { message = (JSON.parse(text)?.message ?? text) } catch {}

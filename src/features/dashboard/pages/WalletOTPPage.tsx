@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { WalletService, WalletOTPRequest } from '../../../services/walletService';
@@ -21,10 +21,20 @@ export default function WalletOTPPage() {
   const [action, setAction] = useState<'activate' | 'deactivate'>('activate');
   const [realOTP, setRealOTP] = useState('');
   const [isRequestingOTP, setIsRequestingOTP] = useState(false);
+  const hasRequestedOTP = useRef(false);
+  const isRequestingRef = useRef(false); // Track request state with ref to prevent race conditions
+  const previousAction = useRef<'activate' | 'deactivate'>('activate');
 
   // Request OTP from backend
   const requestOTP = async () => {
+    // Prevent multiple simultaneous requests using ref (more reliable than state)
+    if (isRequestingRef.current) {
+      console.log('⏸️ OTP request already in progress, skipping...');
+      return;
+    }
+
     try {
+      isRequestingRef.current = true;
       setIsRequestingOTP(true);
       setError('');
       
@@ -40,36 +50,61 @@ export default function WalletOTPPage() {
       setTimeLeft(30);
       setIsResendDisabled(true);
       setOtp(['', '', '', '', '', '']);
+      hasRequestedOTP.current = true;
       
     } catch (error: any) {
       console.error('❌ Error requesting OTP:', error);
       setError(error.message || 'Failed to request OTP. Please try again.');
     } finally {
+      isRequestingRef.current = false;
       setIsRequestingOTP(false);
     }
   };
 
-  // Get action from navigation state
+  // Initialize action from navigation state on mount only
   useEffect(() => {
     const state = location.state as { action?: 'activate' | 'deactivate' };
-    if (state?.action) {
+    if (state?.action && state.action !== action) {
       setAction(state.action);
+      previousAction.current = state.action;
     }
-  }, [location]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
+  // Request OTP only once on mount or when action actually changes
   useEffect(() => {
-    setOtp(['', '', '', '', '', '']);
-    setError('');
-    setTimeLeft(30);
-    setIsResendDisabled(true);
-    setFailedAttempts(0);
-    requestOTP(); // Request real OTP from backend when component mounts
-    // Focus first input
-    setTimeout(() => {
-      const firstInput = document.getElementById('otp-0');
-      firstInput?.focus();
-    }, 100);
-  }, [action]); // Re-request OTP when action changes
+    // Skip if already requesting to prevent duplicate calls (use ref for immediate check)
+    if (isRequestingRef.current) {
+      console.log('⏸️ Skipping OTP request - already in progress');
+      return;
+    }
+
+    // Only request OTP if action has changed from previous
+    const actionChanged = previousAction.current !== action;
+    
+    if (actionChanged || !hasRequestedOTP.current) {
+      console.log('📞 Requesting OTP for action:', action, 'actionChanged:', actionChanged, 'hasRequested:', hasRequestedOTP.current);
+      
+      setOtp(['', '', '', '', '', '']);
+      setError('');
+      setTimeLeft(30);
+      setIsResendDisabled(true);
+      setFailedAttempts(0);
+      
+      // Mark as requested before calling to prevent duplicate calls
+      hasRequestedOTP.current = true;
+      previousAction.current = action;
+      
+      requestOTP();
+      
+      // Focus first input
+      setTimeout(() => {
+        const firstInput = document.getElementById('otp-0');
+        firstInput?.focus();
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [action]); // Only depend on action
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -79,6 +114,22 @@ export default function WalletOTPPage() {
       setIsResendDisabled(false);
     }
   }, [timeLeft]);
+
+  // Close modals when navigating back or away
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      // Close any open modals when navigating back
+      setShowAccountBlockedModal(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    // Also close modals when component unmounts (navigating away)
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      setShowAccountBlockedModal(false);
+    };
+  }, []);
 
   const handleOtpChange = (index: number, value: string) => {
     // Only allow digits
@@ -119,34 +170,22 @@ export default function WalletOTPPage() {
     setError('');
     
     try {
-      // First verify the OTP using the auth API
-      const phoneNumber = localStorage.getItem('phoneNumber') || '+966501234567';
-      const verifyResponse = await API.post('/api/v1/auth/verify-otp', {
-        phoneNumber: phoneNumber,
-        otp: otpCode
-      });
-      
-      if (verifyResponse.success) {
-        console.log('✅ OTP verified successfully');
-        
-        // Now perform the wallet operation (without OTP since it's already verified)
-        if (action === 'activate') {
-          await WalletService.activateWallet({ otp: '' }); // Empty OTP since already verified
-          console.log('✅ Wallet activated successfully');
-        } else {
-          await WalletService.deactivateWallet({ otp: '' }); // Empty OTP since already verified
-          console.log('✅ Wallet deactivated successfully');
-        }
-        
-        // Store the action result in localStorage for the wallet page to read
-        localStorage.setItem('walletAction', action);
-        localStorage.setItem('walletActionCompleted', 'true');
-        
-        // Show success screen
-        setShowSuccessScreen(true);
+      // Pass OTP directly to wallet activate/deactivate endpoints
+      // The backend will verify the OTP internally
+      if (action === 'activate') {
+        await WalletService.activateWallet({ otp: otpCode });
+        console.log('✅ Wallet activated successfully');
       } else {
-        throw new Error('OTP verification failed');
+        await WalletService.deactivateWallet({ otp: otpCode });
+        console.log('✅ Wallet deactivated successfully');
       }
+      
+      // Store the action result in localStorage for the wallet page to read
+      localStorage.setItem('walletAction', action);
+      localStorage.setItem('walletActionCompleted', 'true');
+      
+      // Show success screen
+      setShowSuccessScreen(true);
       
     } catch (error: any) {
       console.error('❌ Wallet operation failed:', error);
@@ -158,7 +197,14 @@ export default function WalletOTPPage() {
       if (newFailedAttempts >= 5) {
         setShowAccountBlockedModal(true);
       } else {
-        setError(error.message || 'The code you entered is incorrect.');
+        // Check for specific error messages
+        if (error.message?.includes('phone number') || error.message?.includes('already exists')) {
+          setError('The code you entered is incorrect. Please try again.');
+        } else if (error.message?.includes('Network') || error.message?.includes('fetch')) {
+          setError('Unable to connect to server. Please check your connection.');
+        } else {
+          setError(error.message || 'The code you entered is incorrect. Please try again.');
+        }
       }
     } finally {
       setIsLoading(false);
@@ -168,6 +214,8 @@ export default function WalletOTPPage() {
   const handleResend = async () => {
     if (isRequestingOTP) return; // Prevent multiple requests
     
+    // Reset the flag to allow resending
+    hasRequestedOTP.current = false;
     await requestOTP();
   };
 
@@ -310,11 +358,9 @@ export default function WalletOTPPage() {
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     disabled={isLoading || isRequestingOTP}
-                    className="w-14 h-14 text-3xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-14 h-14 text-4xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       border: '1px solid #2C2C2CB2',
-                      WebkitTextStroke: '1px #2C2C2CB2',
-                      textShadow: '1px 1px 0 #2C2C2CB2, -1px -1px 0 #2C2C2CB2, 1px -1px 0 #2C2C2CB2, -1px 1px 0 #2C2C2CB2'
                     }}
                     required
                   />
@@ -350,13 +396,13 @@ export default function WalletOTPPage() {
                     Resend in {formatTime(timeLeft)}
                   </button>
                 </p>
-                <button
+                {/* <button
                   type="button"
                   onClick={handleChangeNumber}
                   className="text-[#0475CC] hover:text-[#022466] font-medium transition-colors"
                 >
                   Change Mobile Number?
-                </button>
+                </button> */}
               </div>
 
               {/* Action Buttons */}
@@ -380,7 +426,7 @@ export default function WalletOTPPage() {
                     )}
                   </Button>
                 </div>
-                <div className="flex justify-center">
+                {/* <div className="flex justify-center">
                   <button
                     type="button"
                     onClick={handleResend}
@@ -393,7 +439,7 @@ export default function WalletOTPPage() {
                   >
                     {isLoading ? 'Sending...' : isRequestingOTP ? 'Requesting...' : 'Resend'}
                   </button>
-                </div>
+                </div> */}
               </div>
             </form>
           </div>

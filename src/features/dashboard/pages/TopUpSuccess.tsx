@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import checkCircle from '../../../assets/check_circle.svg';
 
@@ -26,8 +26,19 @@ const TopUpSuccess: React.FC = () => {
     hour12: false
   });
 
+  // Prevent browser back button from going back to success screen
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      // Prevent going back to success screen
+      navigate('/services/topup', { replace: true });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigate]);
+
   const handleDone = () => {
-    navigate('/services/topup');
+    navigate('/services/topup', { replace: true });
   };
 
   return (

@@ -132,7 +132,7 @@ export default function PhoneNumberEntry() {
                   hasError={!!(fieldError || statusError)}
                     maxLength={12}
                     autoComplete="tel"
-                    helper="Must start with 05 and be exactly 10 digits"
+                    helper="Must start with 05 (10 digits) or 5 (9 digits)"
                     required
                     leftIcon={<span className="text-black font-medium">+966</span>}
                   onBlur={() => setIsTouched(true)}
