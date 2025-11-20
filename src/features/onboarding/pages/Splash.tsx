@@ -3,9 +3,19 @@ import heroLogoMini from "../../../assets/hero-logo-mini.svg";
 import bubbles from "../../../assets/Bubbles.svg";
 import { Button } from "../../../components/ui/Button";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 export default function Splash() {
   const navigate = useNavigate();
+  
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      // User is authenticated, redirect to dashboard
+      navigate('/app/dashboard', { replace: true });
+    }
+  }, [navigate]);
   
   const handleRegisterClick = () => {
     navigate("/onboarding/business-type");

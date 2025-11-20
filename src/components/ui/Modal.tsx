@@ -262,6 +262,7 @@ export interface AlertModalProps {
   variant?: 'primary' | 'danger' | 'success' | 'info';
   icon?: ReactNode;
   children?: ReactNode;
+  persistent?: boolean; // If true, modal cannot be closed by backdrop or ESC
 }
 
 export function AlertModal({
@@ -273,7 +274,8 @@ export function AlertModal({
   buttonLabel = 'OK',
   variant = 'primary',
   icon,
-  children
+  children,
+  persistent = false
 }: AlertModalProps) {
   const handleButtonClick = () => {
     if (onConfirm) {
@@ -295,6 +297,9 @@ export function AlertModal({
         variant: variant === 'danger' ? 'danger' : 'primary'
       }}
       size="sm"
+      disableBackdropClose={persistent}
+      disableEscapeClose={persistent}
+      persistent={persistent}
     >
       {children ? children : (
         <p className="text-gray-600 leading-relaxed">

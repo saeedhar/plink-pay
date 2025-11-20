@@ -1,6 +1,7 @@
 /**
  * Protected Route Component - Protects authenticated routes
  * Redirects to login if user is not authenticated
+ * Prevents back navigation to login when user has valid token
  */
 
 import { useEffect, useState } from 'react';
@@ -41,6 +42,47 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, [navigate, location.pathname]);
+
+  // Prevent back navigation to login when user has valid token
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    
+    // Only prevent back navigation if user is authenticated
+    if (!token) {
+      return;
+    }
+
+    // Store current authenticated route
+    if (location.pathname.startsWith('/app/')) {
+      sessionStorage.setItem('lastAuthenticatedRoute', location.pathname);
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      // Get the current pathname from the URL after navigation
+      const currentPath = window.location.pathname;
+      
+      // If user navigated to login page or splash screen, immediately redirect back
+      if (currentPath === '/login' || currentPath.startsWith('/login/') || currentPath === '/') {
+        console.log('🚫 Preventing back navigation to login/splash - user is authenticated');
+        
+        // Get the last authenticated route or default to dashboard
+        const lastRoute = sessionStorage.getItem('lastAuthenticatedRoute') || '/app/dashboard';
+        
+        // Immediately navigate back to authenticated route
+        // Use replace to prevent adding to history
+        navigate(lastRoute, { replace: true });
+      } else if (currentPath.startsWith('/app/')) {
+        // Store the current authenticated route for future use
+        sessionStorage.setItem('lastAuthenticatedRoute', currentPath);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, [navigate, location.pathname]);
 
   // Show loading while checking auth

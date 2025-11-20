@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { OnboardingProvider } from './store/OnboardingContext';
 import { RouteGuard } from './components/navigation/RouteGuard';
@@ -5,6 +6,7 @@ import { ProtectedRoute } from './components/navigation/ProtectedRoute';
 import { PublicRoute } from './components/navigation/PublicRoute';
 import { SessionWarningModal } from './components/security/SessionWarningModal';
 import { NafathModal } from './components/modals/NafathModal';
+import SessionExpiredModal, { setSessionExpiredHandler } from './components/modals/SessionExpiredModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSecurity } from './hooks/useSecurity';
 import {
@@ -46,9 +48,21 @@ import TopUpAddNewCard from './features/dashboard/pages/TopUpAddNewCard';
 
 function AppRoutes() {
   const security = useSecurity();
+  const [showSessionExpired, setShowSessionExpired] = React.useState(false);
+
+  // Set up the session expired handler
+  React.useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setShowSessionExpired(true);
+    });
+  }, []);
 
   return (
     <>
+      <SessionExpiredModal 
+        isOpen={showSessionExpired} 
+        onClose={() => setShowSessionExpired(false)} 
+      />
       <Routes>
         {/* Main route - Splash screen */}
         <Route path="/" element={<Splash />} />
