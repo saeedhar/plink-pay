@@ -8,7 +8,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), flowbiteReact()],
   build: { 
     sourcemap: false,                  // Disable source maps for production (reduces build size)
+    assetsInclude: ['**/*.svg'],       // Ensure SVG files are included in build
   },
+  assetsInclude: ['**/*.svg'],        // Include SVG files as assets
   server: {
     proxy: {
       // dev only: Vite forwards /api/v1 to your backend

@@ -23,18 +23,14 @@ export function BusinessTypeOption({
         ${isSelected ? "bg-blue-50 border-[#022466]" : "bg-white border-gray-300 hover:border-gray-400"}`}
     >
       <div className="flex items-center gap-4">
-        <div 
-          className="h-8 w-8"
-          style={{
-            backgroundColor: '#312783',
-            maskImage: `url(${icon})`,
-            maskSize: 'contain',
-            maskRepeat: 'no-repeat',
-            maskPosition: 'center',
-            WebkitMaskImage: `url(${icon})`,
-            WebkitMaskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'center'
+        <img 
+          src={icon} 
+          alt={`${name} icon`}
+          className="h-8 w-8 flex-shrink-0 object-contain"
+          onError={(e) => {
+            // Fallback if icon fails to load
+            console.error(`Failed to load icon for ${name}:`, icon);
+            e.currentTarget.style.display = 'none';
           }}
         />
         <div className="font-semibold text-black text-lg">{name}</div>

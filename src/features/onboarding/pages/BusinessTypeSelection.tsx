@@ -6,7 +6,7 @@ import { Modal } from "../../../components/ui/Modal";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import heroLogo from "../../../assets/hero-logo-mini.svg";
 import WarningIcon from "../../../assets/warning.svg";
-// icons
+// icons - import as URLs for use in img tags
 import SoleProprietorshipIcon from "../../../assets/select your buisness type assets/Vector.svg?url";
 import IndividualOwnerIcon from "../../../assets/select your buisness type assets/Vector-1.svg?url";
 import MultiOwnerIcon from "../../../assets/select your buisness type assets/Vector-2.svg?url";
