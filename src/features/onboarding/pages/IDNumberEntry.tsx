@@ -74,8 +74,9 @@ export default function IDNumberEntry() {
     setIdNumber(formatted);
     setError("");
     
-    // Update state
-    dispatch({ type: 'SET_ID_NUMBER', payload: formatted });
+    // Update state with clean ID (no spaces) for backend
+    const cleanId = formatted.replace(/\s/g, '');
+    dispatch({ type: 'SET_ID_NUMBER', payload: cleanId });
   };
 
   const handleNext = async () => {
@@ -140,7 +141,9 @@ export default function IDNumberEntry() {
       console.log('🎉 All checks passed, navigating to Nafath');
       
       try {
-        dispatch({ type: 'SET_ID_NUMBER', payload: idNumber });
+        // Save ID without spaces for backend
+        const cleanId = idNumber.replace(/\s/g, '');
+        dispatch({ type: 'SET_ID_NUMBER', payload: cleanId });
         dispatch({ type: 'VERIFY_ID_SUCCESS' });
         dispatch({ type: 'SET_CURRENT_STEP', payload: 'nafath' });
         

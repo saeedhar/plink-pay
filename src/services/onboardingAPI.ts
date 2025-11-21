@@ -605,9 +605,10 @@ export interface CreateProfileRequest {
   freelancerLicense?: string;
   nationalId?: string;
   phoneE164: string;
-  annualRevenue?: string;
-  businessActivity?: string;
-  accountPurpose?: string;
+  sourceOfFunds?: string; // KYB field - source of funds
+  annualRevenue?: string; // KYB field - annual revenue
+  businessActivity?: string; // KYB field - business activity
+  accountPurpose?: string; // KYB field - account purpose (comma-separated)
 }
 
 export interface CreateProfileResponse {

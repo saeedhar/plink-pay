@@ -92,8 +92,12 @@ const UpdateKYBOTP: React.FC = () => {
       setOtp(['', '', '', '', '', '']);
       setTimeLeft(30);
       
-      // Request new OTP (using email update endpoint workaround)
-      const response = await UserManagementService.requestKybOTP();
+      // Resend OTP by re-initiating KYB update
+      if (!kybData) {
+        throw new Error('KYB data is missing. Please start over.');
+      }
+      
+      const response = await UserManagementService.initiateKybUpdate(kybData);
       
       setSessionId(response.sessionId);
       if (response.otpCode) {
@@ -133,23 +137,19 @@ const UpdateKYBOTP: React.FC = () => {
     setError('');
     
     try {
-      // First verify OTP using email verify endpoint (workaround)
-      const { API } = await import('../../../lib/api');
-      await API.post('/api/v1/users/me/email/verify-otp', {
+      if (!sessionId) {
+        throw new Error('Session ID is missing. Please start over.');
+      }
+      
+      // Verify OTP and complete KYB update
+      console.log('✅ Verifying KYB update with OTP...');
+      const response = await UserManagementService.verifyKybUpdate({
         sessionId,
         otp: otpValue
       });
       
-      console.log('✅ OTP verified successfully for KYB update');
-      
-      // OTP verified, now update KYB
-      if (!kybData) {
-        throw new Error('KYB data is missing. Please start over.');
-      }
-      
-      const response = await UserManagementService.initiateKybUpdate(kybData);
-      
       if (response.success) {
+        console.log('✅ KYB update completed successfully');
         // Navigate to success page using replace to prevent going back to OTP page
         navigate('/app/account-settings/kyb/success', { replace: true });
       } else {

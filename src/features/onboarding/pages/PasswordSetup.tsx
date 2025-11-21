@@ -86,11 +86,16 @@ export default function PasswordSetup() {
       console.log('✅ Setting password for user:', userId);
       await setPasswordAPI(userId, password);
       
+      // Store password temporarily for auto-login after profile creation
+      sessionStorage.setItem('onboardingPassword', password);
+      sessionStorage.setItem('onboardingPhone', state.data.phone || '');
+      console.log('💾 Password stored temporarily for auto-login');
+      
       // Mark password as set
       dispatch({ type: 'SET_PASSWORD_SUCCESS' });
       
-      // Navigate directly to login page
-      navigate('/login');
+      // Navigate to onboarding complete page to create profile with all collected data
+      navigate('/onboarding/complete');
       
     } catch (error) {
       console.error("Password setup failed:", error);

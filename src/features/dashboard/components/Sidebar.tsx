@@ -19,10 +19,8 @@ const Sidebar: React.FC = () => {
   const isWalletActive = location.pathname === '/app/services/wallet';
   const isTransactionsPage = location.pathname === '/app/transactions';
   
-  // Check if we're on any account settings page
   const isAccountSettingsPage = location.pathname.startsWith('/app/account-settings');
   
-  // Check if user has viewed transactions before (from localStorage)
   useEffect(() => {
     const viewed = localStorage.getItem('hasViewedTransactions');
     if (viewed === 'true') {
@@ -30,7 +28,6 @@ const Sidebar: React.FC = () => {
     }
   }, []);
 
-  // Mark transactions as viewed when user visits the transactions page
   useEffect(() => {
     if (isTransactionsPage && !hasViewedTransactions) {
       setHasViewedTransactions(true);
@@ -38,7 +35,6 @@ const Sidebar: React.FC = () => {
     }
   }, [isTransactionsPage, hasViewedTransactions]);
   
-  // Auto-collapse services when on account settings page
   useEffect(() => {
     if (isAccountSettingsPage) {
       setServicesExpanded(false);
@@ -49,12 +45,10 @@ const Sidebar: React.FC = () => {
     try {
       console.log('🚪 Starting logout process...');
       
-      // Call logout API to invalidate session on backend and clear tokens
       await logout();
       
       console.log('✅ Logged out successfully, redirecting to login');
       
-      // Navigate to login using replace to prevent going back to dashboard
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('❌ Error during logout:', error);
@@ -108,10 +102,10 @@ const Sidebar: React.FC = () => {
           {servicesExpanded && (
             <div className="services-submenu">
               <Link to="/app/services/wallet" className={`submenu-item ${isWalletActive ? 'active' : ''}`}>Wallet</Link>
-              <Link to="/services/transfer" className="submenu-item">Transfer</Link>
-              <Link to="/services/credit" className="submenu-item">Credit</Link>
-              <Link to="/services/bills" className="submenu-item">Bills</Link>
-              <Link to="/services/beneficiaries" className="submenu-item">Beneficiaries</Link>
+              <div className="submenu-item">Transfer</div>
+              <div className="submenu-item">Credit</div>
+              <div className="submenu-item">Bills</div>
+              <div className="submenu-item">Beneficiaries</div>
               <Link to="/services/topup" className="submenu-item">Top Up</Link>
             </div>
           )}
@@ -125,13 +119,12 @@ const Sidebar: React.FC = () => {
           <span>Settings</span>
         </Link>
 
-        <Link 
-          to="/support" 
+        <div 
           className={`nav-item ${isActive('/support') ? 'active' : ''}`}
         >
           <img src={supportIcon} alt="Support" className="nav-icon" />
           <span>Support</span>
-        </Link>
+        </div>
 
         <button 
           onClick={handleLogout}

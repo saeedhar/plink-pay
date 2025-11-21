@@ -124,19 +124,31 @@ export default function KYBPage() {
 
     try {
       const kybData = {
-        annualRevenue: expectedMonthlyVolume, // Map to expected field
-        businessActivity: expectedTransactionType, // Map to expected field
-        purposeOfAccount,
-        purposeOther: purposeOfAccount.includes('other') ? purposeOther : undefined,
-        // Store additional fields in a custom format for now
-        sourceOfFunds,
-        sourceOfFundsOther: sourceOfFunds === 'other' ? sourceOfFundsOther : undefined,
+        // KYB Fields - ensure all are properly mapped
+        sourceOfFunds: sourceOfFunds || '', // Source of funds (required)
+        sourceOfFundsOther: sourceOfFunds === 'other' ? sourceOfFundsOther : undefined, // Other text if "other" selected
+        annualRevenue: expectedMonthlyVolume || '', // Annual revenue (maps from expected monthly volume)
+        businessActivity: expectedTransactionType || '', // Business activity (maps from expected transaction type)
+        purposeOfAccount: purposeOfAccount || [], // Purpose of account (array)
+        purposeOther: purposeOfAccount.includes('other') ? purposeOther : undefined, // Other purpose text if "other" selected
       };
+
+      // Log KYB data before storing
+      console.log('📋 KYB Data Being Stored:', JSON.stringify(kybData, null, 2));
+      console.log('📋 KYB Data Fields:', {
+        sourceOfFunds: kybData.sourceOfFunds,
+        sourceOfFundsOther: kybData.sourceOfFundsOther,
+        annualRevenue: kybData.annualRevenue,
+        businessActivity: kybData.businessActivity,
+        purposeOfAccount: kybData.purposeOfAccount,
+        purposeOther: kybData.purposeOther
+      });
 
       const result = await submitKYB(kybData);
       
       // Store KYB data and result
       dispatch({ type: 'SET_KYB_DATA', payload: kybData });
+      console.log("✅ KYB Data Stored in State:", kybData);
       console.log("KYB Result:", result);
       
       navigate("/onboarding/password");

@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { createProfile } from "../../../services/onboardingAPI";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
-import RightSectionImage from "../../../assets/right-section-password.png";
 
 export default function OnboardingComplete() {
   const [isCreating, setIsCreating] = useState(true);
@@ -19,10 +18,63 @@ export default function OnboardingComplete() {
   const createUserProfile = async () => {
     try {
       console.log('🏗️ Creating user profile with state:', state.data);
+      console.log('🔍 KYB Data in State:', JSON.stringify(state.data.kybData, null, 2));
+      
+      // Validate required fields
+      if (!state.data.userId) {
+        throw new Error('User ID is missing. Please restart the onboarding process.');
+      }
+      
+      if (!state.data.idNumber) {
+        throw new Error('National ID is missing. Please go back and enter your ID number.');
+      }
+      
+      if (!state.data.kybData) {
+        throw new Error('KYB information is missing. Please go back and complete the KYB form.');
+      }
+      
+      // Check if sourceOfFunds is missing
+      if (!state.data.kybData.sourceOfFunds || state.data.kybData.sourceOfFunds.trim() === '') {
+        console.warn('⚠️ WARNING: sourceOfFunds is empty or missing in state!', {
+          sourceOfFunds: state.data.kybData.sourceOfFunds,
+          sourceOfFundsOther: state.data.kybData.sourceOfFundsOther,
+          fullKybData: state.data.kybData
+        });
+      }
       
       // Prepare profile data from onboarding state
-      const profileData = {
-        userId: state.data.userId || 'temp_user',
+      // Handle sourceOfFunds - check if it's 'other' and use the other text, otherwise use the selected value
+      let sourceOfFundsValue: string | undefined = undefined;
+      
+      console.log('🔍 Checking sourceOfFunds in state:', {
+        sourceOfFunds: state.data.kybData?.sourceOfFunds,
+        sourceOfFundsOther: state.data.kybData?.sourceOfFundsOther,
+        isOther: state.data.kybData?.sourceOfFunds === 'other'
+      });
+      
+      if (state.data.kybData?.sourceOfFunds) {
+        if (state.data.kybData.sourceOfFunds === 'other') {
+          sourceOfFundsValue = state.data.kybData.sourceOfFundsOther || undefined;
+          console.log('📝 Using "other" value:', sourceOfFundsValue);
+        } else {
+          sourceOfFundsValue = state.data.kybData.sourceOfFunds;
+          console.log('📝 Using selected value:', sourceOfFundsValue);
+        }
+      } else {
+        console.warn('⚠️ sourceOfFunds is missing or empty in state!');
+      }
+      
+      // Safely construct accountPurpose with null checks
+      let accountPurpose = '';
+      if (state.data.kybData?.purposeOfAccount && Array.isArray(state.data.kybData.purposeOfAccount) && state.data.kybData.purposeOfAccount.length > 0) {
+        accountPurpose = state.data.kybData.purposeOfAccount.join(', ');
+        if (state.data.kybData.purposeOfAccount.includes('other') && state.data.kybData.purposeOther) {
+          accountPurpose += `, ${state.data.kybData.purposeOther}`;
+        }
+      }
+      
+      const profileData: any = {
+        userId: state.data.userId,
         businessType: state.data.businessType?.toUpperCase() as 'COMPANY' | 'FREELANCER',
         businessName: state.data.kybData?.businessActivity || 'Business Name',
         businessNameArabic: undefined, // Could be added later
@@ -30,12 +82,51 @@ export default function OnboardingComplete() {
         freelancerLicense: state.data.businessType === 'freelancer' ? state.data.crNumber : undefined,
         nationalId: state.data.idNumber,
         phoneE164: state.data.phone || '',
-        annualRevenue: state.data.kybData?.annualRevenue,
-        businessActivity: state.data.kybData?.businessActivity,
-        accountPurpose: state.data.kybData?.purposeOfAccount?.join(', ')
+        // KYB Fields - include all fields explicitly
+        annualRevenue: state.data.kybData?.annualRevenue || undefined,
+        businessActivity: state.data.kybData?.businessActivity || undefined,
+        accountPurpose: accountPurpose || undefined
       };
+      
+      // Add sourceOfFunds only if it has a value (don't send empty string or null)
+      if (sourceOfFundsValue && sourceOfFundsValue.trim() !== '') {
+        profileData.sourceOfFunds = sourceOfFundsValue;
+      }
 
-      console.log('📋 Profile data to send:', profileData);
+      // Comprehensive logging to verify all KYB data
+      console.log('📋 Full Profile Data Being Sent:', JSON.stringify(profileData, null, 2));
+      console.log('📋 National ID:', profileData.nationalId);
+      console.log('📋 KYB Data Verification:', {
+        sourceOfFunds: {
+          value: profileData.sourceOfFunds,
+          fromState: state.data.kybData?.sourceOfFunds,
+          isOther: state.data.kybData?.sourceOfFunds === 'other',
+          otherValue: state.data.kybData?.sourceOfFundsOther,
+          finalValue: sourceOfFundsValue
+        },
+        annualRevenue: {
+          value: profileData.annualRevenue,
+          fromState: state.data.kybData?.annualRevenue
+        },
+        businessActivity: {
+          value: profileData.businessActivity,
+          fromState: state.data.kybData?.businessActivity
+        },
+        accountPurpose: {
+          value: profileData.accountPurpose,
+          fromState: state.data.kybData?.purposeOfAccount,
+          purposeOther: state.data.kybData?.purposeOther
+        }
+      });
+      
+      // Warn if sourceOfFunds is missing
+      if (!profileData.sourceOfFunds) {
+        console.warn('⚠️ WARNING: sourceOfFunds is missing from profile data!', {
+          kybData: state.data.kybData,
+          sourceOfFundsInState: state.data.kybData?.sourceOfFunds,
+          sourceOfFundsOtherInState: state.data.kybData?.sourceOfFundsOther
+        });
+      }
 
       // Call the profile creation API
       const result = await createProfile(profileData);
@@ -48,10 +139,10 @@ export default function OnboardingComplete() {
       // Mark onboarding as complete
       dispatch({ type: 'NEXT_STEP' });
       
-      // Navigate to success page or dashboard after a delay
+      // Navigate to login page after a short delay
       setTimeout(() => {
-        navigate('/app/dashboard');
-      }, 3000);
+        navigate('/login');
+      }, 2000);
       
     } catch (err: any) {
       console.error('❌ Profile creation failed:', err);
@@ -67,8 +158,8 @@ export default function OnboardingComplete() {
   };
 
   const handleSkip = () => {
-    // Navigate to dashboard without creating profile
-    navigate('/app/dashboard');
+    // Navigate to login page - user can retry profile creation later
+    navigate('/login');
   };
 
   if (isCreating) {
@@ -98,14 +189,7 @@ export default function OnboardingComplete() {
           </div>
         </div>
 
-        {/* Right Section */}
-        <div className="hidden lg:block relative w-0 flex-1">
-          <img
-            className="absolute inset-0 h-full w-full object-cover"
-            src={RightSectionImage}
-            alt="Onboarding"
-          />
-        </div>
+       
       </div>
     );
   }
@@ -135,20 +219,13 @@ export default function OnboardingComplete() {
                 </div>
               </div>
               <p className="mt-4 text-center text-sm text-gray-500">
-                Redirecting you to your dashboard...
+                Redirecting you to your login page...
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right Section */}
-        <div className="hidden lg:block relative w-0 flex-1">
-          <img
-            className="absolute inset-0 h-full w-full object-cover"
-            src={RightSectionImage}
-            alt="Onboarding"
-          />
-        </div>
+       
       </div>
     );
   }
@@ -206,14 +283,7 @@ export default function OnboardingComplete() {
         </div>
       </div>
 
-      {/* Right Section */}
-      <div className="hidden lg:block relative w-0 flex-1">
-        <img
-          className="absolute inset-0 h-full w-full object-cover"
-          src={RightSectionImage}
-          alt="Onboarding"
-        />
-      </div>
+     
     </div>
   );
 }

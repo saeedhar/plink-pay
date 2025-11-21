@@ -67,7 +67,8 @@ export default function CRNumberEntry() {
       
       if (result.valid) {
         console.log('✅ CR verification successful, navigating...');
-        // Mark CR as verified
+        // Save CR number and mark as verified
+        dispatch({ type: 'SET_CR_NUMBER', payload: crNumber });
         dispatch({ type: 'VERIFY_CR_SUCCESS' });
         navigate("/onboarding/id-number");
       }

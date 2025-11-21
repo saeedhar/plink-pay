@@ -174,8 +174,9 @@ export function formatCRNumber(input: string): string {
 // ==========================================
 
 /**
- * Validates Saudi ID using standard Saudi checksum algorithm
+ * Validates Saudi ID format (checksum validation removed)
  * Supports both citizen (1*) and iqama (2*) variants
+ * Validates: 10 digits, must start with 1 or 2
  */
 export function isValidSaudiId(id: string): boolean {
   const cleaned = convertArabicToEnglish(id).replace(/\D/g, '');
@@ -185,30 +186,15 @@ export function isValidSaudiId(id: string): boolean {
   // Must start with 1 (Saudi citizen) or 2 (Iqama)
   if (!/^[12]/.test(cleaned)) return false;
   
-  // Apply Saudi ID checksum algorithm (Luhn-like)
-  let sum = 0;
+  // Checksum validation removed per requirements
   
-  for (let i = 0; i < 9; i++) {
-    let digit = parseInt(cleaned[i]);
-    
-    // For odd positions (1st, 3rd, 5th, 7th, 9th), multiply by 1
-    // For even positions (2nd, 4th, 6th, 8th), multiply by 2
-    if (i % 2 === 1) {
-      digit *= 2;
-      if (digit > 9) {
-        digit = Math.floor(digit / 10) + (digit % 10);
-      }
-    }
-    
-    sum += digit;
-  }
-  
-  const checkDigit = (10 - (sum % 10)) % 10;
-  return checkDigit === parseInt(cleaned[9]);
+  return true;
 }
 
 /**
  * Validates Saudi ID with detailed error messages
+ * Validates: 10 digits, must start with 1 or 2
+ * Checksum validation removed per requirements
  */
 export function validateSaudiId(id: string): string | null {
   if (!id.trim()) {
@@ -225,9 +211,7 @@ export function validateSaudiId(id: string): string | null {
     return "ID Number must start with 1 (Saudi) or 2 (Iqama)";
   }
   
-  if (!isValidSaudiId(cleaned)) {
-    return "Invalid ID Number checksum";
-  }
+  // Checksum validation removed per requirements
   
   return null;
 }

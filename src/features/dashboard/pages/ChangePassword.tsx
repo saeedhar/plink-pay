@@ -159,28 +159,6 @@ const ChangePassword: React.FC = () => {
                       </div>
                     )}
                     
-                    {/* Forgot Password - Bottom left corner of input */}
-                    <button
-                      type="button"
-                      onClick={handleForgotPassword}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#0475CC',
-                        textDecoration: 'underline',
-                        cursor: 'pointer',
-                        padding: 0,
-                        marginTop: '8px',
-                        fontSize: '14px',
-                        fontFamily: 'Hanken Grotesk, sans-serif',
-                        textAlign: 'left',
-                        marginLeft: '8px',
-                        width: 'auto',
-                        display: 'block'
-                      }}
-                    >
-                      Forgot Password?
-                    </button>
                   </div>
                 </div>
               </div>

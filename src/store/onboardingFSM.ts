@@ -29,6 +29,8 @@ export interface OnboardingState {
     idVerified?: boolean;
     nafathStatus?: 'SENT' | 'UNDER_REVIEW' | 'FAILED' | 'REJECTED' | 'RECEIVED';
     kybData?: {
+      sourceOfFunds?: string;
+      sourceOfFundsOther?: string;
       annualRevenue?: string;
       businessActivity?: string;
       purposeOfAccount?: string[];

@@ -33,6 +33,62 @@ const UpdateKYB: React.FC = () => {
   
   const profileLoadedRef = useRef(false);
 
+  // Mapping function for old purpose codes to new codes
+  const mapOldPurposeCode = (oldCode: string, availableOptions: PublicKybOption[]): string | null => {
+    const lowerOldCode = oldCode.toLowerCase().trim();
+    
+    // Direct code mappings - map old codes to possible new codes
+    const codeMap: Record<string, string[]> = {
+      'customer_payments': ['receiving_payments', 'receive_payments', 'receiving-payments', 'customer_payments'],
+      'suppliers': ['paying_suppliers', 'pay_suppliers', 'paying-suppliers'],
+      'petty_cash': ['managing_cash', 'managing_petty_cash', 'managing-cash', 'managing-petty-cash', 'petty_cash'],
+      'payroll': ['distributing_funds', 'distributing-funds'],
+      'disbursements': ['receiving_disbursements', 'receiving-disbursements'],
+    };
+    
+    // Normalize function to handle underscore/hyphen variations
+    const normalizeCode = (code: string) => code.toLowerCase().replace(/[_-]/g, '');
+    
+    // Try exact match first
+    if (codeMap[lowerOldCode]) {
+      // Check which mapped code exists in available options
+      for (const mappedCode of codeMap[lowerOldCode]) {
+        const found = availableOptions.find(opt => {
+          if (!opt.code) return false;
+          const optCodeNormalized = normalizeCode(opt.code);
+          const mappedCodeNormalized = normalizeCode(mappedCode);
+          return opt.code.toLowerCase() === mappedCode.toLowerCase() ||
+                 optCodeNormalized === mappedCodeNormalized;
+        });
+        if (found && found.code) {
+          console.log(`🔄 Mapped "${oldCode}" -> "${found.code}" (from mapping)`);
+          return found.code;
+        }
+      }
+    }
+    
+    // Try partial match in code map
+    for (const [old, newCodes] of Object.entries(codeMap)) {
+      if (lowerOldCode.includes(old) || old.includes(lowerOldCode)) {
+        for (const mappedCode of newCodes) {
+          const found = availableOptions.find(opt => {
+            if (!opt.code) return false;
+            const optCodeNormalized = normalizeCode(opt.code);
+            const mappedCodeNormalized = normalizeCode(mappedCode);
+            return opt.code.toLowerCase() === mappedCode.toLowerCase() ||
+                   optCodeNormalized === mappedCodeNormalized;
+          });
+          if (found && found.code) {
+            console.log(`🔄 Mapped "${oldCode}" -> "${found.code}" (from partial match)`);
+            return found.code;
+          }
+        }
+      }
+    }
+    
+    return null;
+  };
+
   useEffect(() => {
     // Add dashboard-root class to root element
     const root = document.getElementById('root');
@@ -80,102 +136,211 @@ const UpdateKYB: React.FC = () => {
         setIsLoadingProfile(true);
         const profile = await UserManagementService.getProfile();
         
+        console.log('📋 User profile loaded:', {
+          sourceOfFunds: profile.sourceOfFunds,
+          businessActivity: profile.businessActivity,
+          annualRevenue: profile.annualRevenue,
+          accountPurpose: profile.accountPurpose
+        });
+        
         // Pre-fill source of funds
-        if (profile.sourceOfFunds) {
-          const sourceOfFunds = profile.sourceOfFunds;
-          // Check if the value matches any option code or label
-          const matchingOption = kybOptions.sourceOfFunds.find(
-            opt => opt.code === sourceOfFunds || 
-                   opt.label.toLowerCase() === sourceOfFunds.toLowerCase() ||
-                   (opt.code && sourceOfFunds.toLowerCase().includes(opt.code.toLowerCase()))
+        if (profile.sourceOfFunds && profile.sourceOfFunds.trim() !== '') {
+          const sourceOfFundsValue = profile.sourceOfFunds.trim();
+          console.log('🔍 Pre-filling source of funds:', sourceOfFundsValue);
+          console.log('📋 Available options:', kybOptions.sourceOfFunds.map(opt => ({ code: opt.code, label: opt.label })));
+          
+          // Try multiple matching strategies
+          let matchingOption = kybOptions.sourceOfFunds.find(
+            opt => opt.code === sourceOfFundsValue || 
+                   opt.code?.toLowerCase() === sourceOfFundsValue.toLowerCase()
           );
+          
+          // If no match by code, try matching by label
+          if (!matchingOption) {
+            matchingOption = kybOptions.sourceOfFunds.find(
+              opt => opt.label.toLowerCase() === sourceOfFundsValue.toLowerCase() ||
+                     opt.label.toLowerCase().includes(sourceOfFundsValue.toLowerCase()) ||
+                     sourceOfFundsValue.toLowerCase().includes(opt.label.toLowerCase())
+            );
+          }
           
           if (matchingOption) {
             const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
+            console.log('✅ Matched source of funds:', optionValue, 'from option:', matchingOption.label);
             setSourceOfFunds(optionValue);
           } else {
-            // If no match, treat as "other"
-            setSourceOfFunds('other');
-            setSourceOfFundsOther(sourceOfFunds);
+            // Check if it's already an "other" value by checking if it doesn't match any option
+            const isOtherValue = !kybOptions.sourceOfFunds.some(opt => 
+              opt.code === sourceOfFundsValue || 
+              opt.label.toLowerCase() === sourceOfFundsValue.toLowerCase()
+            );
+            
+            if (isOtherValue) {
+              console.log('📝 Setting as "other" with value:', sourceOfFundsValue);
+              setSourceOfFunds('other');
+              setSourceOfFundsOther(sourceOfFundsValue);
+            } else {
+              // Try to find a close match or use the first option as fallback
+              console.warn('⚠️ Could not match source of funds:', sourceOfFundsValue);
+              // Don't set anything - let user select manually
+            }
           }
         }
         
         // Pre-fill business activity (expected transaction type)
         if (profile.businessActivity) {
-          const businessActivity = profile.businessActivity;
-          const matchingOption = kybOptions.businessActivity.find(
-            opt => opt.code === businessActivity ||
-                   opt.label.toLowerCase() === businessActivity.toLowerCase() ||
-                   (opt.code && businessActivity.toLowerCase().includes(opt.code.toLowerCase()))
+          const businessActivityValue = profile.businessActivity.trim();
+          console.log('🔍 Pre-filling business activity:', businessActivityValue);
+          
+          let matchingOption = kybOptions.businessActivity.find(
+            opt => opt.code === businessActivityValue ||
+                   opt.code?.toLowerCase() === businessActivityValue.toLowerCase()
           );
+          
+          // If no match by code, try matching by label
+          if (!matchingOption) {
+            matchingOption = kybOptions.businessActivity.find(
+              opt => opt.label.toLowerCase() === businessActivityValue.toLowerCase() ||
+                     opt.label.toLowerCase().includes(businessActivityValue.toLowerCase()) ||
+                     businessActivityValue.toLowerCase().includes(opt.label.toLowerCase())
+            );
+          }
           
           if (matchingOption) {
             const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
+            console.log('✅ Matched business activity:', optionValue);
             setExpectedTransactionType(optionValue);
           } else {
-            setExpectedTransactionType(businessActivity);
+            console.warn('⚠️ Could not match business activity:', businessActivityValue);
+            // Try to set the value directly in case it's a valid code
+            setExpectedTransactionType(businessActivityValue);
           }
         }
         
         // Pre-fill annual revenue (expected monthly volume)
         if (profile.annualRevenue) {
-          const annualRevenue = profile.annualRevenue;
-          const matchingOption = kybOptions.annualRevenue.find(
-            opt => opt.code === annualRevenue ||
-                   opt.label.toLowerCase() === annualRevenue.toLowerCase() ||
-                   (opt.code && annualRevenue.toLowerCase().includes(opt.code.toLowerCase()))
+          const annualRevenueValue = profile.annualRevenue.trim();
+          console.log('🔍 Pre-filling annual revenue:', annualRevenueValue);
+          
+          let matchingOption = kybOptions.annualRevenue.find(
+            opt => opt.code === annualRevenueValue ||
+                   opt.code?.toLowerCase() === annualRevenueValue.toLowerCase()
           );
+          
+          // If no match by code, try matching by label
+          if (!matchingOption) {
+            matchingOption = kybOptions.annualRevenue.find(
+              opt => opt.label.toLowerCase() === annualRevenueValue.toLowerCase() ||
+                     opt.label.toLowerCase().includes(annualRevenueValue.toLowerCase()) ||
+                     annualRevenueValue.toLowerCase().includes(opt.label.toLowerCase())
+            );
+          }
           
           if (matchingOption) {
             const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
+            console.log('✅ Matched annual revenue:', optionValue);
             setExpectedMonthlyVolume(optionValue);
           } else {
-            setExpectedMonthlyVolume(annualRevenue);
+            console.warn('⚠️ Could not match annual revenue:', annualRevenueValue);
+            // Try to set the value directly in case it's a valid code
+            setExpectedMonthlyVolume(annualRevenueValue);
           }
         }
         
         // Pre-fill purpose of account (comma-separated, can be multiple checkboxes)
         if (profile.accountPurpose) {
+          console.log('🔍 Pre-filling account purpose:', profile.accountPurpose);
           const purposes = profile.accountPurpose.split(',').map(p => p.trim()).filter(p => p);
+          console.log('📋 Parsed purposes:', purposes);
           const selectedPurposes: string[] = [];
           let otherPurpose = '';
           
           purposes.forEach(purpose => {
-            // Check if this purpose matches any option
-            const matchingOption = kybOptions.purposeOfAccount.find(
-              opt => opt.code === purpose ||
-                     opt.label.toLowerCase() === purpose.toLowerCase() ||
-                     (opt.code && purpose.toLowerCase().includes(opt.code.toLowerCase())) ||
-                     purpose.toLowerCase().includes(opt.label.toLowerCase())
+            // First try to map old code to new code
+            const mappedCode = mapOldPurposeCode(purpose, kybOptions.purposeOfAccount);
+            const codeToMatch = mappedCode || purpose;
+            
+            // First try exact code match (handle both underscore and hyphen formats)
+            let matchingOption = kybOptions.purposeOfAccount.find(
+              opt => {
+                const optCode = opt.code?.toLowerCase().replace(/_/g, '-') || '';
+                const matchCode = codeToMatch.toLowerCase().replace(/_/g, '-');
+                return opt.code?.toLowerCase() === codeToMatch.toLowerCase() || 
+                       optCode === matchCode ||
+                       opt.code?.toLowerCase() === matchCode ||
+                       matchCode === optCode;
+              }
             );
+            
+            // If no match by code, try matching by label
+            if (!matchingOption) {
+              matchingOption = kybOptions.purposeOfAccount.find(
+                opt => {
+                  const optLabel = opt.label.toLowerCase();
+                  const matchLabel = codeToMatch.toLowerCase();
+                  return optLabel === matchLabel ||
+                         optLabel.includes(matchLabel) ||
+                         matchLabel.includes(optLabel) ||
+                         // Try matching words
+                         optLabel.split(/\s+/).some(word => matchLabel.includes(word)) ||
+                         matchLabel.split(/\s+/).some(word => optLabel.includes(word));
+                }
+              );
+            }
             
             if (matchingOption) {
               const optionValue = matchingOption.code || matchingOption.label.toLowerCase().replace(/\s+/g, '-');
+              console.log('✅ Matched purpose:', purpose, '->', optionValue, '(label:', matchingOption.label + ')');
               if (!selectedPurposes.includes(optionValue)) {
                 selectedPurposes.push(optionValue);
               }
-            } else if (purpose.toLowerCase().includes('other')) {
-              // Extract the "other" text
-              const otherMatch = purpose.match(/other[:\s]+(.+)/i);
-              if (otherMatch) {
-                otherPurpose = otherMatch[1].trim();
-              }
-              if (!selectedPurposes.includes('other')) {
-                selectedPurposes.push('other');
-              }
+              // Don't add matched purposes to "other" - they're already handled above
             } else {
-              // If no match and not "other", treat as "other" text
-              if (!selectedPurposes.includes('other')) {
-                selectedPurposes.push('other');
-              }
-              if (!otherPurpose) {
-                otherPurpose = purpose;
+              console.warn('⚠️ Could not match purpose:', purpose, 'Available options:', kybOptions.purposeOfAccount.map(o => ({ code: o.code, label: o.label })));
+              
+              // Only treat unmatched purposes as "other" if they contain "other" or are clearly custom text
+              if (purpose.toLowerCase().includes('other')) {
+                // Extract the "other" text
+                const otherMatch = purpose.match(/other[:\s,]+(.+)/i);
+                if (otherMatch && otherMatch[1]) {
+                  otherPurpose = otherMatch[1].trim();
+                } else if (purpose.toLowerCase().trim() !== 'other') {
+                  // If it's not just "other", treat the whole thing as other text
+                  otherPurpose = purpose;
+                }
+                if (!selectedPurposes.includes('other')) {
+                  selectedPurposes.push('other');
+                }
+                console.log('📝 Found "other" purpose:', otherPurpose);
               } else {
-                otherPurpose += ', ' + purpose;
+                // Only add unmatched purposes to "other" if they're clearly custom text (not standard codes)
+                // Check if it looks like a code vs custom text
+                const looksLikeCode = /^[a-z_]+$/i.test(purpose.trim());
+                const isShortCode = purpose.trim().length <= 30;
+                
+                // If it looks like a code (underscores, short, alphanumeric) but didn't match, skip it
+                // Only add to "other" if it's clearly custom text (longer text, spaces, etc.)
+                if (looksLikeCode && isShortCode) {
+                  // It looks like a code but didn't match - don't add to "other", just log a warning
+                  console.warn('⚠️ Purpose code not found in options, skipping (not adding to "other"):', purpose);
+                } else {
+                  // It's custom text, add to "other"
+                  console.log('⚠️ Purpose not matched and appears to be custom text, treating as "other":', purpose);
+                  if (!selectedPurposes.includes('other')) {
+                    selectedPurposes.push('other');
+                  }
+                  if (!otherPurpose) {
+                    otherPurpose = purpose;
+                  } else {
+                    otherPurpose += ', ' + purpose;
+                  }
+                }
               }
             }
           });
           
+          console.log('✅ Final selected purposes:', selectedPurposes);
+          console.log('✅ Final other purpose text:', otherPurpose);
           setPurposeOfAccount(selectedPurposes);
           if (otherPurpose) {
             setPurposeOther(otherPurpose);
@@ -263,16 +428,16 @@ const UpdateKYB: React.FC = () => {
         accountPurpose: purposeOfAccount.join(', ') + (purposeOfAccount.includes('other') && purposeOther ? `, ${purposeOther}` : '')
       };
       
-      // Request OTP first (like wallet activation)
-      console.log('📞 Requesting OTP for KYB update...');
-      const otpResponse = await UserManagementService.requestKybOTP();
+      // Initiate KYB update (this will send OTP and create pending update)
+      console.log('🏢 Initiating KYB update...');
+      const kybResponse = await UserManagementService.initiateKybUpdate(kybRequest);
       
       // Navigate to OTP screen with KYB data and session ID
       navigate('/app/account-settings/kyb/otp', {
         state: { 
           kybData: kybRequest,
-          sessionId: otpResponse.sessionId,
-          otpCode: otpResponse.otpCode
+          sessionId: kybResponse.sessionId,
+          otpCode: kybResponse.otpCode
         }
       });
     } catch (error: any) {
