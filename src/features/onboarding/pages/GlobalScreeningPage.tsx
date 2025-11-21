@@ -116,14 +116,14 @@ export default function GlobalScreeningPage() {
         }
       />
       
-      <DevScenarioBar
+      {/* <DevScenarioBar
         title="Screening/Compliance"
         items={[
           { label: 'Hit → Approved', patch: { globalHit: true, complianceApproved: true } },
           { label: 'Hit → Rejected', patch: { globalHit: true, complianceApproved: false } },
           { label: 'No hit',         patch: { globalHit: false } },
         ]}
-      />
+      /> */}
     </>
   );
 }

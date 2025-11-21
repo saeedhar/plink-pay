@@ -46,14 +46,14 @@ export default function NafathPage() {
         </main>
       </div>
       
-      <DevScenarioBar
+      {/* <DevScenarioBar
         title="Nafath Scenarios"
         items={[
           { label: 'Happy: RECEIVED', patch: { nafathSeq: ['SENT','UNDER_REVIEW','RECEIVED'] } },
           { label: 'Rejected',        patch: { nafathSeq: ['REJECTED'] } },
           { label: 'Failed',          patch: { nafathSeq: ['FAILED'] } },
         ]}
-      />
+      /> */}
     </div>
   );
 }
