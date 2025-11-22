@@ -231,7 +231,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="pt-8">
               <div className="text-center mb-8">
                 <h2 className="text-2xl text-gray-800 mb-2">Sign In</h2>
-                <p className="text-black">Enter your phone number or ID/UNN</p>
+                <p className="text-black">Enter your ID/UNN</p>
               </div>
 
               {/* Error Message */}

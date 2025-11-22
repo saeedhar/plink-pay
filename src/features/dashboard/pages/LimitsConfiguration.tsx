@@ -32,6 +32,7 @@ const LimitsConfiguration: React.FC = () => {
   const [generatedOTP, setGeneratedOTP] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState('');
   const [showTransactionDropdown, setShowTransactionDropdown] = useState(false);
+  const [transactionSearchQuery, setTransactionSearchQuery] = useState(''); // Search query for transaction types
 
   // Transaction types data from backend
   const [transactionTypes, setTransactionTypes] = useState<TransactionFilter[]>([]);
@@ -201,8 +202,14 @@ const LimitsConfiguration: React.FC = () => {
           });
           
           // Initialize form with current limits
+          // Only initialize overall limits - specific transaction limits start empty
           setDailyLimit((dailyLimit?.limitAmount || 0).toString());
-          setMonthlyLimit((monthlyLimit?.limitAmount || 0).toString());
+          // Only set monthlyLimit for overall mode - keep empty for specific transactions
+          if (selectedLimitType === 'overall') {
+            setMonthlyLimit((monthlyLimit?.limitAmount || 0).toString());
+          } else {
+            setMonthlyLimit(''); // Keep empty for specific transactions
+          }
           
           console.log('🔍 Limits data processed:', {
             dailyLimit: dailyLimit?.limitAmount,
@@ -240,6 +247,14 @@ const LimitsConfiguration: React.FC = () => {
     loadData();
   }, []);
 
+  // Clear monthly limit when switching to specific transaction mode or when selecting a transaction
+  useEffect(() => {
+    if (selectedLimitType === 'specific') {
+      setMonthlyLimit('');
+      setMonthlyLimitError('');
+    }
+  }, [selectedLimitType, selectedTransaction]);
+
   useEffect(() => {
     const root = document.getElementById('root');
     if (root) {
@@ -268,6 +283,7 @@ const LimitsConfiguration: React.FC = () => {
       const target = event.target as HTMLElement;
       if (showTransactionDropdown && !target.closest('.transaction-dropdown-container')) {
         setShowTransactionDropdown(false);
+        setTransactionSearchQuery(''); // Clear search when closing dropdown
       }
     };
 
@@ -333,19 +349,27 @@ const LimitsConfiguration: React.FC = () => {
 
   const handleDailyLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setDailyLimit(value);
-    validateDailyLimit(value);
+    // Only allow numbers, decimal point, and comma (for formatting)
+    const numericValue = value.replace(/[^0-9.,]/g, '');
+    setDailyLimit(numericValue);
+    // Clear error when user starts typing
+    if (dailyLimitError) setDailyLimitError('');
   };
 
   const handleMonthlyLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setMonthlyLimit(value);
-    validateMonthlyLimit(value);
+    // Only allow numbers, decimal point, and comma (for formatting)
+    const numericValue = value.replace(/[^0-9.,]/g, '');
+    setMonthlyLimit(numericValue);
+    // Clear error when user starts typing
+    if (monthlyLimitError) setMonthlyLimitError('');
   };
 
   const handleTransactionLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setTransactionLimit(value);
+    // Only allow numbers, decimal point, and comma (for formatting)
+    const numericValue = value.replace(/[^0-9.,]/g, '');
+    setTransactionLimit(numericValue);
     // Clear error when user starts typing
     if (transactionLimitError) setTransactionLimitError('');
   };
@@ -566,7 +590,13 @@ const LimitsConfiguration: React.FC = () => {
     navigate('/app/services/wallet');
   };
 
+  // Filter transaction types based on search query
+  const filteredTransactionTypes = transactionTypes.filter(filter => 
+    filter.label.toLowerCase().includes(transactionSearchQuery.toLowerCase())
+  );
+
   const handleTransactionSelect = (transaction: string) => {
+    setTransactionSearchQuery(''); // Clear search when selecting
     setSelectedTransaction(transaction);
     setShowTransactionDropdown(false);
   };
@@ -991,7 +1021,12 @@ const LimitsConfiguration: React.FC = () => {
                           <div className="transaction-dropdown-container">
                             <button
                               type="button"
-                              onClick={() => setShowTransactionDropdown(!showTransactionDropdown)}
+                              onClick={() => {
+                                setShowTransactionDropdown(!showTransactionDropdown);
+                                if (showTransactionDropdown) {
+                                  setTransactionSearchQuery(''); // Clear search when closing dropdown
+                                }
+                              }}
                               className="transaction-dropdown-button"
                               disabled={isLoadingFilters}
                             >
@@ -1007,6 +1042,8 @@ const LimitsConfiguration: React.FC = () => {
                                     type="text"
                                     placeholder="Search transaction type"
                                     className="transaction-search-input"
+                                    value={transactionSearchQuery}
+                                    onChange={(e) => setTransactionSearchQuery(e.target.value)}
                                   />
                                   <svg className="transaction-search-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
                                     <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1015,10 +1052,12 @@ const LimitsConfiguration: React.FC = () => {
                                 <div className="transaction-dropdown-list">
                                   {isLoadingFilters ? (
                                     <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
-                                  ) : transactionTypes.length === 0 ? (
-                                    <div className="px-4 py-3 text-sm text-gray-500">No transaction types available</div>
+                                  ) : filteredTransactionTypes.length === 0 ? (
+                                    <div className="px-4 py-3 text-sm text-gray-500">
+                                      {transactionSearchQuery ? 'No matching transaction types found' : 'No transaction types available'}
+                                    </div>
                                   ) : (
-                                    transactionTypes.map((filter) => (
+                                    filteredTransactionTypes.map((filter) => (
                                     <button
                                         key={filter.id}
                                       type="button"
@@ -1039,6 +1078,7 @@ const LimitsConfiguration: React.FC = () => {
                           <label className="limit-input-label">Daily Limit</label>
                           <input
                             type="text"
+                            inputMode="numeric"
                             placeholder="Enter Daily Limit"
                             value={transactionLimit}
                             onChange={handleTransactionLimitChange}
@@ -1075,6 +1115,7 @@ const LimitsConfiguration: React.FC = () => {
                           <label className="limit-input-label">Daily Limit</label>
                           <input
                             type="text"
+                            inputMode="numeric"
                             placeholder="Enter daily limit..."
                             value={dailyLimit}
                             onChange={handleDailyLimitChange}
@@ -1119,7 +1160,12 @@ const LimitsConfiguration: React.FC = () => {
                           <div className="transaction-dropdown-container">
                             <button
                               type="button"
-                              onClick={() => setShowTransactionDropdown(!showTransactionDropdown)}
+                              onClick={() => {
+                                setShowTransactionDropdown(!showTransactionDropdown);
+                                if (showTransactionDropdown) {
+                                  setTransactionSearchQuery(''); // Clear search when closing dropdown
+                                }
+                              }}
                               className="transaction-dropdown-button"
                               disabled={isLoadingFilters}
                             >
@@ -1135,6 +1181,8 @@ const LimitsConfiguration: React.FC = () => {
                                     type="text"
                                     placeholder="Search transaction type"
                                     className="transaction-search-input"
+                                    value={transactionSearchQuery}
+                                    onChange={(e) => setTransactionSearchQuery(e.target.value)}
                                   />
                                   <svg className="transaction-search-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
                                     <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1143,10 +1191,12 @@ const LimitsConfiguration: React.FC = () => {
                                 <div className="transaction-dropdown-list">
                                   {isLoadingFilters ? (
                                     <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
-                                  ) : transactionTypes.length === 0 ? (
-                                    <div className="px-4 py-3 text-sm text-gray-500">No transaction types available</div>
+                                  ) : filteredTransactionTypes.length === 0 ? (
+                                    <div className="px-4 py-3 text-sm text-gray-500">
+                                      {transactionSearchQuery ? 'No matching transaction types found' : 'No transaction types available'}
+                                    </div>
                                   ) : (
-                                    transactionTypes.map((filter) => (
+                                    filteredTransactionTypes.map((filter) => (
                                     <button
                                         key={filter.id}
                                       type="button"
@@ -1167,6 +1217,7 @@ const LimitsConfiguration: React.FC = () => {
                           <label className="limit-input-label">Monthly Limit</label>
                           <input
                             type="text"
+                            inputMode="numeric"
                             placeholder="Enter Monthly Limit"
                             value={monthlyLimit}
                             onChange={handleMonthlyLimitChange}
@@ -1203,6 +1254,7 @@ const LimitsConfiguration: React.FC = () => {
                           <label className="limit-input-label">Monthly Limit</label>
                           <input
                             type="text"
+                            inputMode="numeric"
                             placeholder="Enter monthly limit..."
                             value={monthlyLimit}
                             onChange={handleMonthlyLimitChange}

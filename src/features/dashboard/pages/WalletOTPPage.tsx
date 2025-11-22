@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { WalletService, WalletOTPRequest } from '../../../services/walletService';
+import { UserManagementService } from '../../../services/userManagementService';
 import { API } from '../../../lib/api';
 import logo from '../../../assets/logo-mark.svg';
 import checkCircle from '../../../assets/check_circle.svg';
@@ -20,6 +21,7 @@ export default function WalletOTPPage() {
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [action, setAction] = useState<'activate' | 'deactivate'>('activate');
   const [realOTP, setRealOTP] = useState('');
+  const [sessionId, setSessionId] = useState<string>(''); // Store sessionId for OTP verification
   const [isRequestingOTP, setIsRequestingOTP] = useState(false);
   const hasRequestedOTP = useRef(false);
   const isRequestingRef = useRef(false); // Track request state with ref to prevent race conditions
@@ -44,6 +46,12 @@ export default function WalletOTPPage() {
       if (response.otpCode) {
         setRealOTP(response.otpCode);
         console.log('✅ Real OTP received from backend:', response.otpCode);
+      }
+      
+      // Store sessionId for OTP verification
+      if (response.sessionId) {
+        setSessionId(response.sessionId);
+        console.log('✅ Session ID stored for OTP verification:', response.sessionId);
       }
       
       // Reset timer
@@ -166,12 +174,45 @@ export default function WalletOTPPage() {
       return;
     }
     
+    // Validate sessionId exists
+    if (!sessionId) {
+      setError('Session expired. Please request a new OTP.');
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
     
     try {
-      // Pass OTP directly to wallet activate/deactivate endpoints
-      // The backend will verify the OTP internally
+      // First, verify the OTP using the email verify endpoint (since we use email update endpoint to send OTP)
+      console.log('🔍 Verifying OTP before wallet operation...');
+      try {
+        await UserManagementService.verifyEmailUpdate({
+          sessionId: sessionId,
+          otp: otpCode
+        });
+        console.log('✅ OTP verified successfully');
+      } catch (verifyError: any) {
+        console.error('❌ OTP verification failed:', verifyError);
+        
+        // Increment failed attempts
+        const newFailedAttempts = failedAttempts + 1;
+        setFailedAttempts(newFailedAttempts);
+        
+        if (newFailedAttempts >= 5) {
+          setShowAccountBlockedModal(true);
+        } else {
+          setError('The code you entered is incorrect. Please try again.');
+        }
+        
+        // Clear OTP inputs on error
+        setOtp(['', '', '', '', '', '']);
+        setIsLoading(false);
+        return; // Stop here if OTP verification fails
+      }
+      
+      // OTP verified successfully, now proceed with wallet activation/deactivation
+      console.log('🔍 Proceeding with wallet operation:', action);
       if (action === 'activate') {
         await WalletService.activateWallet({ otp: otpCode });
         console.log('✅ Wallet activated successfully');
@@ -206,6 +247,9 @@ export default function WalletOTPPage() {
           setError(error.message || 'The code you entered is incorrect. Please try again.');
         }
       }
+      
+      // Clear OTP inputs on error
+      setOtp(['', '', '', '', '', '']);
     } finally {
       setIsLoading(false);
     }

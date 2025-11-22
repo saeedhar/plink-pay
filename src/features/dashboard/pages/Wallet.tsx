@@ -137,10 +137,12 @@ const Wallet: React.FC = () => {
   };
 
   const handleLimitsClick = () => {
+    if (!isWalletActive) return; // Disable if wallet is deactivated
     navigate('/app/services/wallet/limits');
   };
 
   const handleSubWalletClick = () => {
+    if (!isWalletActive) return; // Disable if wallet is deactivated
     navigate('/app/services/wallet/subwallet');
   };
 
@@ -196,37 +198,53 @@ const Wallet: React.FC = () => {
               </div>
               
                   {/* Limits Configuration Section */}
-                  <div className="wallet-section" onClick={handleLimitsClick}>
+                  <div 
+                    className={`wallet-section ${!isWalletActive ? 'wallet-section-disabled' : ''}`} 
+                    onClick={handleLimitsClick}
+                    style={{ cursor: !isWalletActive ? 'not-allowed' : 'pointer', opacity: !isWalletActive ? 0.5 : 1 }}
+                  >
                     <div className="wallet-section-content">
                       <div className="wallet-section-icon">
                         <img src={limitsIcon} alt="Limits Configuration" className="wallet-section-icon-img" />
                       </div>
                       <div className="wallet-section-info">
                         <h3 className="wallet-section-title">Limits Configuration</h3>
-                        <p className="wallet-section-description">Manage your transfer and withdrawal limits.</p>
+                        <p className="wallet-section-description">
+                          {!isWalletActive 
+                            ? 'Wallet must be activated to configure limits.' 
+                            : 'Manage your transfer and withdrawal limits.'}
+                        </p>
                       </div>
                     </div>
                     <div className="wallet-section-control">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M8.59 16.59L13.17 12L8.59 7.41L10 6l6 6-6 6-1.41-1.41z" fill="#1F2937"/>
+                        <path d="M8.59 16.59L13.17 12L8.59 7.41L10 6l6 6-6 6-1.41-1.41z" fill={!isWalletActive ? "#9CA3AF" : "#1F2937"}/>
                       </svg>
                     </div>
                   </div>
               
               {/* Create Sub-Wallet Section */}
-              <div className="wallet-section" onClick={handleSubWalletClick}>
+              <div 
+                className={`wallet-section ${!isWalletActive ? 'wallet-section-disabled' : ''}`} 
+                onClick={handleSubWalletClick}
+                style={{ cursor: !isWalletActive ? 'not-allowed' : 'pointer', opacity: !isWalletActive ? 0.5 : 1 }}
+              >
                 <div className="wallet-section-content">
                   <div className="wallet-section-icon">
                     <img src={subWalletIcon} alt="Create Sub-Wallet" className="wallet-section-icon-img" />
                   </div>
                   <div className="wallet-section-info">
                     <h3 className="wallet-section-title">Create Sub-Wallet</h3>
-                    <p className="wallet-section-description">Add a new sub-wallet to manage your funds.</p>
+                    <p className="wallet-section-description">
+                      {!isWalletActive 
+                        ? 'Wallet must be activated to create sub-wallets.' 
+                        : 'Add a new sub-wallet to manage your funds.'}
+                    </p>
                   </div>
                 </div>
                 <div className="wallet-section-control">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8.59 16.59L13.17 12L8.59 7.41L10 6l6 6-6 6-1.41-1.41z" fill="#1F2937"/>
+                    <path d="M8.59 16.59L13.17 12L8.59 7.41L10 6l6 6-6 6-1.41-1.41z" fill={!isWalletActive ? "#9CA3AF" : "#1F2937"}/>
                   </svg>
                 </div>
               </div>
