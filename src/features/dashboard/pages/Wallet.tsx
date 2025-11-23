@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import DeactivateWalletModal from '../../../components/modals/DeactivateWalletModal';
 import ActivateWalletModal from '../../../components/modals/ActivateWalletModal';
@@ -11,6 +11,10 @@ import subWalletIcon from '../../../assets/wallet-managment/sub-wallet.svg';
 
 const Wallet: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { subWalletName?: string; subWalletId?: string; isSubWallet?: boolean } | null;
+  const subWalletId = state?.subWalletId;
+  const isSubWallet = state?.isSubWallet;
   const [isWalletActive, setIsWalletActive] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showActivateModal, setShowActivateModal] = useState(false);
@@ -31,17 +35,25 @@ const Wallet: React.FC = () => {
     };
   }, []);
 
-  // Load wallet data on component mount
+  // Load wallet data on component mount or when sub-wallet changes
   useEffect(() => {
     loadWalletData();
-  }, []);
+  }, [isSubWallet, subWalletId]);
 
   // Check for completed OTP verification
   useEffect(() => {
     const actionCompleted = localStorage.getItem('walletActionCompleted');
     const action = localStorage.getItem('walletAction');
+    const actionSubWalletId = localStorage.getItem('walletActionSubWalletId');
+    const actionIsSubWallet = localStorage.getItem('walletActionIsSubWallet') === 'true';
     
-    if (actionCompleted === 'true' && action) {
+    // Only process if this is for the current sub-wallet (or main wallet if no sub-wallet)
+    const isForCurrentWallet = (
+      (!isSubWallet && !actionIsSubWallet) || // Both main wallet
+      (isSubWallet && actionIsSubWallet && subWalletId === actionSubWalletId) // Same sub-wallet
+    );
+    
+    if (actionCompleted === 'true' && action && isForCurrentWallet) {
       if (action === 'activate') {
         setIsWalletActive(true);
         // Reload wallet data after activation
@@ -55,8 +67,11 @@ const Wallet: React.FC = () => {
       // Clear the stored action
       localStorage.removeItem('walletAction');
       localStorage.removeItem('walletActionCompleted');
+      localStorage.removeItem('walletActionSubWalletId');
+      localStorage.removeItem('walletActionIsSubWallet');
+      localStorage.removeItem('walletActionSubWalletName');
     }
-  }, []);
+  }, [isSubWallet, subWalletId]);
 
   // Close modals when navigating back or away
   useEffect(() => {
@@ -82,10 +97,10 @@ const Wallet: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      // Load wallet status and balance in parallel
+      // Load wallet status and balance in parallel, using subWalletId if viewing a sub-wallet
       const [status, balance] = await Promise.all([
-        WalletService.getStatus(),
-        WalletService.getBalance()
+        WalletService.getStatus(isSubWallet ? subWalletId : undefined),
+        WalletService.getBalance(isSubWallet ? subWalletId : undefined)
       ]);
       
       setWalletStatus(status);
@@ -117,17 +132,25 @@ const Wallet: React.FC = () => {
 
   const handleConfirmDeactivation = () => {
     setShowDeactivateModal(false);
-    // Navigate to OTP page with deactivate action
+    // Navigate to OTP page with deactivate action and sub-wallet info
     navigate('/app/services/wallet/otp', { 
-      state: { action: 'deactivate' } 
+      state: { 
+        action: 'deactivate',
+        subWalletId: isSubWallet ? subWalletId : undefined,
+        isSubWallet: isSubWallet
+      } 
     });
   };
 
   const handleConfirmActivation = () => {
     setShowActivateModal(false);
-    // Navigate to OTP page with activate action
+    // Navigate to OTP page with activate action and sub-wallet info
     navigate('/app/services/wallet/otp', { 
-      state: { action: 'activate' } 
+      state: { 
+        action: 'activate',
+        subWalletId: isSubWallet ? subWalletId : undefined,
+        isSubWallet: isSubWallet
+      } 
     });
   };
 
@@ -138,7 +161,13 @@ const Wallet: React.FC = () => {
 
   const handleLimitsClick = () => {
     if (!isWalletActive) return; // Disable if wallet is deactivated
-    navigate('/app/services/wallet/limits');
+    navigate('/app/services/wallet/limits', {
+      state: {
+        subWalletId: isSubWallet ? subWalletId : undefined,
+        isSubWallet: isSubWallet,
+        subWalletName: state?.subWalletName
+      }
+    });
   };
 
   const handleSubWalletClick = () => {
@@ -150,7 +179,7 @@ const Wallet: React.FC = () => {
     <div className="dashboard-container">
       <Sidebar />
       <div className="main-content">
-        <Header />
+        <Header subWalletId={subWalletId} isSubWallet={isSubWallet} />
         <div className="dashboard-content">
           <h1 className="dashboard-title">Wallet</h1>
           
@@ -159,7 +188,11 @@ const Wallet: React.FC = () => {
               <div className="wallet-header-icon">
                 <img src={walletManagementIcon} alt="Wallet Management" className="wallet-header-icon-img" />
               </div>
-              <h2 className="wallet-header-title">Wallet Management</h2>
+              <h2 className="wallet-header-title">
+                {isSubWallet && state?.subWalletName 
+                  ? `${state.subWalletName} - Wallet Management`
+                  : 'Wallet Management'}
+              </h2>
             </div>
             
             <div className="wallet-sections">
@@ -255,6 +288,8 @@ const Wallet: React.FC = () => {
       
       {/* Deactivate Wallet Modal */}
       <DeactivateWalletModal
+        isSubWallet={isSubWallet}
+        subWalletName={state?.subWalletName}
         isOpen={showDeactivateModal}
         onClose={handleCloseModal}
         onConfirm={handleConfirmDeactivation}

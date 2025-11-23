@@ -77,16 +77,20 @@ export interface WalletActivationResponse {
 export class WalletService {
   /**
    * Get wallet balance
+   * @param subWalletId Optional sub-wallet ID. If provided, returns balance for that sub-wallet
    */
-  static async getBalance(): Promise<WalletBalance> {
+  static async getBalance(subWalletId?: string): Promise<WalletBalance> {
     try {
-      console.log('🔍 Fetching wallet balance...');
-      const data = await API.get('/api/v1/wallet/balance');
+      console.log('🔍 Fetching wallet balance...', subWalletId ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
+      const url = subWalletId 
+        ? `/api/v1/wallet/balance?subWalletId=${subWalletId}`
+        : '/api/v1/wallet/balance';
+      const data = await API.get(url);
       console.log('✅ Wallet balance data received:', data);
       return {
-        balance: data.balance || 0,
+        balance: data.availableBalance || data.balance || 0,
         currency: data.currency || 'SAR',
-        formattedBalance: data.formattedBalance || '0.00 SAR'
+        formattedBalance: data.formattedBalance || `${(data.availableBalance || data.balance || 0).toFixed(2)} ${data.currency || 'SAR'}`
       };
     } catch (error) {
       console.error('❌ Error fetching wallet balance:', error);
@@ -96,10 +100,14 @@ export class WalletService {
 
   /**
    * Get wallet status
+   * @param subWalletId Optional sub-wallet ID. If provided, returns status for that sub-wallet
    */
-  static async getStatus(): Promise<WalletStatus> {
+  static async getStatus(subWalletId?: string): Promise<WalletStatus> {
     try {
-      const data = await API.get('/api/v1/wallet/status');
+      const url = subWalletId 
+        ? `/api/v1/wallet/status?subWalletId=${subWalletId}`
+        : '/api/v1/wallet/status';
+      const data = await API.get(url);
       console.log('🔍 Wallet status response:', data);
       
       // Handle both boolean isActive and string status from backend
@@ -232,10 +240,15 @@ export class WalletService {
 
   /**
    * Activate wallet
+   * @param request Activation request with OTP
+   * @param subWalletId Optional sub-wallet ID. If provided, activates that sub-wallet
    */
-  static async activateWallet(request: WalletActivationRequest): Promise<WalletActivationResponse> {
+  static async activateWallet(request: WalletActivationRequest, subWalletId?: string): Promise<WalletActivationResponse> {
     try {
-      const data = await API.post('/api/v1/wallet/activate', request);
+      const url = subWalletId 
+        ? `/api/v1/wallet/activate?subWalletId=${subWalletId}`
+        : '/api/v1/wallet/activate';
+      const data = await API.post(url, request);
       console.log('🔍 Wallet activation response:', data);
       
       // Handle backend response format
@@ -260,10 +273,15 @@ export class WalletService {
 
   /**
    * Deactivate wallet
+   * @param request Deactivation request with OTP
+   * @param subWalletId Optional sub-wallet ID. If provided, deactivates that sub-wallet
    */
-  static async deactivateWallet(request: WalletActivationRequest): Promise<WalletActivationResponse> {
+  static async deactivateWallet(request: WalletActivationRequest, subWalletId?: string): Promise<WalletActivationResponse> {
     try {
-      const data = await API.post('/api/v1/wallet/deactivate', request);
+      const url = subWalletId 
+        ? `/api/v1/wallet/deactivate?subWalletId=${subWalletId}`
+        : '/api/v1/wallet/deactivate';
+      const data = await API.post(url, request);
       console.log('🔍 Wallet deactivation response:', data);
       
       // Handle backend response format
@@ -288,14 +306,24 @@ export class WalletService {
 
   /**
    * Get wallet limits
+   * @param subWalletId Optional sub-wallet ID. If provided, returns limits for that sub-wallet (inherits from main wallet)
    */
-  static async getLimits(): Promise<WalletLimits> {
+  static async getLimits(subWalletId?: string): Promise<WalletLimits> {
     try {
-      const data = await API.get('/api/v1/wallet/limits');
+      const url = subWalletId 
+        ? `/api/v1/wallet/limits?subWalletId=${subWalletId}`
+        : '/api/v1/wallet/limits';
+      const data = await API.get(url);
+      // Backend returns limits array, extract daily and monthly
+      const limits = data.limits || [];
+      const dailyLimit = limits.find((l: any) => l.limitType === 'DAILY' && !l.transactionType)?.limitAmount || 0;
+      const monthlyLimit = limits.find((l: any) => l.limitType === 'MONTHLY' && !l.transactionType)?.limitAmount || 0;
+      const transactionLimit = limits.find((l: any) => l.limitType === 'TRANSACTION_SPECIFIC')?.limitAmount || 0;
+      
       return {
-        dailyLimit: data.dailyLimit || 0,
-        monthlyLimit: data.monthlyLimit || 0,
-        transactionLimit: data.transactionLimit || 0,
+        dailyLimit: dailyLimit,
+        monthlyLimit: monthlyLimit,
+        transactionLimit: transactionLimit,
         currency: data.currency || 'SAR'
       };
     } catch (error) {

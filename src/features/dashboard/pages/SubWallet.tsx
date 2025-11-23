@@ -8,9 +8,22 @@ import subWalletIcon from '../../../assets/wallet-managment/sub-wallet.svg';
 import checkCircle from '../../../assets/check_circle.svg';
 import rejectIcon from '../../../assets/reject.svg';
 
+interface MainWalletData {
+  subWalletId?: string; // undefined for main wallet
+  subWalletName: string;
+  balance: number;
+  onHoldBalance: number;
+  availableBalance: number;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  createdAt?: string;
+  isMainWallet: boolean;
+}
+
 const SubWallet: React.FC = () => {
   const navigate = useNavigate();
   const [subWallets, setSubWallets] = useState<SubWalletData[]>([]);
+  const [mainWallet, setMainWallet] = useState<MainWalletData | null>(null);
+  const [isLoadingMainWallet, setIsLoadingMainWallet] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [walletName, setWalletName] = useState('');
   const [error, setError] = useState('');
@@ -90,9 +103,27 @@ const SubWallet: React.FC = () => {
     };
   }, []);
 
-  // Load sub-wallets on component mount
+  // Load sub-wallets and main wallet on component mount
   useEffect(() => {
     loadSubWallets();
+    loadMainWallet();
+  }, []);
+
+  // Reload when component becomes visible (handles back navigation)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 SubWallet: Page visible again, reloading wallets...');
+        loadSubWallets();
+        loadMainWallet();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Close modals when navigating back or away
@@ -116,6 +147,35 @@ const SubWallet: React.FC = () => {
       setShowSuccess(false);
     };
   }, []);
+
+  // Load main wallet from API
+  const loadMainWallet = async () => {
+    try {
+      setIsLoadingMainWallet(true);
+      const [status, balanceData] = await Promise.all([
+        WalletService.getStatus(),
+        WalletService.getBalance()
+      ]);
+      
+      // Get full balance info from TransactionService which has more details
+      const { TransactionService } = await import('../../../services/transactionService');
+      const fullBalance = await TransactionService.getWalletBalance();
+      
+      setMainWallet({
+        subWalletId: undefined, // Main wallet has no sub-wallet ID
+        subWalletName: 'Main Wallet',
+        balance: fullBalance.totalBalance || 0,
+        onHoldBalance: fullBalance.onHoldBalance || 0,
+        availableBalance: fullBalance.availableBalance || 0,
+        status: status.isActive ? 'ACTIVE' : 'INACTIVE',
+        isMainWallet: true
+      });
+    } catch (err) {
+      console.error('Error loading main wallet:', err);
+    } finally {
+      setIsLoadingMainWallet(false);
+    }
+  };
 
   // Load sub-wallets from API
   const loadSubWallets = async () => {
@@ -325,15 +385,26 @@ const SubWallet: React.FC = () => {
     setShowLimitReachedModal(false);
   };
 
-  const handleSubWalletClick = (wallet: SubWalletData) => {
-    // Navigate to dashboard with sub-wallet data
-    navigate('/app/dashboard', { 
-      state: { 
-        subWalletName: wallet.subWalletName,
-        subWalletId: wallet.subWalletId,
-        isSubWallet: true 
-      } 
-    });
+  const handleWalletClick = (wallet: SubWalletData | MainWalletData) => {
+    if ('isMainWallet' in wallet && wallet.isMainWallet) {
+      // Navigate to dashboard with main wallet (no sub-wallet context)
+      navigate('/app/dashboard', { 
+        state: { 
+          subWalletName: undefined,
+          subWalletId: undefined,
+          isSubWallet: false 
+        } 
+      });
+    } else {
+      // Navigate to dashboard with sub-wallet data
+      navigate('/app/dashboard', { 
+        state: { 
+          subWalletName: wallet.subWalletName,
+          subWalletId: wallet.subWalletId,
+          isSubWallet: true 
+        } 
+      });
+    }
   };
 
   // Show success screen if OTP is verified
@@ -596,11 +667,11 @@ const SubWallet: React.FC = () => {
                     View and manage your sub-wallets. Create new sub-wallets to organize your funds and control spending.
                   </p>
 
-                  {isLoadingWallets ? (
+                  {isLoadingWallets || isLoadingMainWallet ? (
                     <div className="subwallet-loading">
                       <div className="flex items-center justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#022466]"></div>
-                        <span className="ml-2 text-gray-600">Loading sub-wallets...</span>
+                        <span className="ml-2 text-gray-600">Loading wallets...</span>
                       </div>
                     </div>
                   ) : walletsError ? (
@@ -613,48 +684,100 @@ const SubWallet: React.FC = () => {
                       </div>
                       <div className="flex justify-center">
                         <button
-                          onClick={loadSubWallets}
+                          onClick={() => { loadSubWallets(); loadMainWallet(); }}
                           className="px-4 py-2 bg-[#022466] text-white rounded-lg hover:bg-[#0475CC] transition-colors"
                         >
                           Retry
                         </button>
                       </div>
                     </div>
-                  ) : subWallets.length === 0 ? (
-                    <div className="subwallet-empty">
-                      <div className="text-center py-8 text-gray-500">
-                        <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7H5C3.89543 7 3 7.89543 3 9V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V9C21 7.89543 20.1046 7 19 7Z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11H17" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 15H13" />
-                        </svg>
-                        <p className="text-lg font-medium mb-2">No sub-wallets yet</p>
-                        <p className="text-sm">Create your first sub-wallet to get started</p>
-                      </div>
-                    </div>
                   ) : (
                     <div className="subwallet-list">
-                      {subWallets.map((wallet, index) => (
+                      {/* Main Wallet - Always first */}
+                      {mainWallet && (
                         <div 
-                          key={wallet.subWalletId} 
-                          className="subwallet-item"
-                          onClick={() => handleSubWalletClick(wallet)}
-                          style={{ cursor: 'pointer' }}
+                          key="main-wallet"
+                          className={`subwallet-item ${mainWallet.status === 'INACTIVE' ? 'deactivated' : ''}`}
+                          onClick={() => handleWalletClick(mainWallet)}
+                          style={{ cursor: 'pointer', opacity: mainWallet.status === 'INACTIVE' ? 0.7 : 1 }}
                         >
-                          <div className={`subwallet-item-icon ${index % 2 === 0 ? 'brown' : 'purple'}`}>
+                          <div className="subwallet-item-icon main-wallet" style={{ backgroundColor: '#022466', borderRadius: '8px', padding: '8px' }}>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M19 7H5C3.89543 7 3 7.89543 3 9V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V9C21 7.89543 20.1046 7 19 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M7 11H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M7 15H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M19 7H5C3.89543 7 3 7.89543 3 9V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V9C21 7.89543 20.1046 7 19 7Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M7 11H17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M7 15H13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                           </div>
                           <div className="subwallet-item-info">
-                            <h4 className="subwallet-item-name">{wallet.subWalletName}</h4>
-                            <p className="subwallet-item-id">ID: {wallet.subWalletId}</p>
-                           
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <h4 className="subwallet-item-name">{mainWallet.subWalletName}</h4>
+                              {mainWallet.status === 'INACTIVE' && (
+                                <span style={{ 
+                                  padding: '2px 8px', 
+                                  borderRadius: '4px', 
+                                  fontSize: '12px', 
+                                  backgroundColor: '#FEE2E2', 
+                                  color: '#DC2626',
+                                  fontWeight: '600'
+                                }}>
+                                  Deactivated
+                                </span>
+                              )}
+                            </div>
+                            <p className="subwallet-item-id">Main Account</p>
                           </div>
                         </div>
-                      ))}
+                      )}
+                      
+                      {/* Sub-Wallets - Show all, including deactivated */}
+                      {subWallets.length === 0 ? (
+                        <div className="subwallet-empty" style={{ marginTop: '16px' }}>
+                          <div className="text-center py-8 text-gray-500">
+                            <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7H5C3.89543 7 3 7.89543 3 9V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V9C21 7.89543 20.1046 7 19 7Z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11H17" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 15H13" />
+                            </svg>
+                            <p className="text-lg font-medium mb-2">No sub-wallets yet</p>
+                            <p className="text-sm">Create your first sub-wallet to get started</p>
+                          </div>
+                        </div>
+                      ) : (
+                        subWallets.map((wallet, index) => (
+                          <div 
+                            key={wallet.subWalletId} 
+                            className={`subwallet-item ${wallet.status === 'INACTIVE' ? 'deactivated' : ''}`}
+                            onClick={() => handleWalletClick(wallet)}
+                            style={{ cursor: 'pointer', opacity: wallet.status === 'INACTIVE' ? 0.7 : 1 }}
+                          >
+                            <div className={`subwallet-item-icon ${index % 2 === 0 ? 'brown' : 'purple'}`}>
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 7H5C3.89543 7 3 7.89543 3 9V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V9C21 7.89543 20.1046 7 19 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M7 11H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M7 15H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                            <div className="subwallet-item-info">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <h4 className="subwallet-item-name">{wallet.subWalletName}</h4>
+                                {wallet.status === 'INACTIVE' && (
+                                  <span style={{ 
+                                    padding: '2px 8px', 
+                                    borderRadius: '4px', 
+                                    fontSize: '12px', 
+                                    backgroundColor: '#FEE2E2', 
+                                    color: '#DC2626',
+                                    fontWeight: '600'
+                                  }}>
+                                    Deactivated
+                                  </span>
+                                )}
+                              </div>
+                              <p className="subwallet-item-id">ID: {wallet.subWalletId}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
 
@@ -728,3 +851,4 @@ const SubWallet: React.FC = () => {
 };
 
 export default SubWallet;
+

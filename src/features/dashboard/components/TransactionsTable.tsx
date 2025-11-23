@@ -2,21 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TransactionService, TransactionSummary } from '../../../services/transactionService';
 
-const TransactionsTable: React.FC = () => {
+interface TransactionsTableProps {
+  subWalletId?: string;
+  isSubWallet?: boolean;
+}
+
+const TransactionsTable: React.FC<TransactionsTableProps> = ({ subWalletId, isSubWallet }) => {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<TransactionSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch transactions on component mount
+  // Fetch transactions on component mount or when sub-wallet changes
   useEffect(() => {
     const loadTransactions = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await TransactionService.getTransactionHistory(0, 10); // Get first 10 transactions
+        // Pass subWalletId if viewing a sub-wallet
+        const response = await TransactionService.getTransactionHistory(
+          0, 
+          10, 
+          undefined, 
+          undefined, 
+          undefined, 
+          undefined,
+          isSubWallet ? subWalletId : undefined
+        );
         setTransactions(response.transactions);
-        console.log('🔍 Transactions loaded:', response.transactions);
+        console.log('🔍 Transactions loaded:', response.transactions, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
       } catch (err) {
         console.error('Error loading transactions:', err);
         setError(err instanceof Error ? err.message : 'Failed to load transactions');
@@ -26,13 +40,22 @@ const TransactionsTable: React.FC = () => {
     };
 
     loadTransactions();
-  }, []);
+  }, [isSubWallet, subWalletId]);
 
   return (
     <div className="transactions-table">
       <div className="transactions-header">
         <h3 className="transactions-title">Transactions</h3>
-        <a href="#" className="see-all-link" onClick={(e) => { e.preventDefault(); navigate('/app/transactions'); }}>See All</a>
+        <a href="#" className="see-all-link" onClick={(e) => { 
+          e.preventDefault(); 
+          navigate('/app/transactions', { 
+            state: { 
+              subWalletId: isSubWallet ? subWalletId : undefined,
+              isSubWallet: isSubWallet,
+              subWalletName: isSubWallet ? 'Sub-Wallet' : undefined
+            } 
+          }); 
+        }}>See All</a>
       </div>
       
       <div className="table-container">

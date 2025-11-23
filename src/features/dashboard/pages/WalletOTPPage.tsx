@@ -11,6 +11,7 @@ import AccountBlockedModal from '../../../components/modals/AccountBlockedModal'
 export default function WalletOTPPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const state = location.state as { action?: 'activate' | 'deactivate'; subWalletId?: string; isSubWallet?: boolean; subWalletName?: string } | null;
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
@@ -19,7 +20,9 @@ export default function WalletOTPPage() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
-  const [action, setAction] = useState<'activate' | 'deactivate'>('activate');
+  const [action, setAction] = useState<'activate' | 'deactivate'>(state?.action || 'activate');
+  const [subWalletId, setSubWalletId] = useState<string | undefined>(state?.subWalletId);
+  const [isSubWallet, setIsSubWallet] = useState<boolean>(state?.isSubWallet || false);
   const [realOTP, setRealOTP] = useState('');
   const [sessionId, setSessionId] = useState<string>(''); // Store sessionId for OTP verification
   const [isRequestingOTP, setIsRequestingOTP] = useState(false);
@@ -184,46 +187,31 @@ export default function WalletOTPPage() {
     setError('');
     
     try {
-      // First, verify the OTP using the email verify endpoint (since we use email update endpoint to send OTP)
-      console.log('🔍 Verifying OTP before wallet operation...');
-      try {
-        await UserManagementService.verifyEmailUpdate({
-          sessionId: sessionId,
-          otp: otpCode
-        });
-        console.log('✅ OTP verified successfully');
-      } catch (verifyError: any) {
-        console.error('❌ OTP verification failed:', verifyError);
-        
-        // Increment failed attempts
-        const newFailedAttempts = failedAttempts + 1;
-        setFailedAttempts(newFailedAttempts);
-        
-        if (newFailedAttempts >= 5) {
-          setShowAccountBlockedModal(true);
-        } else {
-          setError('The code you entered is incorrect. Please try again.');
-        }
-        
-        // Clear OTP inputs on error
-        setOtp(['', '', '', '', '', '']);
-        setIsLoading(false);
-        return; // Stop here if OTP verification fails
-      }
-      
-      // OTP verified successfully, now proceed with wallet activation/deactivation
-      console.log('🔍 Proceeding with wallet operation:', action);
+      // Backend now handles OTP verification directly, so we just call activate/deactivate
+      console.log('🔍 Proceeding with wallet operation:', action, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
       if (action === 'activate') {
-        await WalletService.activateWallet({ otp: otpCode });
-        console.log('✅ Wallet activated successfully');
+        await WalletService.activateWallet({ otp: otpCode }, subWalletId);
+        console.log('✅ Wallet activated successfully', isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
       } else {
-        await WalletService.deactivateWallet({ otp: otpCode });
-        console.log('✅ Wallet deactivated successfully');
+        await WalletService.deactivateWallet({ otp: otpCode }, subWalletId);
+        console.log('✅ Wallet deactivated successfully', isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
       }
       
       // Store the action result in localStorage for the wallet page to read
       localStorage.setItem('walletAction', action);
       localStorage.setItem('walletActionCompleted', 'true');
+      // Store sub-wallet context for wallet page to reload correctly
+      if (isSubWallet && subWalletId) {
+        localStorage.setItem('walletActionSubWalletId', subWalletId);
+        localStorage.setItem('walletActionIsSubWallet', 'true');
+        if (state?.subWalletName) {
+          localStorage.setItem('walletActionSubWalletName', state.subWalletName);
+        }
+      } else {
+        localStorage.removeItem('walletActionSubWalletId');
+        localStorage.removeItem('walletActionIsSubWallet');
+        localStorage.removeItem('walletActionSubWalletName');
+      }
       
       // Show success screen
       setShowSuccessScreen(true);
@@ -264,16 +252,34 @@ export default function WalletOTPPage() {
   };
 
   const handleChangeNumber = () => {
-    navigate('/app/services/wallet');
+    navigate('/app/services/wallet', {
+      state: {
+        subWalletId: isSubWallet ? subWalletId : undefined,
+        isSubWallet: isSubWallet,
+        subWalletName: state?.subWalletName
+      }
+    });
   };
 
   const handleModalClose = () => {
     setShowAccountBlockedModal(false);
-    navigate('/app/services/wallet');
+    navigate('/app/services/wallet', {
+      state: {
+        subWalletId: isSubWallet ? subWalletId : undefined,
+        isSubWallet: isSubWallet,
+        subWalletName: state?.subWalletName
+      }
+    });
   };
 
   const handleSuccessDone = () => {
-    navigate('/app/services/wallet');
+    navigate('/app/services/wallet', {
+      state: {
+        subWalletId: isSubWallet ? subWalletId : undefined,
+        isSubWallet: isSubWallet,
+        subWalletName: state?.subWalletName
+      }
+    });
   };
 
   const formatTime = (seconds: number) => {
@@ -358,7 +364,13 @@ export default function WalletOTPPage() {
           >
             {/* Back Button */}
             <button
-              onClick={() => navigate('/app/services/wallet')}
+              onClick={() => navigate('/app/services/wallet', {
+                state: {
+                  subWalletId: isSubWallet ? subWalletId : undefined,
+                  isSubWallet: isSubWallet,
+                  subWalletName: state?.subWalletName
+                }
+              })}
               className="absolute top-6 left-6 text-[#022466] hover:text-[#0475CC] transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

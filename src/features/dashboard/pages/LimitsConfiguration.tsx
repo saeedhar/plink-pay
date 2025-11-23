@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { Button } from '../../../components/ui/Button';
 import { LimitsService, CurrentLimits, OverallLimits, LimitsOTPRequest, LimitsResponse, LimitItem, UpdateOverallLimitsRequest, UpdateTransactionLimitsRequest } from '../../../services/limitsService';
@@ -12,6 +12,10 @@ import checkCircle from '../../../assets/check_circle.svg';
 
 const LimitsConfiguration: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { subWalletName?: string; subWalletId?: string; isSubWallet?: boolean } | null;
+  const subWalletId = state?.subWalletId;
+  const isSubWallet = state?.isSubWallet;
   const [selectedLimitType, setSelectedLimitType] = useState<'overall' | 'specific'>('overall');
   const [showLimitForm, setShowLimitForm] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -162,17 +166,42 @@ const LimitsConfiguration: React.FC = () => {
         setIsLoadingFilters(true);
         setLimitsError(null);
         
+        // Reset form fields when switching wallets to prevent showing stale data
+        setDailyLimit('');
+        setMonthlyLimit('');
+        setTransactionLimit('');
+        setDailyLimitError('');
+        setMonthlyLimitError('');
+        setTransactionLimitError('');
+        setCurrentLimits(null);
+        setOverallLimits(null);
+        setLimitsData(null);
+        
+        console.log('🔄 Loading limits for wallet:', isSubWallet ? `sub-wallet ${subWalletId}` : 'main wallet');
+        
         // Load limits data and transaction filters in parallel
+        const walletContext = isSubWallet ? subWalletId : 'main';
+        console.log('🔄 Loading limits for wallet context:', walletContext, { isSubWallet, subWalletId });
+        
         const [limitsData, filters] = await Promise.allSettled([
-          LimitsService.getLimitsData(),
+          LimitsService.getLimitsData(isSubWallet ? subWalletId : undefined),
           fetchTransactionFilters()
         ]);
         
-        console.log('🔍 API results:', { limitsData, filters });
+        console.log('🔍 API results for wallet context:', walletContext, { limitsData, filters });
         
         // Handle limits data
         if (limitsData.status === 'fulfilled') {
           const data = limitsData.value;
+          console.log('📊 Raw limits data received:', {
+            walletId: data.walletId,
+            limitsCount: data.limits?.length || 0,
+            limits: data.limits,
+            expectedWalletContext: walletContext,
+            isSubWallet,
+            subWalletId
+          });
+          
           setLimitsData(data);
           
           // Extract overall limits from the data
@@ -182,6 +211,16 @@ const LimitsConfiguration: React.FC = () => {
           const monthlyLimit = data.limits.find(limit => 
             limit.limitType === 'MONTHLY' && limit.overallLimit === true
           );
+          
+          console.log('📊 Extracted limits for wallet context:', walletContext, { 
+            dailyLimit: dailyLimit?.limitAmount, 
+            monthlyLimit: monthlyLimit?.limitAmount,
+            walletId: data.walletId,
+            isSubWallet,
+            subWalletId,
+            dailyLimitId: dailyLimit?.id,
+            monthlyLimitId: monthlyLimit?.id
+          });
           
           // Set current limits
           setCurrentLimits({
@@ -245,7 +284,7 @@ const LimitsConfiguration: React.FC = () => {
     };
 
     loadData();
-  }, []);
+  }, [isSubWallet, subWalletId]);
 
   // Clear monthly limit when switching to specific transaction mode or when selecting a transaction
   useEffect(() => {
@@ -254,6 +293,32 @@ const LimitsConfiguration: React.FC = () => {
       setMonthlyLimitError('');
     }
   }, [selectedLimitType, selectedTransaction]);
+
+  // Load current transaction limit when transaction is selected
+  useEffect(() => {
+    if (selectedLimitType === 'specific' && selectedTransaction && limitsData) {
+      const currentDailyLimit = getCurrentTransactionLimit(selectedTransaction, 'DAILY');
+      const currentMonthlyLimit = getCurrentTransactionLimit(selectedTransaction, 'MONTHLY');
+      
+      // Set the current limit based on active tab
+      if (activeTab === 'daily') {
+        setTransactionLimit(currentDailyLimit > 0 ? currentDailyLimit.toString() : '');
+      } else {
+        setMonthlyLimit(currentMonthlyLimit > 0 ? currentMonthlyLimit.toString() : '');
+      }
+      
+      console.log('🔍 Loaded current limits for transaction:', {
+        transaction: selectedTransaction,
+        daily: currentDailyLimit,
+        monthly: currentMonthlyLimit,
+        activeTab
+      });
+    } else if (selectedLimitType === 'specific' && !selectedTransaction) {
+      // Clear limits when no transaction is selected
+      setTransactionLimit('');
+      setMonthlyLimit('');
+    }
+  }, [selectedTransaction, selectedLimitType, activeTab, limitsData]);
 
   useEffect(() => {
     const root = document.getElementById('root');
@@ -484,13 +549,19 @@ const LimitsConfiguration: React.FC = () => {
       
       // OTP verified, now update limits
         if (selectedLimitType === 'overall') {
-          // Update overall limits
+          // Update overall limits - only include non-empty values
           const updateRequest: UpdateOverallLimitsRequest = {
-            dailyLimit: parseFloat(dailyLimit),
-            monthlyLimit: parseFloat(monthlyLimit)
+            dailyLimit: dailyLimit && dailyLimit.trim() ? parseFloat(dailyLimit) : undefined,
+            monthlyLimit: monthlyLimit && monthlyLimit.trim() ? parseFloat(monthlyLimit) : undefined
           };
           
-          const updateResult = await LimitsService.updateOverallLimits(updateRequest);
+          // Validate that at least one limit is provided
+          if (!updateRequest.dailyLimit && !updateRequest.monthlyLimit) {
+            throw new Error('At least one of daily or monthly limit must be provided');
+          }
+          
+          console.log('🔍 Updating overall limits:', updateRequest, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
+          const updateResult = await LimitsService.updateOverallLimits(updateRequest, isSubWallet ? subWalletId : undefined);
           console.log('✅ Overall limits updated:', updateResult);
         } else {
         // Update transaction-specific limits based on active tab
@@ -516,12 +587,72 @@ const LimitsConfiguration: React.FC = () => {
           activeTab
         });
           
-          const updateResult = await LimitsService.updateTransactionLimits(updateRequest);
+          const updateResult = await LimitsService.updateTransactionLimits(updateRequest, isSubWallet ? subWalletId : undefined);
           console.log('✅ Transaction limits updated:', updateResult);
         }
       
       // Clear session ID
       emailUpdateSessionId.current = null;
+      
+      // Reload limits data to reflect the changes
+      console.log('🔄 Reloading limits data after successful update...');
+      try {
+        const [limitsData] = await Promise.allSettled([
+          LimitsService.getLimitsData(isSubWallet ? subWalletId : undefined)
+        ]);
+        
+        if (limitsData.status === 'fulfilled') {
+          const data = limitsData.value;
+          setLimitsData(data); // Update limitsData state - this will trigger useEffect to update current limits
+          
+          // Extract overall limits
+          const dailyLimitItem = data.limits.find(limit => 
+            limit.limitType === 'DAILY' && limit.overallLimit === true
+          );
+          const monthlyLimitItem = data.limits.find(limit => 
+            limit.limitType === 'MONTHLY' && limit.overallLimit === true
+          );
+          
+          setCurrentLimits({
+            dailyLimit: dailyLimitItem?.limitAmount || 0,
+            monthlyLimit: monthlyLimitItem?.limitAmount || 0,
+            transactionLimit: 0,
+            currency: 'SAR',
+            remainingDaily: dailyLimitItem?.remainingLimit || 0,
+            remainingMonthly: monthlyLimitItem?.remainingLimit || 0
+          });
+          
+          // Update form values with new limits
+          setDailyLimit((dailyLimitItem?.limitAmount || 0).toString());
+          if (selectedLimitType === 'overall') {
+            setMonthlyLimit((monthlyLimitItem?.limitAmount || 0).toString());
+          }
+          
+          // If transaction-specific limit was updated, reload the current transaction limit
+          if (selectedLimitType === 'specific' && selectedTransaction) {
+            const currentDailyLimit = getCurrentTransactionLimit(selectedTransaction, 'DAILY');
+            const currentMonthlyLimit = getCurrentTransactionLimit(selectedTransaction, 'MONTHLY');
+            
+            // Update form values based on active tab
+            if (activeTab === 'daily') {
+              setTransactionLimit(currentDailyLimit > 0 ? currentDailyLimit.toString() : '');
+            } else {
+              setMonthlyLimit(currentMonthlyLimit > 0 ? currentMonthlyLimit.toString() : '');
+            }
+            
+            console.log('✅ Transaction limits reloaded:', {
+              transaction: selectedTransaction,
+              daily: currentDailyLimit,
+              monthly: currentMonthlyLimit
+            });
+          }
+          
+          console.log('✅ Limits data reloaded:', data);
+        }
+      } catch (reloadError) {
+        console.error('⚠️ Failed to reload limits data:', reloadError);
+        // Continue to show success even if reload fails
+      }
         
         // Show success screen
         setShowOTP(false);
@@ -586,8 +717,78 @@ const LimitsConfiguration: React.FC = () => {
     await requestOTP();
   };
 
-  const handleSuccessDone = () => {
-    navigate('/app/services/wallet');
+  const handleSuccessDone = async () => {
+    // Reload limits data before navigating back to ensure changes are reflected
+    try {
+      console.log('🔄 Reloading limits data after success...');
+      setIsLoadingLimits(true);
+      const [limitsData, filters] = await Promise.allSettled([
+        LimitsService.getLimitsData(isSubWallet ? subWalletId : undefined),
+        fetchTransactionFilters()
+      ]);
+      
+      if (limitsData.status === 'fulfilled') {
+        const data = limitsData.value;
+        setLimitsData(data);
+        
+        // Extract overall limits
+          const dailyLimit = data.limits.find(limit => 
+            limit.limitType === 'DAILY' && limit.overallLimit === true
+          );
+          const monthlyLimit = data.limits.find(limit => 
+            limit.limitType === 'MONTHLY' && limit.overallLimit === true
+          );
+          
+          setCurrentLimits({
+            dailyLimit: dailyLimit?.limitAmount || 0,
+            monthlyLimit: monthlyLimit?.limitAmount || 0,
+            transactionLimit: 0,
+            currency: 'SAR',
+            remainingDaily: dailyLimit?.remainingLimit || 0,
+            remainingMonthly: monthlyLimit?.remainingLimit || 0
+          });
+          
+          // Update form values
+          setDailyLimit((dailyLimit?.limitAmount || 0).toString());
+          if (selectedLimitType === 'overall') {
+            setMonthlyLimit((monthlyLimit?.limitAmount || 0).toString());
+          }
+          
+          // If transaction-specific limit was updated, reload the current transaction limit
+          if (selectedLimitType === 'specific' && selectedTransaction) {
+            const currentDailyLimit = getCurrentTransactionLimit(selectedTransaction, 'DAILY');
+            const currentMonthlyLimit = getCurrentTransactionLimit(selectedTransaction, 'MONTHLY');
+            
+            // Update form values based on active tab
+            if (activeTab === 'daily') {
+              setTransactionLimit(currentDailyLimit > 0 ? currentDailyLimit.toString() : '');
+            } else {
+              setMonthlyLimit(currentMonthlyLimit > 0 ? currentMonthlyLimit.toString() : '');
+            }
+            
+            console.log('✅ Transaction limits reloaded:', {
+              transaction: selectedTransaction,
+              daily: currentDailyLimit,
+              monthly: currentMonthlyLimit
+            });
+          }
+          
+          console.log('✅ Limits data reloaded after success');
+        }
+      } catch (error) {
+        console.error('⚠️ Error reloading limits:', error);
+      } finally {
+        setIsLoadingLimits(false);
+      }
+    
+    // Navigate back after data is reloaded
+    navigate('/app/services/wallet', {
+      state: {
+        subWalletId: isSubWallet ? subWalletId : undefined,
+        isSubWallet: isSubWallet,
+        subWalletName: state?.subWalletName
+      }
+    });
   };
 
   // Filter transaction types based on search query
@@ -614,7 +815,13 @@ const LimitsConfiguration: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/app/services/wallet');
+    navigate('/app/services/wallet', {
+      state: {
+        subWalletId: isSubWallet ? subWalletId : undefined,
+        isSubWallet: isSubWallet,
+        subWalletName: state?.subWalletName
+      }
+    });
   };
 
   const formatTime = (seconds: number) => {
@@ -787,7 +994,7 @@ const LimitsConfiguration: React.FC = () => {
     <div className="dashboard-container">
       <Sidebar />
       <div className="main-content">
-        <Header />
+        <Header subWalletId={subWalletId} isSubWallet={isSubWallet} />
         <div className="dashboard-content">
           <h1 className="dashboard-title">Wallet</h1>
 
@@ -796,7 +1003,11 @@ const LimitsConfiguration: React.FC = () => {
               <div className="wallet-header-icon">
                 <img src={limitsIcon2} alt="Limits Configuration" className="wallet-header-icon-img" />
               </div>
-              <h2 className="limits-header-title">Limits Configuration</h2>
+              <h2 className="limits-header-title">
+                {isSubWallet && state?.subWalletName 
+                  ? `${state.subWalletName} - Limits Configuration`
+                  : 'Limits Configuration'}
+              </h2>
             </div>
 
             {showConfirmation ? (
@@ -1151,7 +1362,7 @@ const LimitsConfiguration: React.FC = () => {
                             <span>Current Limit</span>
                           </div>
                           <span className="current-limit-value">
-                            {isLoadingLimits ? 'Loading...' : formatCurrency(getCurrentTransactionLimit(selectedTransaction || '', activeTab === 'daily' ? 'DAILY' : 'MONTHLY'))}
+                            {isLoadingLimits ? 'Loading...' : formatCurrency(getCurrentTransactionLimit(selectedTransaction || '', 'MONTHLY'))}
                           </span>
                         </div>
 

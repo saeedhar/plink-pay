@@ -1,11 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import balanceIcon from '../../../assets/dashboard/balance.svg';
 import profileIcon from '../../../assets/dashboard/profile.svg';
 import notificationsIcon from '../../../assets/dashboard/Notifications.svg';
 import ProfileDropdown from './ProfileDropdown';
 import { TransactionService, WalletBalanceResponse } from '../../../services/transactionService';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  subWalletId?: string;
+  isSubWallet?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ subWalletId, isSubWallet }) => {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState<WalletBalanceResponse | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
@@ -20,15 +26,16 @@ const Header: React.FC = () => {
     setIsProfileDropdownOpen(false);
   };
 
-  // Fetch wallet balance on component mount
+  // Fetch wallet balance on component mount or when sub-wallet changes
   useEffect(() => {
     const loadWalletBalance = async () => {
       try {
         setIsLoadingBalance(true);
         setBalanceError(null);
-        const balance = await TransactionService.getWalletBalance();
+        // Pass subWalletId if viewing a sub-wallet
+        const balance = await TransactionService.getWalletBalance(isSubWallet ? subWalletId : undefined);
         setWalletBalance(balance);
-        console.log('🔍 Header: Wallet balance loaded:', balance);
+        console.log('🔍 Header: Wallet balance loaded:', balance, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
       } catch (error) {
         console.error('Error loading wallet balance in header:', error);
         setBalanceError(error instanceof Error ? error.message : 'Failed to load balance');
@@ -38,7 +45,21 @@ const Header: React.FC = () => {
     };
 
     loadWalletBalance();
-  }, []);
+    
+    // Also reload when component becomes visible (handles back navigation)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 Header: Page visible again, reloading balance...');
+        loadWalletBalance();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isSubWallet, subWalletId]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

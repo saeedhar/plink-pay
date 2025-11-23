@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { TransactionService, TransactionSummary } from '../../../services/transactionService';
 
@@ -15,6 +15,10 @@ interface OnHoldTransaction {
 
 const OnHoldBalance: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { subWalletName?: string; subWalletId?: string; isSubWallet?: boolean } | null;
+  const subWalletId = state?.subWalletId;
+  const isSubWallet = state?.isSubWallet;
   const [onHoldTransactions, setOnHoldTransactions] = useState<OnHoldTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,22 +36,23 @@ const OnHoldBalance: React.FC = () => {
     };
   }, []);
 
-  // Load on-hold transactions and balance
+  // Load on-hold transactions and balance on mount or when sub-wallet changes
   useEffect(() => {
     loadOnHoldData();
-  }, []);
+  }, [isSubWallet, subWalletId]);
 
   const loadOnHoldData = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Fetch wallet balance to get total on-hold balance
-      const balanceData = await TransactionService.getWalletBalance();
+      // Fetch wallet balance to get total on-hold balance (pass subWalletId if viewing a sub-wallet)
+      const balanceData = await TransactionService.getWalletBalance(isSubWallet ? subWalletId : undefined);
       setTotalOnHoldBalance(balanceData.onHoldBalance || 0);
 
       // Fetch on-hold transactions (status: PENDING indicates on-hold)
       // Try PENDING first, as that's the default status for transactions on hold
+      // Pass subWalletId if viewing a sub-wallet
       let transactionData;
       try {
         transactionData = await TransactionService.getTransactionHistory(
@@ -56,7 +61,8 @@ const OnHoldBalance: React.FC = () => {
           undefined, // startDate
           undefined, // endDate
           undefined, // transactionType
-          'PENDING' // status - filter for pending/on-hold transactions
+          'PENDING', // status - filter for pending/on-hold transactions
+          isSubWallet ? subWalletId : undefined // subWalletId
         );
       } catch (err) {
         // If PENDING doesn't work, try ON_HOLD
@@ -67,7 +73,8 @@ const OnHoldBalance: React.FC = () => {
           undefined,
           undefined,
           undefined,
-          'ON_HOLD'
+          'ON_HOLD',
+          isSubWallet ? subWalletId : undefined // subWalletId
         );
       }
 
@@ -115,7 +122,7 @@ const OnHoldBalance: React.FC = () => {
     <div className="dashboard-container">
       <Sidebar />
       <div className="main-content">
-        <Header />
+        <Header subWalletId={subWalletId} isSubWallet={isSubWallet} />
         <div className="dashboard-content">
           <h1 className="dashboard-title">On Hold Balance</h1>
           

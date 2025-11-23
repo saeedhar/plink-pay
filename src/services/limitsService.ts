@@ -59,11 +59,6 @@ export interface UpdateLimitsRequest {
   transactionLimit?: number;
 }
 
-export interface UpdateTransactionLimitsRequest {
-  transactionType: string;
-  limit: number;
-}
-
 export interface LimitsOTPRequest {
   action: 'update_limits';
   dailyLimit?: number;
@@ -73,8 +68,8 @@ export interface LimitsOTPRequest {
 }
 
 export interface UpdateOverallLimitsRequest {
-  dailyLimit: number;
-  monthlyLimit: number;
+  dailyLimit?: number;
+  monthlyLimit?: number;
 }
 
 export interface UpdateTransactionLimitsRequest {
@@ -121,11 +116,15 @@ export class LimitsService {
 
   /**
    * Get raw limits data from backend
+   * @param subWalletId Optional sub-wallet ID. If provided, returns limits for that sub-wallet (inherits from main wallet)
    */
-  static async getLimitsData(): Promise<LimitsResponse> {
+  static async getLimitsData(subWalletId?: string): Promise<LimitsResponse> {
     try {
-      console.log('🔍 Fetching limits data from backend...');
-      const data = await API.get('/api/v1/wallet/limits');
+      console.log('🔍 Fetching limits data from backend...', subWalletId ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
+      const url = subWalletId 
+        ? `/api/v1/wallet/limits?subWalletId=${subWalletId}`
+        : '/api/v1/wallet/limits';
+      const data = await API.get(url);
       console.log('✅ Limits data received:', data);
       return data;
     } catch (error) {
@@ -136,11 +135,33 @@ export class LimitsService {
 
   /**
    * Update overall limits
+   * @param request Update request
+   * @param subWalletId Optional sub-wallet ID. If provided, updates limits for that sub-wallet (inherits from main wallet)
    */
-  static async updateOverallLimits(request: UpdateOverallLimitsRequest): Promise<UpdateLimitsResult> {
+  static async updateOverallLimits(request: UpdateOverallLimitsRequest, subWalletId?: string): Promise<UpdateLimitsResult> {
     try {
-      console.log('🔍 Updating overall limits:', request);
-      const data = await API.put('/api/v1/limits/overall', request);
+      console.log('🔍 Updating overall limits:', request, subWalletId ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
+      const url = subWalletId 
+        ? `/api/v1/limits/overall?subWalletId=${subWalletId}`
+        : '/api/v1/limits/overall';
+      
+      // Remove undefined/null fields to avoid sending null values
+      // But ensure at least one field is present
+      const cleanRequest: any = {};
+      if (request.dailyLimit !== undefined && request.dailyLimit !== null && !isNaN(request.dailyLimit)) {
+        cleanRequest.dailyLimit = request.dailyLimit;
+      }
+      if (request.monthlyLimit !== undefined && request.monthlyLimit !== null && !isNaN(request.monthlyLimit)) {
+        cleanRequest.monthlyLimit = request.monthlyLimit;
+      }
+      
+      // Validate that at least one limit is provided
+      if (Object.keys(cleanRequest).length === 0) {
+        throw new Error('At least one of dailyLimit or monthlyLimit must be provided');
+      }
+      
+      console.log('📤 Sending overall limits request:', cleanRequest);
+      const data = await API.put(url, cleanRequest);
       console.log('✅ Overall limits updated:', data);
       return data;
     } catch (error) {
@@ -151,11 +172,16 @@ export class LimitsService {
 
   /**
    * Update transaction-specific limits
+   * @param request Update request
+   * @param subWalletId Optional sub-wallet ID. If provided, updates limits for that sub-wallet (inherits from main wallet)
    */
-  static async updateTransactionLimits(request: UpdateTransactionLimitsRequest): Promise<UpdateLimitsResult> {
+  static async updateTransactionLimits(request: UpdateTransactionLimitsRequest, subWalletId?: string): Promise<UpdateLimitsResult> {
     try {
-      console.log('🔍 Updating transaction limits:', request);
-      const data = await API.put('/api/v1/limits/transaction', request);
+      console.log('🔍 Updating transaction limits:', request, subWalletId ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
+      const url = subWalletId 
+        ? `/api/v1/limits/transaction?subWalletId=${subWalletId}`
+        : '/api/v1/limits/transaction';
+      const data = await API.put(url, request);
       console.log('✅ Transaction limits updated:', data);
       return data;
     } catch (error) {

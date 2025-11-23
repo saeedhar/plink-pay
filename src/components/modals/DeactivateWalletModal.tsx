@@ -5,9 +5,11 @@ interface DeactivateWalletModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  isSubWallet?: boolean;
+  subWalletName?: string;
 }
 
-export default function DeactivateWalletModal({ isOpen, onClose, onConfirm }: DeactivateWalletModalProps) {
+export default function DeactivateWalletModal({ isOpen, onClose, onConfirm, isSubWallet, subWalletName }: DeactivateWalletModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -37,12 +39,18 @@ export default function DeactivateWalletModal({ isOpen, onClose, onConfirm }: De
 
         {/* Title */}
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Deactivate E-Wallet</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">
+            {isSubWallet ? `Deactivate ${subWalletName || 'Sub-Wallet'}` : 'Deactivate E-Wallet'}
+          </h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-2">
-            Are you sure you want to deactivate your e-wallet?
+            {isSubWallet 
+              ? `Are you sure you want to deactivate ${subWalletName || 'this sub-wallet'}?`
+              : 'Are you sure you want to deactivate your e-wallet?'}
           </p>
           <p className="text-gray-700 text-base leading-relaxed">
-            By doing this, all outward transactions will be stopped, and your wallet will be marked as inactive.
+            {isSubWallet
+              ? `By doing this, all outward transactions for ${subWalletName || 'this sub-wallet'} will be stopped, and the sub-wallet will be marked as inactive.`
+              : 'By doing this, all outward transactions will be stopped, and your wallet will be marked as inactive.'}
           </p>
         </div>
 

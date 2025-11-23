@@ -31,6 +31,7 @@ export interface WalletBalanceResponse {
 export class TransactionService {
   /**
    * Get transaction history
+   * @param subWalletId Optional sub-wallet ID. If provided, returns transactions for that sub-wallet only
    */
   static async getTransactionHistory(
     page: number = 0,
@@ -38,16 +39,18 @@ export class TransactionService {
     startDate?: string,
     endDate?: string,
     transactionType?: string,
-    status?: string
+    status?: string,
+    subWalletId?: string
   ): Promise<TransactionHistoryResponse> {
     try {
-      console.log('🔍 Fetching transaction history...');
+      console.log('🔍 Fetching transaction history...', subWalletId ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
       
       const params = new URLSearchParams({
         page: page.toString(),
         size: size.toString()
       });
       
+      if (subWalletId) params.append('subWalletId', subWalletId);
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       if (transactionType) params.append('transactionType', transactionType);
@@ -64,11 +67,15 @@ export class TransactionService {
 
   /**
    * Get wallet balance
+   * @param subWalletId Optional sub-wallet ID. If provided, returns balance for that sub-wallet
    */
-  static async getWalletBalance(): Promise<WalletBalanceResponse> {
+  static async getWalletBalance(subWalletId?: string): Promise<WalletBalanceResponse> {
     try {
-      console.log('🔍 Fetching wallet balance...');
-      const data = await API.get('/api/v1/wallet/balance');
+      console.log('🔍 Fetching wallet balance...', subWalletId ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
+      const url = subWalletId 
+        ? `/api/v1/wallet/balance?subWalletId=${subWalletId}`
+        : '/api/v1/wallet/balance';
+      const data = await API.get(url);
       console.log('✅ Wallet balance received:', data);
       return data;
     } catch (error) {

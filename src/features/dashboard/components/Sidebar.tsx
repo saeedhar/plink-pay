@@ -14,6 +14,12 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const [servicesExpanded, setServicesExpanded] = useState(true);
   const [hasViewedTransactions, setHasViewedTransactions] = useState(false);
+  
+  // Get sub-wallet context from location state
+  const state = location.state as { subWalletName?: string; subWalletId?: string; isSubWallet?: boolean } | null;
+  const subWalletId = state?.subWalletId;
+  const isSubWallet = state?.isSubWallet;
+  const subWalletName = state?.subWalletName;
 
   const isActive = (path: string) => location.pathname === path;
   const isWalletActive = location.pathname === '/app/services/wallet';
@@ -67,17 +73,31 @@ const Sidebar: React.FC = () => {
       </div>
 
       <nav className="sidebar-nav">
-        <Link 
-          to="/app/dashboard" 
+        <div 
           className={`nav-item ${isActive('/app/dashboard') ? 'active' : ''}`}
+          onClick={() => navigate('/app/dashboard', {
+            state: {
+              subWalletId: isSubWallet ? subWalletId : undefined,
+              isSubWallet: isSubWallet,
+              subWalletName: subWalletName
+            }
+          })}
+          style={{ cursor: 'pointer' }}
         >
           <img src={dashboardIcon} alt="Dashboard" className="nav-icon" />
           <span>Dashboard</span>
-        </Link>
+        </div>
 
-        <Link 
-          to="/app/transactions" 
+        <div 
           className={`nav-item ${isActive('/app/transactions') ? 'active' : ''}`}
+          onClick={() => navigate('/app/transactions', {
+            state: {
+              subWalletId: isSubWallet ? subWalletId : undefined,
+              isSubWallet: isSubWallet,
+              subWalletName: subWalletName
+            }
+          })}
+          style={{ cursor: 'pointer' }}
         >
           <img src={transfersIcon} alt="Transactions" className="nav-icon" />
           <span>Transaction</span>
@@ -87,7 +107,7 @@ const Sidebar: React.FC = () => {
               <span className="badge badge-count">6</span>
             </div>
           )}
-        </Link>
+        </div>
 
         <div className={`nav-item services-item ${servicesExpanded ? 'expanded' : ''}`}>
           <div 
@@ -101,7 +121,19 @@ const Sidebar: React.FC = () => {
           
           {servicesExpanded && (
             <div className="services-submenu">
-              <Link to="/app/services/wallet" className={`submenu-item ${isWalletActive ? 'active' : ''}`}>Wallet</Link>
+              <div 
+                className={`submenu-item ${isWalletActive ? 'active' : ''}`}
+                onClick={() => navigate('/app/services/wallet', {
+                  state: {
+                    subWalletId: isSubWallet ? subWalletId : undefined,
+                    isSubWallet: isSubWallet,
+                    subWalletName: subWalletName
+                  }
+                })}
+                style={{ cursor: 'pointer' }}
+              >
+                Wallet
+              </div>
               <div className="submenu-item">Transfer</div>
               <div className="submenu-item">Credit</div>
               <div className="submenu-item">Bills</div>

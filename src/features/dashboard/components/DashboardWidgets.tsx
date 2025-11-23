@@ -27,15 +27,16 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ subWalletName, subW
 
   const periods = ['Last week', 'Last month', 'Last year'];
 
-  // Fetch wallet balance on component mount
+  // Fetch wallet balance on component mount or when sub-wallet changes
   useEffect(() => {
     const loadWalletBalance = async () => {
       try {
         setIsLoadingBalance(true);
         setBalanceError(null);
-        const balance = await TransactionService.getWalletBalance();
+        // Pass subWalletId if viewing a sub-wallet
+        const balance = await TransactionService.getWalletBalance(isSubWallet ? subWalletId : undefined);
         setWalletBalance(balance);
-        console.log('🔍 Wallet balance loaded:', balance);
+        console.log('🔍 Wallet balance loaded:', balance, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
       } catch (error) {
         console.error('Error loading wallet balance:', error);
         setBalanceError(error instanceof Error ? error.message : 'Failed to load balance');
@@ -45,7 +46,21 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ subWalletName, subW
     };
 
     loadWalletBalance();
-  }, []);
+    
+    // Also reload when component becomes visible (handles back navigation)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 DashboardWidgets: Page visible again, reloading balance...');
+        loadWalletBalance();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isSubWallet, subWalletId]);
 
   // Fetch sub-wallet data when sub-wallet is selected
   useEffect(() => {
@@ -71,6 +86,20 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ subWalletName, subW
     };
 
     loadSubWalletData();
+    
+    // Also reload when component becomes visible (handles back navigation)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isSubWallet && subWalletId) {
+        console.log('🔄 DashboardWidgets: Page visible again, reloading sub-wallet data...');
+        loadSubWalletData();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [isSubWallet, subWalletId]);
 
   // Memoized chart data to prevent re-renders
@@ -130,7 +159,13 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ subWalletName, subW
     <div className="dashboard-widgets">
       {/* Balance Card */}
       <div className="widget balance-card">
-        <div className="on-hold-balance" onClick={() => navigate('/app/onhold-balance')}>
+        <div className="on-hold-balance" onClick={() => navigate('/app/onhold-balance', {
+          state: {
+            subWalletId: isSubWallet ? subWalletId : undefined,
+            isSubWallet: isSubWallet,
+            subWalletName: subWalletName
+          }
+        })}>
           <div className="on-hold-icon">
             <img src={onholdIcon} alt="On Hold" className="on-hold-icon-img" />
           </div>

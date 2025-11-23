@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { FiFilter, FiRefreshCw, FiDownload, FiSearch } from 'react-icons/fi';
 import { fetchTransactionFilters, type TransactionFilter } from '../../../services/transactionFiltersService';
 import { TransactionService, TransactionSummary } from '../../../services/transactionService';
 
 const Transactions: React.FC = () => {
+  const location = useLocation();
+  const state = location.state as { subWalletName?: string; subWalletId?: string; isSubWallet?: boolean } | null;
+  const subWalletId = state?.subWalletId;
+  const isSubWallet = state?.isSubWallet;
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionSummary | null>(null);
   const [filters, setFilters] = useState({
     status: '',
@@ -41,15 +46,21 @@ const Transactions: React.FC = () => {
     loadFilters();
   }, []);
 
-  // Fetch transactions on mount and when page changes
+  // Fetch transactions on mount and when page changes or sub-wallet changes
   useEffect(() => {
     const loadTransactions = async () => {
       try {
         setIsLoadingTransactions(true);
         setTransactionsError(null);
+        // Pass subWalletId if viewing a sub-wallet
         const response = await TransactionService.getTransactionHistory(
           pagination.currentPage,
-          pagination.pageSize
+          pagination.pageSize,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          isSubWallet ? subWalletId : undefined
         );
         setTransactions(response.transactions);
         setPagination(prev => ({
@@ -57,7 +68,7 @@ const Transactions: React.FC = () => {
           totalPages: response.totalPages,
           totalElements: response.totalElements
         }));
-        console.log('🔍 Transactions loaded:', response);
+        console.log('🔍 Transactions loaded:', response, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
       } catch (error) {
         console.error('Error loading transactions:', error);
         setTransactionsError(error instanceof Error ? error.message : 'Failed to load transactions');
@@ -67,7 +78,7 @@ const Transactions: React.FC = () => {
     };
 
     loadTransactions();
-  }, [pagination.currentPage, pagination.pageSize]);
+  }, [pagination.currentPage, pagination.pageSize, isSubWallet, subWalletId]);
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -135,7 +146,7 @@ const Transactions: React.FC = () => {
     <div className="dashboard-container">
       <Sidebar />
       <div className="main-content">
-        <Header />
+        <Header subWalletId={subWalletId} isSubWallet={isSubWallet} />
         <div className="transactions-content">
           <h1 className="transactions-page-title">Transactions</h1>
           
