@@ -8,6 +8,7 @@ import WhiteLogo from "../../../assets/select your buisness type assets/white-lo
 import PasswordIcon from "../../../assets/password.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
+import OnboardingFooter from "../components/OnboardingFooter";
 import { validatePassword, validatePasswordConfirmation, getPasswordRequirements } from "../../../utils/validators";
 import { setPassword as setPasswordAPI } from "../../../services/onboardingAPI";
 
@@ -234,13 +235,9 @@ export default function PasswordSetup() {
               >
                 Next
               </SignupButton>
-
-              {/* Footer Copyright */}
-              <div className="mt-12 text-center text-gray-500 text-sm">
-                © 2025 Tyaseer Pay. All rights reserved
-              </div>
             </div>
           </div>
+          <OnboardingFooter />
         </main>
       </div>
     </div>

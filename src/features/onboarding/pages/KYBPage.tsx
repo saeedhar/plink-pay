@@ -9,6 +9,7 @@ import WhiteLogo from "../../../assets/select your buisness type assets/white-lo
 import KYBIcon from "../../../assets/KYB.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
+import OnboardingFooter from "../components/OnboardingFooter";
 import { CustomSelect } from "../components/CustomSelect";
 import { MultiSelect } from "../../../components/ui/MultiSelect";
 import { validateKYBField, validateOtherText } from "../../../utils/validators";
@@ -518,15 +519,11 @@ export default function KYBPage() {
                       'Next'
                     )}
                   </button>
-
-                  {/* Footer Copyright */}
-                  <div className="mt-8 text-center text-gray-500 text-sm">
-                    © 2025 Tyaseer Pay. All rights reserved
-                  </div>
                 </div>
               </div>
               </div>
             </div>
+          <OnboardingFooter />
           </main>
         </div>
       </div>

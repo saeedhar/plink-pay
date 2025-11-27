@@ -4,6 +4,7 @@ import { Stepper } from "../../../components/ui/Stepper";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
+import OnboardingFooter from "../components/OnboardingFooter";
 import { DevScenarioBar } from "../../../dev/DevScenarioBar";
 
 export default function NafathPage() {
@@ -38,11 +39,14 @@ export default function NafathPage() {
         />
 
         {/* Right content - Background for modals */}
-        <main className="flex-1 bg-white rounded-tl-[40px] relative flex items-center justify-center">
+        <main className="flex-1 bg-white rounded-tl-[40px] relative flex flex-col">
+          <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <img src={HeroLogo} alt="" className="h-16 w-16 mx-auto mb-4 opacity-20" />
             <p className="text-gray-400">Processing Nafath verification...</p>
           </div>
+          </div>
+          <OnboardingFooter />
         </main>
       </div>
       

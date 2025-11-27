@@ -12,7 +12,7 @@ import { logout } from '../../../services/realBackendAPI';
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [servicesExpanded, setServicesExpanded] = useState(true);
+  const [servicesExpanded, setServicesExpanded] = useState(false);
   const [hasViewedTransactions, setHasViewedTransactions] = useState(false);
   
   // Get sub-wallet context from location state
@@ -46,6 +46,18 @@ const Sidebar: React.FC = () => {
       setServicesExpanded(false);
     }
   }, [isAccountSettingsPage]);
+
+  // Keep Services closed on dashboard and transactions pages, expand on services pages
+  useEffect(() => {
+    const isDashboardPage = location.pathname === '/app/dashboard';
+    const isServicesPage = location.pathname.startsWith('/app/services/') || location.pathname.startsWith('/services/');
+    
+    if (isDashboardPage || isTransactionsPage) {
+      setServicesExpanded(false);
+    } else if (isServicesPage) {
+      setServicesExpanded(true);
+    }
+  }, [location.pathname, isTransactionsPage]);
 
   const handleLogout = async () => {
     try {

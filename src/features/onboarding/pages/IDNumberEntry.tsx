@@ -9,6 +9,7 @@ import WhiteLogo from "../../../assets/select your buisness type assets/white-lo
 import IDIcon from "../../../assets/IDNum.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
+import OnboardingFooter from "../components/OnboardingFooter";
 import { validateSaudiId, formatIdNumber, getIdType } from "../../../utils/validators";
 import { verifyID, IDVerificationError, IDMismatchError, localScreen, tahaquq } from "../../../services/onboardingAPI";
 import { DevScenarioBar } from "../../../dev/DevScenarioBar";
@@ -279,13 +280,9 @@ export default function IDNumberEntry() {
                 >
                   Next
                 </SignupButton>
-
-                {/* Footer Copyright */}
-                <div className="mt-12 text-center text-gray-500 text-sm">
-                  © 2025 Tyaseer Pay. All rights reserved
-                </div>
               </div>
             </div>
+          <OnboardingFooter />
           </main>
         </div>
       </div>

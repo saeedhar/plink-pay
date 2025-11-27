@@ -53,7 +53,6 @@ const Dashboard: React.FC = () => {
         <div className="dashboard-content">
           <h1 className="dashboard-title">Dashboard</h1>
           <DashboardWidgets subWalletName={subWalletName} subWalletId={subWalletId} isSubWallet={isSubWallet} />
-          <div className="transactions-separator"></div>
           <TransactionsTable subWalletId={subWalletId} isSubWallet={isSubWallet} />
         </div>
       </div>

@@ -9,7 +9,8 @@ import WhiteLogo from "../../../assets/select your buisness type assets/white-lo
 import CRIcon from "../../../assets/CR-Num.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
-import { validateCRNumber, formatCRNumber } from "../../../utils/validators";
+import OnboardingFooter from "../components/OnboardingFooter";
+import { validateCRNumber, convertArabicToEnglish } from "../../../utils/validators";
 import { verifyCR, CRVerificationError } from "../../../services/onboardingAPI";
 import { DevScenarioBar } from "../../../dev/DevScenarioBar";
 
@@ -32,13 +33,13 @@ export default function CRNumberEntry() {
     // Mark that user has interacted
     setHasUserInteracted(true);
     
-    // Format as user types and convert Arabic numerals
-    const formatted = formatCRNumber(value);
-    setCrNumber(formatted);
+    // Allow only digits (convert Arabic numerals) and limit to 10 chars
+    const digitsOnly = convertArabicToEnglish(value).replace(/\D/g, "").substring(0, 10);
+    setCrNumber(digitsOnly);
     setError("");
     
     // Update state
-    dispatch({ type: 'SET_CR_NUMBER', payload: formatted });
+    dispatch({ type: 'SET_CR_NUMBER', payload: digitsOnly });
   };
 
   const handleNext = async () => {
@@ -145,7 +146,7 @@ export default function CRNumberEntry() {
                     value={crNumber}
                     onChange={(e) => handleCRChange(e.target.value)}
                     hasError={!!(error || shouldShowValidationError)}
-                    maxLength={12}
+                    maxLength={10}
                     autoComplete="off"
                     error={error || shouldShowValidationError || undefined}
                     addLeftPadding={false}
@@ -165,13 +166,9 @@ export default function CRNumberEntry() {
                 >
                   Next
                 </SignupButton>
-
-                {/* Footer Copyright */}
-                <div className="mt-12 text-center text-gray-500 text-sm">
-                  © 2025 Tyaseer Pay. All rights reserved
-                </div>
               </div>
             </div>
+            <OnboardingFooter />
           </main>
         </div>
       </div>

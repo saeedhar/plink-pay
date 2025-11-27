@@ -12,6 +12,7 @@ import IndividualOwnerIcon from "../../../assets/select your buisness type asset
 import MultiOwnerIcon from "../../../assets/select your buisness type assets/Vector-2.svg?url";
 import FreelancerIcon from "../../../assets/select your buisness type assets/Vector-3.svg?url";
 import StepSidebar from "../components/StepSidebar";
+import OnboardingFooter from "../components/OnboardingFooter";
 import { BusinessTypeOption } from "../components/BusinessTypeOption";
 
 
@@ -70,7 +71,8 @@ export default function BusinessTypeSelection() {
           />
 
       {/* Right content */}
-      <main className="flex-1 bg-white p-12 rounded-tl-[40px] relative">
+      <main className="flex-1 bg-white p-12 rounded-tl-[40px] relative flex flex-col">
+        <div className="flex-1 flex">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <img src={heroLogo} alt="" className="h-12 w-12 mx-auto" />
@@ -146,12 +148,9 @@ export default function BusinessTypeSelection() {
               Sign up
             </button>
           </div>
-
-          {/* Footer Copyright */}
-          <div className="mt-12 text-center text-gray-500 text-sm">
-            © 2025 Tyaseer Pay. All rights reserved
           </div>
         </div>
+        <OnboardingFooter />
       </main>
         </div>
       </div>

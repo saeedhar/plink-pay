@@ -63,10 +63,10 @@ export default function Splash() {
 
               {/* Buttons */}
               <div className="space-y-4 flex flex-col items-center">
-                <Button onClick={handleRegisterClick}>
+                <Button onClick={handleRegisterClick} className="rounded-full">
                   Register
                 </Button>
-                <Button onClick={handleLoginClick}>
+                <Button onClick={handleLoginClick} className="rounded-full">
                   Login
                 </Button>
               </div>

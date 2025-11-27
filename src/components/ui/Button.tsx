@@ -17,7 +17,9 @@ const baseStyle: React.CSSProperties = {
   paddingBottom: '12px',
   paddingLeft: '20px',
   gap: '8px',
+  borderRadius: '15px',
 };
+
 
 export const Button: React.FC<ButtonProps> = ({
   children,
@@ -28,13 +30,13 @@ export const Button: React.FC<ButtonProps> = ({
   disabled = false,
 }) => {
   const baseClasses =
-    'rounded-full font-medium transition-all duration-200 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
+    'font-medium transition-all duration-200 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
 
   const variantClass =
     variant === 'primary'
       ? disabled
         ? 'bg-gray-300 text-gray-500'
-        : 'gradient-button text-white'
+        : 'bg-[#023A66] text-white'
       : 'bg-gray-200 text-gray-700 hover:bg-gray-300';
 
   const disabledClasses = disabled ? 'opacity-60 cursor-not-allowed' : '';
@@ -42,11 +44,14 @@ export const Button: React.FC<ButtonProps> = ({
   const hoverClasses =
     variant === 'primary' && !disabled ? 'hover:shadow-lg' : '';
 
+  const isRoundedFull = className.includes('rounded-full');
+  
   const style: React.CSSProperties = {
     ...baseStyle,
     ...(variant === 'primary' && !disabled
       ? { border: 'none' }
       : {}),
+    ...(isRoundedFull ? { borderRadius: '9999px' } : {}),
   };
 
   return (

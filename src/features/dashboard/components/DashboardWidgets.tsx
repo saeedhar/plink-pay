@@ -194,112 +194,13 @@ const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ subWalletName, subW
             isLoadingBalance ? 'Loading...' : balanceError ? 'Error' : walletBalance ? TransactionService.formatCurrency(walletBalance.availableBalance, walletBalance.currency) : '0.00 SAR'
           )}
         </div>
-        <div className="balance-change">
-          <img src={upIcon} alt="Up" className="change-icon" />
-          <span className="change-text positive">+0.5%</span>
-        </div>
+       
         <button className="wallets-button" onClick={() => navigate('/app/services/wallet/subwallet')}>
           <img src={walletIcon} alt="Wallet" className="button-icon" />
           Wallets
         </button>
       </div>
 
-      {/* Activity Graph */}
-      <div className="widget activity-graph">
-        <div className="widget-header">
-          <h3 className="widget-title">Activity</h3>
-          <div className="dropdown-container">
-            <div 
-              className="dropdown" 
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            >
-              <span>{selectedPeriod}</span>
-              <div className={`dropdown-icon ${isDropdownOpen ? 'open' : ''}`}>▼</div>
-            </div>
-            {isDropdownOpen && (
-              <div className="dropdown-menu">
-                {periods.map((period) => (
-                  <div 
-                    key={period}
-                    className="dropdown-item"
-                    onClick={() => handlePeriodChange(period)}
-                  >
-                    {period}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="graph-container">
-          <div className="line-graph">
-             <VictoryChart
-               height={180}
-               padding={{ left: 40, right: 40, top: 40, bottom: 60 }}
-               domainPadding={{ x: 30, y: 20 }}
-               containerComponent={
-                 <VictoryVoronoiContainer
-                   voronoiDimension="x"
-                   labels={({ datum }) => `$${datum.y}.00`}
-                   labelComponent={
-                     <VictoryTooltip
-                       flyoutStyle={{
-                         fill: '#10B981',
-                         stroke: 'none',
-                         strokeWidth: 0
-                       }}
-                       style={{
-                         fill: 'white',
-                         fontSize: 12,
-                         fontWeight: 600
-                       }}
-                       cornerRadius={6}
-                       pointerLength={8}
-                     />
-                   }
-                 />
-               }
-             >
-              <VictoryAxis
-                dependentAxis
-                style={{
-                  axis: { stroke: 'transparent' },
-                  ticks: { stroke: 'transparent' },
-                  tickLabels: { fill: 'transparent' }
-                }}
-              />
-              <VictoryAxis
-                style={{
-                  axis: { stroke: 'transparent' },
-                  ticks: { stroke: 'transparent' },
-                  tickLabels: { 
-                    fill: '#9CA3AF',
-                    fontSize: 12,
-                    fontWeight: 500
-                  }
-                }}
-              />
-              <VictoryLine
-                data={chartData}
-                style={chartStyle}
-                interpolation="cardinal"
-                animate={{
-                  duration: 300,
-                  onLoad: { duration: 300 }
-                }}
-              />
-            </VictoryChart>
-          </div>
-        </div>
-      </div>
-
-      {/* Spending Breakdown */}
-      <div className="widget spending-breakdown">
-        <h3 className="widget-title">Spending Breakdown</h3>
-        <div className="pie-chart">
-          <img src={placeholderChart} alt="Spending Chart" className="chart-image" />
-        </div>
-      </div>
     </div>
   );
 };

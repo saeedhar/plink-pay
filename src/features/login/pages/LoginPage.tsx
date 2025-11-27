@@ -180,7 +180,7 @@ export default function LoginPage() {
         setError('Unable to connect to server. Please check your connection.');
       } else {
         // For authentication errors (401, 403, user not found, etc.), show the specific message
-        setError('User not found. Please check your mobile number or UNN');
+        setError('User not found. Please check your ID/UNN or Password');
       }
     } finally {
       setIsLoading(false);
@@ -205,33 +205,61 @@ export default function LoginPage() {
       <div className="relative z-10 min-h-screen flex items-center justify-center p-8">
         <div className="w-full max-w-xl">
           {/* Logo */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-20">
             <div className="flex items-center justify-center mb-4">
-              <img src={logo} alt="Tyaseer Pay" className="h-18 w-auto" />
+              <img src={logo} alt="Tyaseer Pay" className="h-32 w-auto" />
             </div>
           </div>
 
           {/* Login Card */}
           <div 
-            className="rounded-3xl p-8 shadow-lg relative"
+            className="rounded-3xl shadow-lg relative"
             style={{
-              background: 'linear-gradient(to bottom right, #E0F5FF, #F8FAFC)',
-              borderRight: '2px solid #022466',
-              borderBottom: '2px solid #022466'
+              padding: '2px',
+              background: 'linear-gradient(136.42deg, #FFFFFF 39.19%, #022466 65.1%)'
             }}
           >
+            <div 
+              className="rounded-3xl p-8 relative"
+              style={{
+                background: 'linear-gradient(to bottom right, #E0F5FF, #F8FAFC)'
+              }}
+            >
             {/* User Icon */}
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg">
-                <img src={profileIcon} alt="Profile" className="w-full h-full" />
-              </div>
+            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
+                <img src={profileIcon} alt="Profile" className="w-full h-20" />
+
             </div>
 
             {/* Form */}
             <form onSubmit={handleLogin} className="pt-8">
               <div className="text-center mb-8">
-                <h2 className="text-2xl text-gray-800 mb-2">Sign In</h2>
-                <p className="text-black">Enter your ID/UNN</p>
+                <h2 
+                  className="text-gray-800 mb-2"
+                  style={{
+                    fontFamily: 'Manrope',
+                    fontWeight: 600,
+                    fontSize: '28px',
+                    lineHeight: '130%',
+                    letterSpacing: '0%',
+                    textAlign: 'center'
+                  }}
+                >
+                  Sign In
+                </h2>
+                <p 
+                  className="text-black"
+                  style={{
+                    fontFamily: 'Manrope',
+                    fontWeight: 300,
+                    fontSize: '18px',
+                    lineHeight: '130%',
+                    letterSpacing: '0%',
+                    textAlign: 'center'
+                  }}
+                >
+                  Enter your Information Number
+                </p>
               </div>
 
               {/* Error Message */}
@@ -251,7 +279,7 @@ export default function LoginPage() {
                 <div className="flex justify-center">
                   <div className="w-full max-w-sm">
                     <label htmlFor="idUnn" className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number or ID/UNN
+                      ID/UNN
                     </label>
                     <input
                       type="text"
@@ -259,13 +287,11 @@ export default function LoginPage() {
                       name="idUnn"
                       value={formData.idUnn}
                       onChange={handleInputChange}
-                      placeholder="Enter your phone number (0501234567) or ID/UNN"
+                      placeholder="Enter your registered  ID  or  UNN"
                       className="w-full px-4 py-2 rounded-xl border border-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] focus:border-transparent transition-all"
                       required
                     />
-                    <p className="mt-2 text-xs text-gray-500">
-                      Examples: 0501234567, 1234567890, or your registered ID
-                    </p>
+                  
                   </div>
                 </div>
               </div>
@@ -316,7 +342,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => navigate('/forgot-password')}
-                      className="text-[#0475CC] hover:text-[#022466] text-sm font-medium transition-colors"
+                      className="text-[#14BCF7] hover:text-[#022466] text-sm font-medium transition-colors underline"
                     >
                       Forgot Password?
                     </button>
@@ -359,6 +385,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       </div>

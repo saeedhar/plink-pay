@@ -21,8 +21,12 @@ const TopUp: React.FC = () => {
               <div className="wallet-header-icon">
                 <img src={topupIcon} alt="Top Up" className="wallet-header-icon-img" />
               </div>
-              <h2 className="wallet-header-title">Top Up Your Wallet</h2>
+              <div className="wallet-header-text">
+                <h2 className="wallet-header-title">Top Up Your Wallet</h2>
+                <p className="wallet-header-subtitle">Choose a method to add funds to your wallet.</p>
+              </div>
             </div>
+            <div className="wallet-header-divider"></div>
 
             <div className="wallet-sections">
               <div className="wallet-section" onClick={() => navigate('/services/topup/card')}>

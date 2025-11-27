@@ -8,6 +8,7 @@ import { useOnboarding } from '../../../store/OnboardingContext';
 import { Modal } from '../../../components/ui/Modal';
 import { convertArabicToEnglish, OTP_CONFIG } from '../../../utils/validators';
 import { verifyOTP, sendOTP } from '../../../services/onboardingAPI';
+import OnboardingFooter from '../components/OnboardingFooter';
 
 const formatCountdown = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -47,25 +48,13 @@ export default function OTPVerification() {
     }, 100);
   }, []);
 
-  // Get test OTP
+  // Load test OTP (if any) that was stored when sendOTP was first called
   useEffect(() => {
-    const getTestOTP = async () => {
-      if (state.data.phone) {
-        try {
-          const response = await sendOTP(
-            state.data.phone.replace(/\s/g, ''),
-            (state.data.businessType as 'freelancer' | 'b2b') || 'freelancer'
-          );
-          if (response.testOTP) {
-            setTestOTP(response.testOTP);
-          }
-        } catch (err) {
-          console.log('Could not get test OTP:', err);
+    const stored = sessionStorage.getItem('onboardingTestOTP');
+    if (stored) {
+      setTestOTP(stored);
         }
-      }
-    };
-    getTestOTP();
-  }, [state.data.phone, state.data.businessType]);
+  }, []);
 
   // Handle input change
   const handleChange = (index: number, value: string) => {
@@ -187,7 +176,8 @@ export default function OTPVerification() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col p-4">
+      <div className="flex-1 flex items-center justify-center">
       <Modal
         isOpen={true}
         onClose={handleClose}
@@ -309,6 +299,9 @@ export default function OTPVerification() {
           </div>
         </div>
       </Modal>
+      </div>
+
+      <OnboardingFooter />
     </div>
   );
 }

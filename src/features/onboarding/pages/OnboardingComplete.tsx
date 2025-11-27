@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useOnboarding } from "../../../store/OnboardingContext";
 import { createProfile } from "../../../services/onboardingAPI";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
+import OnboardingFooter from "../components/OnboardingFooter";
 
 export default function OnboardingComplete() {
   const [isCreating, setIsCreating] = useState(true);
@@ -164,7 +165,7 @@ export default function OnboardingComplete() {
 
   if (isCreating) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         {/* Left Section */}
         <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">
           <div className="mx-auto w-full max-w-sm lg:w-96">
@@ -189,14 +190,14 @@ export default function OnboardingComplete() {
           </div>
         </div>
 
-       
+      <OnboardingFooter />
       </div>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         {/* Left Section */}
         <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">
           <div className="mx-auto w-full max-w-sm lg:w-96">
@@ -225,13 +226,13 @@ export default function OnboardingComplete() {
           </div>
         </div>
 
-       
+      <OnboardingFooter />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Left Section */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm lg:w-96">
@@ -283,7 +284,7 @@ export default function OnboardingComplete() {
         </div>
       </div>
 
-     
+      <OnboardingFooter />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import WhiteLogo from "../../../assets/select your buisness type assets/white-lo
 import SignupIcon from "../../../assets/signup.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
+import OnboardingFooter from "../components/OnboardingFooter";
 import { validateSaudiPhone, formatPhoneNumber } from "../../../utils/validators";
 import { sendOTP, DuplicatePhoneError } from "../../../services/onboardingAPI";
 import { DevScenarioBar } from "../../../dev/DevScenarioBar";
@@ -25,7 +26,7 @@ export default function PhoneNumberEntry() {
   const { goToNextStep, canGoToNextStep } = useOnboardingNavigation();
   const { executeAction, isLoading, error } = useLoadingState({
     maxRetries: 3,
-    debounceMs: 300
+    debounceMs: 0
   });
 
   // Ensure we're on the correct step when component mounts
@@ -56,17 +57,31 @@ export default function PhoneNumberEntry() {
 
     try {
       await executeAction('send_otp', async () => {
-        const cleanPhone = phoneNumber.replace(/\s/g, '');
+        let cleanPhone = phoneNumber.replace(/\s/g, '');
+
+        // Normalize: if user entered 9-digit starting with "5", send as "05..."
+        if (cleanPhone.startsWith('5') && !cleanPhone.startsWith('05')) {
+          cleanPhone = `0${cleanPhone}`;
+        }
+
+        // Persist normalized phone in state for the rest of the flow
+        dispatch({ type: 'SET_PHONE', payload: cleanPhone });
         
         // Send OTP with integrated retry logic
-        await sendOTP(cleanPhone, state.businessType || 'freelancer');
+        const bt = (state.data.businessType === 'b2b' ? 'b2b' : 'freelancer') as 'freelancer' | 'b2b';
+        const otpResponse = await sendOTP(cleanPhone, bt);
+
+        // Store test OTP for QA use in OTP screen (do not use in production)
+        if (otpResponse.testOTP) {
+          sessionStorage.setItem('onboardingTestOTP', otpResponse.testOTP);
+        }
         
         // Update FSM to next step
         dispatch({ type: 'NEXT_STEP' });
         
         // Navigate to OTP page
         navigate('/onboarding/otp');
-      });
+      }, { skipDebounce: true });
     } catch (err) {
       if (err instanceof DuplicatePhoneError) {
         setShowDuplicateModal(true);
@@ -142,19 +157,15 @@ export default function PhoneNumberEntry() {
 
                 <SignupButton
                   onClick={handleNext}
-                  disabled={!isValid}
+                  disabled={!isValid || isLoading}
                   isLoading={isLoading}
                   loadingText="Sending..."
                 >
                   Next
                 </SignupButton>
-
-                {/* Footer Copyright */}
-                <div className="mt-12 text-center text-gray-500 text-sm">
-                  © 2025 Tyaseer Pay. All rights reserved
-                </div>
               </div>
             </div>
+            <OnboardingFooter />
         </main>
       </div>
       
@@ -210,6 +221,7 @@ export default function PhoneNumberEntry() {
           </div>
         </div>
       )}
+
     </>
   );
 }
