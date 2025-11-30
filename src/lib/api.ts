@@ -133,7 +133,7 @@ async function refreshAccessToken(): Promise<void> {
     throw new Error('No refresh token')
   }
 
-  refreshing = fetch(apiUrl('/api/v1/auth/refresh-token'), {
+  refreshing = fetch(apiUrl('/api/v1/auth/refresh'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken })
@@ -157,12 +157,23 @@ async function refreshAccessToken(): Promise<void> {
         throw new Error(msg || `HTTP ${res.status}`)
       }
       
-      const data = text ? JSON.parse(text) : {}
+      // Parse JSON response safely
+      let data: any = {}
+      try {
+        data = text ? JSON.parse(text) : {}
+      } catch (parseError) {
+        console.error('❌ Failed to parse refresh token response as JSON:', parseError)
+        console.error('Response text:', text)
+        clearTokensAndLogout(true)
+        throw new Error('Invalid refresh response format')
+      }
+      
       if (data?.accessToken) {
         setTokens(data.accessToken, data.refreshToken)
         console.log('✅ Token refreshed successfully')
       } else {
         console.error('❌ No access token in refresh response')
+        console.error('Response data:', data)
         clearTokensAndLogout(true) // Pass sessionExpired flag
         throw new Error('Invalid refresh response')
       }
@@ -186,7 +197,7 @@ async function refreshAccessToken(): Promise<void> {
 async function fetchWithAuth(input: RequestInfo | URL, init?: RequestInit) {
   // Don't retry refresh token endpoint itself
   const url = typeof input === 'string' ? input : input instanceof URL ? input.pathname : ''
-  if (url.includes('/auth/refresh-token')) {
+  if (url.includes('/auth/refresh')) {
     return fetch(input, init)
   }
   
