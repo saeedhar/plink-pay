@@ -9,6 +9,7 @@ import { NafathModal } from './components/modals/NafathModal';
 import SessionExpiredModal, { setSessionExpiredHandler } from './components/modals/SessionExpiredModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSecurity } from './hooks/useSecurity';
+import { OnboardingLayout } from './components/onboarding/OnboardingLayout';
 import {
   Splash,
   BusinessTypeSelection,
@@ -184,81 +185,101 @@ function AppRoutes() {
           <Route 
             path="business-type" 
             element={
-              <RouteGuard requiredStep="businessType">
-                <BusinessTypeSelection />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="businessType">
+                  <BusinessTypeSelection />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="phone" 
             element={
-              <RouteGuard requiredStep="phone">
-                <PhoneNumberEntry />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="phone">
+                  <PhoneNumberEntry />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="otp" 
             element={
-              <RouteGuard requiredStep="otp">
-                <OTPVerification />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="otp">
+                  <OTPVerification />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="cr-number" 
             element={
-              <RouteGuard requiredStep="cr">
-                <CRNumberEntry />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="cr">
+                  <CRNumberEntry />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="id-number" 
             element={
-              <RouteGuard requiredStep="id">
-                <IDNumberEntry />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="id">
+                  <IDNumberEntry />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="nafath" 
             element={
-              <RouteGuard requiredStep="nafath">
-                <NafathPage />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="nafath">
+                  <NafathPage />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="global-screening" 
             element={
-              <RouteGuard requiredStep="globalScreening">
-                <GlobalScreeningPage />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="globalScreening">
+                  <GlobalScreeningPage />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="kyb" 
             element={
-              <RouteGuard requiredStep="kyb">
-                <KYBPage />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="kyb">
+                  <KYBPage />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="password" 
             element={
-              <RouteGuard requiredStep="password">
-                <PasswordSetup />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="password">
+                  <PasswordSetup />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
           <Route 
             path="complete" 
             element={
-              <RouteGuard requiredStep="done">
-                <OnboardingComplete />
-              </RouteGuard>
+              <OnboardingLayout>
+                <RouteGuard requiredStep="done">
+                  <OnboardingComplete />
+                </RouteGuard>
+              </OnboardingLayout>
             } 
           />
         </Route>
