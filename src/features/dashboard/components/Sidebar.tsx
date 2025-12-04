@@ -147,7 +147,19 @@ const Sidebar: React.FC = () => {
                 Wallet
               </div>
               <div className="submenu-item">Transfer</div>
-              <div className="submenu-item">Credit</div>
+              <div 
+                className={`submenu-item ${location.pathname === '/app/services/cards' ? 'active' : ''}`}
+                onClick={() => navigate('/app/services/cards', {
+                  state: {
+                    subWalletId: isSubWallet ? subWalletId : undefined,
+                    isSubWallet: isSubWallet,
+                    subWalletName: subWalletName
+                  }
+                })}
+                style={{ cursor: 'pointer' }}
+              >
+                Cards
+              </div>
               <div className="submenu-item">Bills</div>
               <div className="submenu-item">Beneficiaries</div>
               <Link to="/services/topup" className="submenu-item">Top Up</Link>

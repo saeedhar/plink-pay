@@ -22,7 +22,7 @@ const TopUp: React.FC = () => {
                 <img src={topupIcon} alt="Top Up" className="wallet-header-icon-img" />
               </div>
               <div className="wallet-header-text">
-                <h2 className="wallet-header-title">Top Up Your Wallet</h2>
+              <h2 className="wallet-header-title">Top Up Your Wallet</h2>
                 <p className="wallet-header-subtitle">Choose a method to add funds to your wallet.</p>
               </div>
             </div>
