@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { sendCardOtp, verifyCardOtp, requestPhysicalCard, reportReplaceCard } from '../../../services/cardAPI';
 import logo from '../../../assets/logo-mark.svg';
 import checkCircle from '../../../assets/check_circle.svg';
 
@@ -10,8 +11,11 @@ const RequestPhysicalCardOTP: React.FC = () => {
     cardType?: 'mada' | 'mastercard'; 
     fee?: number;
     address?: string;
+    nationalAddress?: any;
+    useExistingAddress?: boolean;
     source?: string;
     reason?: string;
+    cardId?: string;
   } | null;
   const isReplacement = state?.source === 'card-replacement';
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -19,7 +23,10 @@ const RequestPhysicalCardOTP: React.FC = () => {
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(true);
+  const [otpCode, setOtpCode] = useState<string | null>(null);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const hasSentOtp = useRef(false);
 
   // Timer countdown
   useEffect(() => {
@@ -31,13 +38,44 @@ const RequestPhysicalCardOTP: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Focus first input on mount
+  // Send OTP on mount
   useEffect(() => {
-    setTimeout(() => {
-      const firstInput = document.getElementById('otp-0');
-      firstInput?.focus();
-    }, 100);
+    if (hasSentOtp.current) return;
+
+    const sendOtp = async () => {
+      try {
+        setIsSendingOtp(true);
+        setError('');
+        hasSentOtp.current = true;
+        const response = await sendCardOtp({ operation: 'REQUEST_CARD' });
+        setOtpCode(response.otpCode || null);
+        setTimeLeft(response.expiresIn || 30);
+        setIsSendingOtp(false);
+        
+        setTimeout(() => {
+          const firstInput = document.getElementById('otp-0');
+          firstInput?.focus();
+        }, 100);
+      } catch (err: any) {
+        console.error('Failed to send OTP:', err);
+        setError(err.message || 'Failed to send OTP. Please try again.');
+        setIsSendingOtp(false);
+        hasSentOtp.current = false;
+      }
+    };
+
+    sendOtp();
   }, []);
+
+  // Focus first input after OTP is sent
+  useEffect(() => {
+    if (!isSendingOtp) {
+      setTimeout(() => {
+        const firstInput = document.getElementById('otp-0');
+        firstInput?.focus();
+      }, 100);
+    }
+  }, [isSendingOtp]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -64,16 +102,25 @@ const RequestPhysicalCardOTP: React.FC = () => {
     }
   };
 
-  const handleResend = () => {
-    setIsResendDisabled(true);
-    setError('');
-    setOtp(['', '', '', '', '', '']);
-    setTimeLeft(30);
-    // TODO: Implement resend OTP API call
-    setTimeout(() => {
-      const firstInput = document.getElementById('otp-0');
-      firstInput?.focus();
-    }, 100);
+  const handleResend = async () => {
+    try {
+      setIsResendDisabled(true);
+      setError('');
+      setOtp(['', '', '', '', '', '']);
+      
+      const response = await sendCardOtp({ operation: 'REQUEST_CARD' });
+      setOtpCode(response.otpCode || null);
+      setTimeLeft(response.expiresIn || 30);
+      
+      setTimeout(() => {
+        const firstInput = document.getElementById('otp-0');
+        firstInput?.focus();
+      }, 100);
+    } catch (err: any) {
+      console.error('Failed to resend OTP:', err);
+      setError(err.message || 'Failed to resend OTP. Please try again.');
+      setIsResendDisabled(false);
+    }
   };
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -85,14 +132,61 @@ const RequestPhysicalCardOTP: React.FC = () => {
       return;
     }
 
+    if (!state?.cardType) {
+      setError('Card type is missing');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     
     try {
-      // TODO: Implement OTP verification API call
-      // For now, simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Verify OTP
+      const verifyResponse = await verifyCardOtp({
+        otp: otpValue,
+        operation: 'REQUEST_CARD'
+      });
+
+      if (!verifyResponse.verified) {
+        throw new Error('OTP verification failed');
+      }
+
+      // Request physical card
+      const cardRequest: any = {
+        cardType: state.cardType.toUpperCase() as 'MADA' | 'MASTERCARD'
+      };
+
+      if (state.useExistingAddress && state.nationalAddress) {
+        cardRequest.useExistingAddress = true;
+      } else if (state.nationalAddress) {
+        cardRequest.nationalAddress = state.nationalAddress;
+      } else {
+        throw new Error('National address is required');
+      }
+
+      // For replacement, first report and replace the old card
+      if (isReplacement && state?.cardId && state?.reason) {
+        // Map frontend reason to backend enum
+        let backendReason: 'LOST' | 'STOLEN' | 'DAMAGED';
+        const reasonLower = state.reason.toLowerCase();
+        
+        if (reasonLower === 'lost') {
+          backendReason = 'LOST';
+        } else if (reasonLower === 'stolen') {
+          backendReason = 'STOLEN';
+        } else {
+          backendReason = 'DAMAGED'; // Default for fraud, damaged, other
+        }
+
+        await reportReplaceCard(state.cardId, {
+          reason: backendReason,
+          description: state.reason === 'other' || state.reason === 'fraud' ? state.reason : undefined
+        });
+      }
+
+      // Request the new physical card
+      const cardResponse = await requestPhysicalCard(cardRequest);
+
       if (isReplacement) {
         // Navigate to replacement success screen
         navigate('/app/services/cards/report-replace/success', {
@@ -106,8 +200,8 @@ const RequestPhysicalCardOTP: React.FC = () => {
         setShowSuccessScreen(true);
       }
     } catch (error: any) {
-      console.error('OTP verification failed:', error);
-      setError(error.message || 'Invalid OTP. Please try again.');
+      console.error('Request physical card failed:', error);
+      setError(error.message || 'Failed to request card. Please try again.');
       setOtp(['', '', '', '', '', '']);
       setIsLoading(false);
     }
@@ -238,7 +332,21 @@ const RequestPhysicalCardOTP: React.FC = () => {
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-[#022466] mb-2">Mobile Number</h2>
                 <h3 className="text-xl font-bold text-[#022466] mb-2">OTP Verification</h3>
-                <p className="text-gray-600">Enter your OTP code</p>
+                <p className="text-gray-600">
+                  {isSendingOtp ? 'Sending OTP...' : 'Enter your OTP code to request your physical card'}
+                </p>
+                
+                {/* Display OTP code if provided (for testing/development) */}
+                {otpCode && (
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Your OTP code:
+                    </p>
+                    <p className="text-2xl font-bold text-blue-600 tracking-wider">
+                      {otpCode}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* OTP Input Fields */}

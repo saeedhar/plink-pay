@@ -1,20 +1,52 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
+import { calculatePhysicalCardFee } from '../../../services/cardAPI';
 import physicalCardIcon from '../../../assets/card-service/physical-card.svg';
 import '../../../styles/dashboard.css';
 
 const PhysicalCardFee: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { cardType?: 'mada' | 'mastercard'; source?: string; reason?: string } | null;
+  const state = location.state as { 
+    cardType?: 'mada' | 'mastercard'; 
+    source?: string; 
+    reason?: string;
+    cardId?: string;
+  } | null;
   const isReplacement = state?.source === 'card-replacement';
+  
+  const [feeData, setFeeData] = useState({
+    feeAmount: 0,
+    vatAmount: 0,
+    total: 0,
+    loading: true
+  });
 
-  // Static fee values (to be replaced with API data later)
-  const cardIssuanceFee = 25.00;
-  const vatRate = 0.15;
-  const vatAmount = cardIssuanceFee * vatRate;
-  const total = cardIssuanceFee + vatAmount;
+  // Load fee from API
+  useEffect(() => {
+    const loadFee = async () => {
+      try {
+        const fee = await calculatePhysicalCardFee();
+        setFeeData({
+          feeAmount: fee.feeAmount || 0,
+          vatAmount: fee.vatAmount || 0,
+          total: fee.totalAmount || 0,
+          loading: false
+        });
+      } catch (error: any) {
+        console.error('Failed to load fee:', error);
+        // Use defaults on error
+        setFeeData({
+          feeAmount: 25.00,
+          vatAmount: 3.75,
+          total: 28.75,
+          loading: false
+        });
+      }
+    };
+    loadFee();
+  }, []);
 
   const handleClose = () => {
     if (isReplacement) {
@@ -31,9 +63,10 @@ const PhysicalCardFee: React.FC = () => {
     navigate('/app/services/cards/request-physical/delivery', {
       state: { 
         cardType: state?.cardType,
-        fee: total,
+        fee: feeData.total,
         source: state?.source,
-        reason: state?.reason
+        reason: state?.reason,
+        cardId: state?.cardId
       }
     });
   };
@@ -79,28 +112,38 @@ const PhysicalCardFee: React.FC = () => {
                   <div className="physical-card-fee-table-header-cell">Amount</div>
                 </div>
                 
-                <div className="physical-card-fee-table-row">
-                  <div className="physical-card-fee-table-cell">Card Issuance Fee</div>
-                  <div className="physical-card-fee-table-cell">{cardIssuanceFee.toFixed(2)} SAR</div>
-                </div>
-                
-                <div className="physical-card-fee-table-row">
-                  <div className="physical-card-fee-table-cell">VAT (15%)</div>
-                  <div className="physical-card-fee-table-cell">{vatAmount.toFixed(2)} SAR</div>
-                </div>
-                
-                <div className="physical-card-fee-table-row physical-card-fee-table-row-total">
-                  <div className="physical-card-fee-table-cell physical-card-fee-table-cell-total">Total</div>
-                  <div className="physical-card-fee-table-cell physical-card-fee-table-cell-total">{total.toFixed(2)} SAR</div>
-                </div>
+                {feeData.loading ? (
+                  <div className="physical-card-fee-table-row">
+                    <div className="physical-card-fee-table-cell">Loading...</div>
+                    <div className="physical-card-fee-table-cell">-</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="physical-card-fee-table-row">
+                      <div className="physical-card-fee-table-cell">Card Issuance Fee</div>
+                      <div className="physical-card-fee-table-cell">{feeData.feeAmount.toFixed(2)} SAR</div>
+                    </div>
+                    
+                    <div className="physical-card-fee-table-row">
+                      <div className="physical-card-fee-table-cell">VAT (15%)</div>
+                      <div className="physical-card-fee-table-cell">{feeData.vatAmount.toFixed(2)} SAR</div>
+                    </div>
+                    
+                    <div className="physical-card-fee-table-row physical-card-fee-table-row-total">
+                      <div className="physical-card-fee-table-cell physical-card-fee-table-cell-total">Total</div>
+                      <div className="physical-card-fee-table-cell physical-card-fee-table-cell-total">{feeData.total.toFixed(2)} SAR</div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Confirm Button */}
               <button 
                 className="physical-card-fee-confirm-button"
                 onClick={handleConfirm}
+                disabled={feeData.loading}
               >
-                Confirm
+                {feeData.loading ? 'Loading...' : 'Confirm'}
               </button>
             </div>
           </div>

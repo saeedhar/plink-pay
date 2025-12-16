@@ -2,22 +2,28 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../../../assets/logo-mark.svg';
 import AccountBlockedModal from '../../../components/modals/AccountBlockedModal';
+import { sendCardOtp, verifyCardOtp, freezeCard, unfreezeCard } from '../../../services/cardAPI';
 import '../../../styles/card-management.css';
 
 const FreezeCardOTP: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { currentFrozenState?: boolean } | null;
+  const state = location.state as { currentFrozenState?: boolean; cardId?: string } | null;
   const currentFrozenState = state?.currentFrozenState ?? false;
+  const cardId = state?.cardId;
   const action = currentFrozenState ? 'unfreeze' : 'freeze';
+  const operation = currentFrozenState ? 'UNFREEZE_CARD' : 'FREEZE_CARD';
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(true);
+  const [otpCode, setOtpCode] = useState<string | null>(null);
   const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const hasSentOtp = useRef(false);
 
   // Timer countdown
   useEffect(() => {
@@ -29,12 +35,55 @@ const FreezeCardOTP: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Focus first input on mount
+  // Send OTP on mount (only once)
   useEffect(() => {
+    // Prevent multiple OTP sends
+    if (hasSentOtp.current) {
+      return;
+    }
+
+    const sendOtp = async () => {
+      if (!cardId) {
+        setError('Card ID is missing');
+        setIsSendingOtp(false);
+        return;
+      }
+
+      // Mark as sent before making the API call to prevent duplicates
+      hasSentOtp.current = true;
+
+      try {
+        setIsSendingOtp(true);
+        setError('');
+        const response = await sendCardOtp({ operation });
+        setOtpCode(response.otpCode || null); // Display OTP code if provided (for testing)
+        setTimeLeft(response.expiresIn || 30);
+        setIsSendingOtp(false);
+        
+        setTimeout(() => {
+          inputRefs.current[0]?.focus();
+        }, 100);
+      } catch (err: any) {
+        console.error('Failed to send OTP:', err);
+        setError(err.message || 'Failed to send OTP. Please try again.');
+        setIsSendingOtp(false);
+        // Reset the flag on error so user can retry
+        hasSentOtp.current = false;
+      }
+    };
+
+    sendOtp();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // Focus first input after OTP is sent
+  useEffect(() => {
+    if (!isSendingOtp) {
     setTimeout(() => {
       inputRefs.current[0]?.focus();
     }, 100);
-  }, []);
+    }
+  }, [isSendingOtp]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -57,19 +106,40 @@ const FreezeCardOTP: React.FC = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
+    if (!cardId) {
+      setError('Card ID is missing');
+      return;
+    }
+
     setIsResendDisabled(true);
     setError('');
     setOtp(['', '', '', '', '', '']);
-    setTimeLeft(30);
-    // TODO: Implement resend OTP API call
+    
+    try {
+      const response = await sendCardOtp({ operation });
+      setOtpCode(response.otpCode || null); // Display OTP code if provided (for testing)
+      setTimeLeft(response.expiresIn || 30);
+      // Reset the flag so resend works properly
+      hasSentOtp.current = false;
+      
     setTimeout(() => {
       inputRefs.current[0]?.focus();
     }, 100);
+    } catch (err: any) {
+      console.error('Failed to resend OTP:', err);
+      setError(err.message || 'Failed to resend OTP. Please try again.');
+      setIsResendDisabled(false);
+    }
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!cardId) {
+      setError('Card ID is missing');
+      return;
+    }
     
     const otpValue = otp.join('');
     if (otpValue.length !== 6) {
@@ -81,22 +151,58 @@ const FreezeCardOTP: React.FC = () => {
     setError('');
     
     try {
-      // TODO: Implement OTP verification API call
-      // For now, simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate back to card management with the new frozen state
-      navigate('/app/services/cards', {
-        state: { 
-          cardFrozen: !currentFrozenState,
-          action: action 
-        }
+      // Verify OTP
+      const verifyResponse = await verifyCardOtp({
+        otp: otpValue,
+        operation
       });
+
+      if (!verifyResponse.verified) {
+        throw new Error('OTP verification failed');
+      }
+
+      // Call freeze/unfreeze API
+      let actionResponse;
+      if (currentFrozenState) {
+        actionResponse = await unfreezeCard(cardId);
+      } else {
+        actionResponse = await freezeCard(cardId);
+      }
+
+      console.log('Freeze/Unfreeze API response:', actionResponse);
+      
+      // Backend returns CardActionResponse with message field (no success field)
+      // If we get a response with a message, the operation succeeded
+      if (actionResponse && actionResponse.message) {
+        // Navigate to success confirmation screen
+        navigate('/app/services/cards/freeze/success', {
+        state: { 
+          action: action 
+          },
+          replace: true
+      });
+      } else {
+        // If no message, something went wrong
+        throw new Error(`Failed to ${action} card`);
+      }
     } catch (error: any) {
-      console.error('OTP verification failed:', error);
-      setError(error.message || 'Invalid OTP. Please try again.');
+      console.error(`${action} card failed:`, error);
+      const errorMessage = error.message || `Failed to ${action} card. Please try again.`;
+      
+      // Check if error message actually indicates success (shouldn't happen, but just in case)
+      if (errorMessage.toLowerCase().includes('success')) {
+        // Navigate to success screen even if it was caught as an error
+        navigate('/app/services/cards/freeze/success', {
+          state: { 
+            action: action
+          },
+          replace: true
+        });
+      } else {
+        setError(errorMessage);
       setOtp(['', '', '', '', '', '']);
       setIsLoading(false);
+      }
     }
   };
 
@@ -139,7 +245,21 @@ const FreezeCardOTP: React.FC = () => {
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-[#1F2937] mb-2">Mobile Number</h2>
               <h3 className="text-2xl font-bold text-[#1F2937] mb-2">OTP Verification</h3>
-              <p className="text-gray-600">Enter your OTP code to {action} your card</p>
+              <p className="text-gray-600">
+                {isSendingOtp ? 'Sending OTP...' : `Enter your OTP code to ${action} your card`}
+              </p>
+              
+              {/* Display OTP code if provided (for testing/development) */}
+              {otpCode && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    Your OTP code:
+                  </p>
+                  <p className="text-2xl font-bold text-blue-600 tracking-wider">
+                    {otpCode}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* OTP Input Fields */}

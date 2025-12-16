@@ -9,7 +9,12 @@ type CardType = 'virtual' | 'physical';
 const SelectReplacementCardType: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { reason: string; originalCardType?: 'mada' | 'mastercard'; action?: 'replace' | 'stop' } | null;
+  const state = location.state as { 
+    reason: string; 
+    originalCardType?: 'mada' | 'mastercard'; 
+    action?: 'replace' | 'stop';
+    cardId?: string;
+  } | null;
   const action = state?.action || 'replace';
   const [selectedCardType, setSelectedCardType] = useState<CardType | null>(null);
 
@@ -42,7 +47,8 @@ const SelectReplacementCardType: React.FC = () => {
           reason: state?.reason, 
           cardType: selectedCardType,
           originalCardType: state?.originalCardType,
-          action
+          action,
+          cardId: state?.cardId
         } 
       });
     } else if (selectedCardType === 'physical') {
@@ -53,7 +59,8 @@ const SelectReplacementCardType: React.FC = () => {
         state: {
           cardType: cardType,
           source: 'card-replacement',
-          reason: state?.reason
+          reason: state?.reason,
+          cardId: state?.cardId
         }
       });
     } else {
@@ -62,7 +69,8 @@ const SelectReplacementCardType: React.FC = () => {
         state: { 
           reason: state?.reason, 
           cardType: selectedCardType,
-          action
+          action,
+          cardId: state?.cardId
         } 
       });
     }

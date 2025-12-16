@@ -1,20 +1,56 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AccountBlockedModal from '../../../components/modals/AccountBlockedModal';
+import { sendCardOtp, verifyCardOtp, reportReplaceCard } from '../../../services/cardAPI';
 import '../../../styles/card-management.css';
 
 const ReportReplaceCardOTP: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { reason?: string; cardType?: 'virtual' | 'physical' } | null;
+  const state = location.state as { 
+    reason?: string; 
+    cardType?: 'virtual' | 'physical';
+    cardId?: string;
+  } | null;
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(true);
+  const [otpCode, setOtpCode] = useState<string | null>(null);
   const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const hasSentOtp = useRef(false);
+
+  // Send OTP on mount
+  useEffect(() => {
+    if (hasSentOtp.current) return;
+
+    const sendOtp = async () => {
+      try {
+        setIsSendingOtp(true);
+        setError('');
+        hasSentOtp.current = true;
+        const response = await sendCardOtp({ operation: 'REPORT_REPLACE' });
+        setOtpCode(response.otpCode || null);
+        setTimeLeft(response.expiresIn || 30);
+        setIsSendingOtp(false);
+        
+        setTimeout(() => {
+          inputRefs.current[0]?.focus();
+        }, 100);
+      } catch (err: any) {
+        console.error('Failed to send OTP:', err);
+        setError(err.message || 'Failed to send OTP. Please try again.');
+        setIsSendingOtp(false);
+        hasSentOtp.current = false;
+      }
+    };
+
+    sendOtp();
+  }, []);
 
   // Timer countdown
   useEffect(() => {
@@ -26,12 +62,14 @@ const ReportReplaceCardOTP: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Focus first input on mount
+  // Focus first input after OTP is sent
   useEffect(() => {
-    setTimeout(() => {
-      inputRefs.current[0]?.focus();
-    }, 100);
-  }, []);
+    if (!isSendingOtp) {
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
+    }
+  }, [isSendingOtp]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -54,19 +92,38 @@ const ReportReplaceCardOTP: React.FC = () => {
     }
   };
 
-  const handleResend = () => {
-    setIsResendDisabled(true);
-    setError('');
-    setOtp(['', '', '', '', '', '']);
-    setTimeLeft(30);
-    // TODO: Implement resend OTP API call
-    setTimeout(() => {
-      inputRefs.current[0]?.focus();
-    }, 100);
+  const handleResend = async () => {
+    try {
+      setIsResendDisabled(true);
+      setError('');
+      setOtp(['', '', '', '', '', '']);
+      
+      const response = await sendCardOtp({ operation: 'REPORT_REPLACE' });
+      setOtpCode(response.otpCode || null);
+      setTimeLeft(response.expiresIn || 30);
+      
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
+    } catch (err: any) {
+      console.error('Failed to resend OTP:', err);
+      setError(err.message || 'Failed to resend OTP. Please try again.');
+      setIsResendDisabled(false);
+    }
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!state?.cardId) {
+      setError('Card ID is missing');
+      return;
+    }
+
+    if (!state?.reason) {
+      setError('Reason is missing');
+      return;
+    }
     
     const otpValue = otp.join('');
     if (otpValue.length !== 6) {
@@ -78,20 +135,53 @@ const ReportReplaceCardOTP: React.FC = () => {
     setError('');
     
     try {
-      // TODO: Implement OTP verification API call
-      // For now, simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify OTP
+      const verifyResponse = await verifyCardOtp({
+        otp: otpValue,
+        operation: 'REPORT_REPLACE'
+      });
+
+      if (!verifyResponse.verified) {
+        throw new Error('OTP verification failed');
+      }
+
+      // Map frontend reason to backend enum
+      // Frontend: 'lost', 'stolen', 'fraud', 'damaged', 'other'
+      // Backend: 'LOST', 'STOLEN', 'DAMAGED'
+      let backendReason: 'LOST' | 'STOLEN' | 'DAMAGED';
+      const reasonLower = state.reason.toLowerCase();
+      
+      if (reasonLower === 'lost') {
+        backendReason = 'LOST';
+      } else if (reasonLower === 'stolen') {
+        backendReason = 'STOLEN';
+      } else if (reasonLower === 'fraud' || reasonLower === 'damaged' || reasonLower === 'other') {
+        // Map fraud, damaged, and other to DAMAGED
+        backendReason = 'DAMAGED';
+      } else {
+        backendReason = 'DAMAGED'; // Default
+      }
+
+      // Call report and replace API
+      const reportResponse = await reportReplaceCard(state.cardId, {
+        reason: backendReason,
+        description: state.reason === 'other' || state.reason === 'fraud' ? state.reason : undefined
+      });
+
+      if (!reportResponse.message || !reportResponse.message.toLowerCase().includes('success')) {
+        throw new Error(reportResponse.message || 'Failed to report and replace card');
+      }
       
       // Navigate to success screen
       navigate('/app/services/cards/report-replace/success', {
         state: { 
-          reason: state?.reason,
-          cardType: state?.cardType
+          reason: state.reason,
+          cardType: state.cardType
         }
       });
     } catch (error: any) {
-      console.error('OTP verification failed:', error);
-      setError(error.message || 'Invalid OTP. Please try again.');
+      console.error('Report and replace failed:', error);
+      setError(error.message || 'Failed to report and replace card. Please try again.');
       setOtp(['', '', '', '', '', '']);
       setIsLoading(false);
     }
@@ -101,7 +191,8 @@ const ReportReplaceCardOTP: React.FC = () => {
     navigate('/app/services/cards/report-replace/select-type', {
       state: { 
         reason: state?.reason,
-        cardType: state?.cardType
+        cardType: state?.cardType,
+        cardId: state?.cardId
       }
     });
   };
@@ -141,7 +232,21 @@ const ReportReplaceCardOTP: React.FC = () => {
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-[#1F2937] mb-2">Mobile Number</h2>
               <h3 className="text-2xl font-bold text-[#1F2937] mb-2">OTP Verification</h3>
-              <p className="text-gray-600">Enter your OTP code</p>
+              <p className="text-gray-600">
+                {isSendingOtp ? 'Sending OTP...' : 'Enter your OTP code to report and replace your card'}
+              </p>
+              
+              {/* Display OTP code if provided (for testing/development) */}
+              {otpCode && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    Your OTP code:
+                  </p>
+                  <p className="text-2xl font-bold text-blue-600 tracking-wider">
+                    {otpCode}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* OTP Input Fields */}

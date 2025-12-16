@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
+import CardDisplay from '../../../components/CardDisplay';
+import { listCards, CardResponse, getCardFeatures, toggleCardFeature, CardFeatureResponse } from '../../../services/cardAPI';
 import eyeIcon from '../../../assets/card-service/eye.svg';
 import pinIcon from '../../../assets/card-service/pin.svg';
 import changePinIcon from '../../../assets/card-service/change-pin.svg';
@@ -12,19 +14,54 @@ import atmIcon from '../../../assets/card-service/ATM.svg';
 import replaceIcon from '../../../assets/card-service/replace.svg';
 import stopIcon from '../../../assets/card-service/stop.svg';
 import applePayIcon from '../../../assets/topup/apple-pay.svg';
-import masterCardIcon from '../../../assets/topup/cards/master-card.svg';
-import visaMadaIcon from '../../../assets/topup/cards/visa-mada.svg';
-import visaIcon from '../../../assets/topup/cards/visa.svg';
 
 const CardManagement: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [cardType, setCardType] = useState<'physical' | 'virtual'>('virtual');
-  const [nfcEnabled, setNfcEnabled] = useState(true);
+  const [nfcEnabled, setNfcEnabled] = useState(false);
   const [onlinePaymentsEnabled, setOnlinePaymentsEnabled] = useState(false);
   const [abroadPaymentsEnabled, setAbroadPaymentsEnabled] = useState(false);
   const [atmWithdrawalEnabled, setAtmWithdrawalEnabled] = useState(false);
   const [cardFrozen, setCardFrozen] = useState(true);
+  const [featuresLoading, setFeaturesLoading] = useState(false);
+
+  // API state
+  const [allCards, setAllCards] = useState<CardResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Current card index for each type
+  const [virtualCardIndex, setVirtualCardIndex] = useState(0);
+  const [physicalCardIndex, setPhysicalCardIndex] = useState(0);
+  
+  // Animation direction state
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+
+  // Load cards from API
+  useEffect(() => {
+    loadCards();
+  }, []);
+
+  const loadCards = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const cards = await listCards();
+      setAllCards(cards);
+      
+      // Update freeze status for current card
+      const currentCard = getCardsForTab()[getCurrentCardIndex()];
+      if (currentCard) {
+        setCardFrozen(currentCard.status === 'FROZEN');
+      }
+    } catch (err: any) {
+      console.error('Failed to load cards:', err);
+      setError(err.message || 'Failed to load cards');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle state updates from OTP verification
   useEffect(() => {
@@ -36,32 +73,94 @@ const CardManagement: React.FC = () => {
     }
   }, [location.state]);
   
-  // Card arrays for carousel
-  const virtualCards = [visaMadaIcon, visaIcon, visaMadaIcon];
-  const physicalCards = [masterCardIcon, visaMadaIcon, masterCardIcon];
-  
-  // Current card index for each type
-  const [virtualCardIndex, setVirtualCardIndex] = useState(0);
-  const [physicalCardIndex, setPhysicalCardIndex] = useState(0);
-  
-  // Get current cards based on type
-  const currentCards = cardType === 'virtual' ? virtualCards : physicalCards;
+  // Get filtered cards based on type - only show ACTIVE cards (and ISSUANCE_IN_PROGRESS for physical)
+  const getCardsForTab = (): CardResponse[] => {
+    return allCards.filter(card => {
+      // Filter by card form type first
+      const matchesCardType = cardType === 'physical' 
+        ? card.cardForm === 'PHYSICAL'
+        : card.cardForm === 'VIRTUAL';
+      
+      if (!matchesCardType) {
+        return false;
+      }
+      
+      // For physical cards: show ACTIVE, FROZEN, and ISSUANCE_IN_PROGRESS
+      // For virtual cards: show ACTIVE and FROZEN only
+      if (cardType === 'physical') {
+        return card.status === 'ACTIVE' || 
+               card.status === 'FROZEN' || 
+               card.status === 'ISSUANCE_IN_PROGRESS' ||
+               card.status === 'REPLACEMENT_IN_PROGRESS';
+      } else {
+        return card.status === 'ACTIVE' || card.status === 'FROZEN';
+      }
+    });
+  };
+
+  const currentCards = getCardsForTab();
   const currentCardIndex = cardType === 'virtual' ? virtualCardIndex : physicalCardIndex;
   const setCurrentCardIndex = cardType === 'virtual' ? setVirtualCardIndex : setPhysicalCardIndex;
   
-  // Animation direction state
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const getCurrentCardIndex = () => currentCardIndex;
   
   // Navigation handlers
   const handlePreviousCard = () => {
+    if (currentCards.length === 0) return;
     setSlideDirection('left');
     setCurrentCardIndex((prev) => (prev > 0 ? prev - 1 : currentCards.length - 1));
   };
   
   const handleNextCard = () => {
+    if (currentCards.length === 0) return;
     setSlideDirection('right');
     setCurrentCardIndex((prev) => (prev < currentCards.length - 1 ? prev + 1 : 0));
   };
+
+  // Reset card index when tab changes
+  useEffect(() => {
+    setVirtualCardIndex(0);
+    setPhysicalCardIndex(0);
+  }, [cardType]);
+
+  // Load card features when current card changes
+  const loadCardFeatures = async (cardId: string) => {
+    try {
+      setFeaturesLoading(true);
+      const features = await getCardFeatures(cardId);
+      
+      // Update feature states from API response
+      setNfcEnabled(features.nfcPayments?.enabled ?? false);
+      setOnlinePaymentsEnabled(features.onlinePayments?.enabled ?? false);
+      setAbroadPaymentsEnabled(features.abroadPayments?.enabled ?? false);
+      setAtmWithdrawalEnabled(features.atmWithdrawal?.enabled ?? false);
+    } catch (err: any) {
+      console.error('Failed to load card features:', err);
+      // Don't show error to user, just use defaults
+    } finally {
+      setFeaturesLoading(false);
+    }
+  };
+
+  // Get current card ID
+  const currentCard = currentCards[currentCardIndex];
+  const currentCardId = currentCard?.id;
+
+  // Update freeze status and load features when card changes
+  useEffect(() => {
+    if (currentCard) {
+      setCardFrozen(currentCard.status === 'FROZEN');
+      // Load features for current card
+      loadCardFeatures(currentCard.id);
+    } else {
+      // Reset features if no card
+      setNfcEnabled(false);
+      setOnlinePaymentsEnabled(false);
+      setAbroadPaymentsEnabled(false);
+      setAtmWithdrawalEnabled(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCardId, cardType]);
 
   return (
     <div className="dashboard-container">
@@ -100,24 +199,63 @@ const CardManagement: React.FC = () => {
                       className="card-arrow card-arrow-left" 
                       onClick={handlePreviousCard}
                       aria-label="Previous card"
+                      disabled={currentCards.length <= 1}
                     >
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </button>
                     <div className="card-preview">
-                      <img 
+                      {loading ? (
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#666'
+                        }}>
+                          Loading cards...
+                        </div>
+                      ) : error ? (
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#d32f2f',
+                          textAlign: 'center',
+                          padding: '20px'
+                        }}>
+                          {error}
+                        </div>
+                      ) : currentCards.length > 0 && currentCards[currentCardIndex] ? (
+                        <div 
                         key={`${cardType}-${currentCardIndex}`}
-                        src={currentCards[currentCardIndex]} 
-                        alt={`${cardType === 'virtual' ? 'Virtual' : 'Physical'} Card ${currentCardIndex + 1}`}
                         className={`card-image ${slideDirection ? `slide-${slideDirection}` : ''}`}
                         onAnimationEnd={() => setSlideDirection(null)}
-                      />
+                          style={{ width: '100%', height: '100%' }}
+                        >
+                          <CardDisplay card={currentCards[currentCardIndex]} />
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#666',
+                          textAlign: 'center',
+                          padding: '20px'
+                        }}>
+                          No {cardType} cards available
+                        </div>
+                      )}
                     </div>
                     <button 
                       className="card-arrow card-arrow-right" 
                       onClick={handleNextCard}
                       aria-label="Next card"
+                      disabled={currentCards.length <= 1}
                     >
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -141,7 +279,14 @@ const CardManagement: React.FC = () => {
                       </button>
                       <button 
                         className="request-card-button request-card-button-activation"
-                        onClick={() => navigate('/app/services/cards/activate-physical')}
+                        onClick={() => {
+                          const currentCard = currentCards[currentCardIndex];
+                          if (!currentCard) return;
+                          navigate('/app/services/cards/activate-physical', {
+                            state: { cardId: currentCard.id }
+                          });
+                        }}
+                        disabled={currentCards.length === 0}
                       >
                         <span>Request Physical</span>
                         <span>Card Activation</span>
@@ -154,8 +299,18 @@ const CardManagement: React.FC = () => {
                 <div className="card-actions">
                   <div 
                     className="card-action-item"
-                    onClick={() => navigate('/app/services/cards/show-details/otp')}
+                    onClick={() => {
+                      const currentCard = currentCards[currentCardIndex];
+                      if (!currentCard) return;
+                      navigate('/app/services/cards/show-details/otp', {
+                        state: { 
+                          cardId: currentCard.id,
+                          last4Digits: currentCard.last4Digits
+                        }
+                      });
+                    }}
                     style={{ cursor: 'pointer' }}
+                    disabled={currentCards.length === 0}
                   >
                     <div className="card-action-icon">
                       <img src={eyeIcon} alt="Show Card Details" />
@@ -180,8 +335,15 @@ const CardManagement: React.FC = () => {
                   </div>
                   <div 
                     className="card-action-item"
-                    onClick={() => navigate('/app/services/cards/change-pin/otp')}
+                    onClick={() => {
+                      const currentCard = currentCards[currentCardIndex];
+                      if (!currentCard) return;
+                      navigate('/app/services/cards/change-pin/otp', {
+                        state: { cardId: currentCard.id }
+                      });
+                    }}
                     style={{ cursor: 'pointer' }}
+                    disabled={currentCards.length === 0}
                   >
                     <div className="card-action-icon">
                       <img src={changePinIcon} alt="Change Card PIN" />
@@ -201,11 +363,17 @@ const CardManagement: React.FC = () => {
                         type="checkbox" 
                         checked={!cardFrozen}
                         onChange={() => {
-                          // Navigate to OTP screen with current frozen state
+                          const currentCard = currentCards[currentCardIndex];
+                          if (!currentCard) return;
+                          // Navigate to OTP screen with current frozen state and cardId
                           navigate('/app/services/cards/freeze/otp', {
-                            state: { currentFrozenState: cardFrozen }
+                            state: { 
+                              currentFrozenState: cardFrozen,
+                              cardId: currentCard.id
+                            }
                           });
                         }}
+                        disabled={currentCards.length === 0}
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -236,7 +404,19 @@ const CardManagement: React.FC = () => {
                       <input 
                         type="checkbox" 
                         checked={nfcEnabled}
-                        onChange={() => setNfcEnabled(!nfcEnabled)}
+                        disabled={featuresLoading || !currentCard}
+                        onChange={async () => {
+                          if (!currentCard) return;
+                          
+                          const newValue = !nfcEnabled;
+                          try {
+                            await toggleCardFeature(currentCard.id, 'nfc-payments', { enabled: newValue });
+                            setNfcEnabled(newValue);
+                          } catch (err: any) {
+                            console.error('Failed to toggle NFC payments:', err);
+                            // Revert on error
+                          }
+                        }}
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -257,7 +437,19 @@ const CardManagement: React.FC = () => {
                       <input 
                         type="checkbox" 
                         checked={onlinePaymentsEnabled}
-                        onChange={() => setOnlinePaymentsEnabled(!onlinePaymentsEnabled)}
+                        disabled={featuresLoading || !currentCard}
+                        onChange={async () => {
+                          if (!currentCard) return;
+                          
+                          const newValue = !onlinePaymentsEnabled;
+                          try {
+                            await toggleCardFeature(currentCard.id, 'online-payments', { enabled: newValue });
+                            setOnlinePaymentsEnabled(newValue);
+                          } catch (err: any) {
+                            console.error('Failed to toggle online payments:', err);
+                            // Revert on error
+                          }
+                        }}
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -278,7 +470,19 @@ const CardManagement: React.FC = () => {
                       <input 
                         type="checkbox" 
                         checked={abroadPaymentsEnabled}
-                        onChange={() => setAbroadPaymentsEnabled(!abroadPaymentsEnabled)}
+                        disabled={featuresLoading || !currentCard}
+                        onChange={async () => {
+                          if (!currentCard) return;
+                          
+                          const newValue = !abroadPaymentsEnabled;
+                          try {
+                            await toggleCardFeature(currentCard.id, 'abroad-payments', { enabled: newValue });
+                            setAbroadPaymentsEnabled(newValue);
+                          } catch (err: any) {
+                            console.error('Failed to toggle abroad payments:', err);
+                            // Revert on error
+                          }
+                        }}
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -299,7 +503,19 @@ const CardManagement: React.FC = () => {
                       <input 
                         type="checkbox" 
                         checked={atmWithdrawalEnabled}
-                        onChange={() => setAtmWithdrawalEnabled(!atmWithdrawalEnabled)}
+                        disabled={featuresLoading || !currentCard}
+                        onChange={async () => {
+                          if (!currentCard) return;
+                          
+                          const newValue = !atmWithdrawalEnabled;
+                          try {
+                            await toggleCardFeature(currentCard.id, 'atm-withdrawal', { enabled: newValue });
+                            setAtmWithdrawalEnabled(newValue);
+                          } catch (err: any) {
+                            console.error('Failed to toggle ATM withdrawal:', err);
+                            // Revert on error
+                          }
+                        }}
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -316,18 +532,24 @@ const CardManagement: React.FC = () => {
                   <div 
                     className="other-service-item"
                     onClick={() => {
-                      // Determine the current card type based on the selected card
-                      // For now, we'll use a default or get it from the current card
-                      // TODO: Get actual card type from API or card selection
-                      const currentCardType = cardType === 'physical' 
-                        ? (physicalCardIndex === 0 ? 'mastercard' : 'mada') // Simplified logic
-                        : 'mada'; // Default for virtual
+                      const currentCard = currentCards[currentCardIndex];
+                      if (!currentCard) return;
+                      
+                      const currentCardType = currentCard.cardType === 'MASTERCARD' 
+                        ? 'mastercard' 
+                        : currentCard.cardType === 'MADA' 
+                        ? 'mada' 
+                        : 'visa';
                       
                       navigate('/app/services/cards/report-replace', {
-                        state: { originalCardType: currentCardType }
+                        state: { 
+                          originalCardType: currentCardType,
+                          cardId: currentCard.id
+                        }
                       });
                     }}
                     style={{ cursor: 'pointer' }}
+                    disabled={currentCards.length === 0}
                   >
                     <div className="other-service-icon">
                       <img src={replaceIcon} alt="Report & Replace Card" />
@@ -341,19 +563,25 @@ const CardManagement: React.FC = () => {
                   <div 
                     className="other-service-item"
                     onClick={() => {
-                      // Determine the current card type based on the selected card
-                      const currentCardType = cardType === 'physical' 
-                        ? (physicalCardIndex === 0 ? 'mastercard' : 'mada')
-                        : 'mada';
+                      const currentCard = currentCards[currentCardIndex];
+                      if (!currentCard) return;
+                      
+                      const currentCardType = currentCard.cardType === 'MASTERCARD' 
+                        ? 'mastercard' 
+                        : currentCard.cardType === 'MADA' 
+                        ? 'mada' 
+                        : 'visa';
                       
                       navigate('/app/services/cards/stop-card', {
                         state: { 
                           originalCardType: currentCardType,
-                          action: 'stop'
+                          action: 'stop',
+                          cardId: currentCard.id
                         }
                       });
                     }}
                     style={{ cursor: 'pointer' }}
+                    disabled={currentCards.length === 0}
                   >
                     <div className="other-service-icon">
                       <img src={stopIcon} alt="Stop Card" />

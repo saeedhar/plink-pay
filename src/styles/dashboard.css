@@ -4444,7 +4444,7 @@ html::-webkit-scrollbar {
 /* Card Management Layout Styles */
 .card-management-layout {
   display: flex;
-  gap: 24px;
+  gap: 15px;
   padding: 24px 30px;
   align-items: flex-start;
   min-height: calc(100vh - 150px);
@@ -4461,7 +4461,7 @@ html::-webkit-scrollbar {
 .card-management-right {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 30px;
   flex: 0 0 auto;
   width: 440px;
   align-items: stretch;
@@ -4469,6 +4469,7 @@ html::-webkit-scrollbar {
 
 .card-management-section {
   background: #ffffff;
+  width: 100%;
   border-radius: 20px;
   padding: 32px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -4632,7 +4633,7 @@ html::-webkit-scrollbar {
 
 .card-preview {
   flex: 1;
-  max-width: 400px;
+  max-width: 700px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4640,7 +4641,7 @@ html::-webkit-scrollbar {
 }
 
 .card-image {
-  width: 400px;
+  width: 700px;
   height: auto;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);

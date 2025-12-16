@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
+import { UserManagementService } from '../../../services/userManagementService';
 import deliveryLocationIcon from '../../../assets/card-service/deleviry-location.svg';
 import yourLocationIcon from '../../../assets/card-service/your-location.svg';
 import selectMapIcon from '../../../assets/card-service/select-map.svg';
@@ -21,18 +22,50 @@ const DeliveryLocation: React.FC = () => {
     fromBrowserLocation?: boolean;
     source?: string;
     reason?: string;
+    cardId?: string;
   } | null;
   const isReplacement = state?.source === 'card-replacement';
 
-  // Get address from state or use default
-  const [registeredAddress, setRegisteredAddress] = useState(
-    state?.address || "1234 Elm Street, Riyadh, Al Riyadh"
-  );
+  // Get address from state or fetch from API
+  const [registeredAddress, setRegisteredAddress] = useState<string>('');
+  const [addressLoading, setAddressLoading] = useState(true);
+  const [nationalAddressData, setNationalAddressData] = useState<any>(null);
 
-  // Update address if it comes from map selection or browser location
+  // Load national address from API
   useEffect(() => {
+    const loadNationalAddress = async () => {
+      try {
+        setAddressLoading(true);
+        const address = await UserManagementService.getNationalAddress();
+        setNationalAddressData(address);
+        
+        // Format address string
+        const addressParts = [
+          address.buildingNumber,
+          address.street,
+          address.district,
+          address.city
+        ].filter(Boolean);
+        
+        const formattedAddress = addressParts.length > 0 
+          ? addressParts.join(', ')
+          : 'No address registered';
+        
+        setRegisteredAddress(formattedAddress);
+      } catch (error: any) {
+        console.error('Failed to load national address:', error);
+        setRegisteredAddress('No address registered');
+      } finally {
+        setAddressLoading(false);
+      }
+    };
+
+    // Update address if it comes from map selection or browser location
     if (state?.address && (state?.fromMap || state?.fromBrowserLocation)) {
       setRegisteredAddress(state.address);
+      setAddressLoading(false);
+    } else {
+      loadNationalAddress();
     }
   }, [state]);
 
@@ -47,14 +80,17 @@ const DeliveryLocation: React.FC = () => {
   };
 
   const handleConfirmAddress = () => {
-    // Navigate to OTP screen with address confirmation
+    // Navigate to OTP screen with address confirmation and national address data
     navigate('/app/services/cards/request-physical/otp', {
       state: { 
         cardType: state?.cardType,
         fee: state?.fee,
         address: registeredAddress,
+        nationalAddress: nationalAddressData,
+        useExistingAddress: true,
         source: state?.source,
-        reason: state?.reason
+        reason: state?.reason,
+        cardId: state?.cardId
       }
     });
   };
@@ -132,13 +168,16 @@ const DeliveryLocation: React.FC = () => {
                   <div className="delivery-location-address-icon">
                     <img src={yourLocationIcon} alt="Location" />
                   </div>
-                  <span className="delivery-location-address-text">{registeredAddress}</span>
+                  <span className="delivery-location-address-text">
+                    {addressLoading ? 'Loading address...' : registeredAddress}
+                  </span>
                 </div>
                 <button 
                   className="delivery-location-confirm-button"
                   onClick={handleConfirmAddress}
+                  disabled={addressLoading || !registeredAddress || registeredAddress === 'No address registered'}
                 >
-                  Confirm Address
+                  {addressLoading ? 'Loading...' : 'Confirm Address'}
                 </button>
               </div>
             </div>

@@ -1,25 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
+import CardDisplay from '../../../components/CardDisplay';
+import { listCards, CardResponse } from '../../../services/cardAPI';
 import cardHeaderIcon from '../../../assets/topup/card.svg';
-import visaCard from '../../../assets/topup/cards/visa.svg';
-import masterCard from '../../../assets/topup/cards/master-card.svg';
-import visaMada from '../../../assets/topup/cards/visa-mada.svg';
-import selectedBadge from '../../../assets/topup/selected.svg';
-import nonSelectedBadge from '../../../assets/topup/non-selected.svg';
 
 const TopUpSelectExistingCard: React.FC = () => {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<number | null>(0);
+  const [cardType, setCardType] = useState<'physical' | 'virtual'>('virtual');
+  const [allCards, setAllCards] = useState<CardResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [virtualCardIndex, setVirtualCardIndex] = useState(0);
+  const [physicalCardIndex, setPhysicalCardIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+
+  // Load cards from API
+  useEffect(() => {
+    loadCards();
+  }, []);
+
+  const loadCards = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const cards = await listCards();
+      setAllCards(cards);
+    } catch (err: any) {
+      console.error('Failed to load cards:', err);
+      setError(err.message || 'Failed to load cards');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get filtered cards based on type - only show ACTIVE cards (and ISSUANCE_IN_PROGRESS for physical)
+  const getCardsForTab = (): CardResponse[] => {
+    if (cardType === 'physical') {
+      // For physical cards: show ACTIVE, FROZEN, ISSUANCE_IN_PROGRESS, REPLACEMENT_IN_PROGRESS
+      return allCards.filter(card => 
+        card.cardForm === 'PHYSICAL' && 
+        (card.status === 'ACTIVE' || 
+         card.status === 'FROZEN' || 
+         card.status === 'ISSUANCE_IN_PROGRESS' || 
+         card.status === 'REPLACEMENT_IN_PROGRESS')
+      );
+    } else {
+      // For virtual cards: show ACTIVE and FROZEN only
+      return allCards.filter(card => 
+        card.cardForm === 'VIRTUAL' && 
+        (card.status === 'ACTIVE' || card.status === 'FROZEN')
+      );
+    }
+  };
+
+  const currentCards = getCardsForTab();
+  const currentCardIndex = cardType === 'virtual' ? virtualCardIndex : physicalCardIndex;
+  const setCurrentCardIndex = cardType === 'virtual' ? setVirtualCardIndex : setPhysicalCardIndex;
+  const currentCard = currentCards[currentCardIndex] || null;
+
+  // Reset index when card type changes
+  useEffect(() => {
+    setCurrentCardIndex(0);
+  }, [cardType, setCurrentCardIndex]);
+
+  const handlePreviousCard = () => {
+    if (currentCards.length === 0) return;
+    const newIndex = currentCardIndex > 0 ? currentCardIndex - 1 : currentCards.length - 1;
+    setSlideDirection('right');
+    setCurrentCardIndex(newIndex);
+  };
+
+  const handleNextCard = () => {
+    if (currentCards.length === 0) return;
+    const newIndex = currentCardIndex < currentCards.length - 1 ? currentCardIndex + 1 : 0;
+    setSlideDirection('left');
+    setCurrentCardIndex(newIndex);
+  };
 
   const goBack = () => navigate('/services/topup');
-  const handleContinue = () => navigate('/services/topup/card/cvv');
-
-  const cards = [
-    { id: 0, label: 'Visa', img: visaCard, last4: '1111', expiry: '02/30' },
-    { id: 1, label: 'Mastercard', img: masterCard, last4: '2345', expiry: '02/30' },
-    { id: 2, label: 'Visa Mada', img: visaMada, last4: '2345', expiry: '02/30' },
-  ];
+  const handleContinue = () => {
+    if (currentCard) {
+      navigate('/services/topup/card/cvv', {
+        state: { cardId: currentCard.id }
+      });
+    }
+  };
 
   return (
     <div className="dashboard-container">
@@ -29,149 +95,142 @@ const TopUpSelectExistingCard: React.FC = () => {
         <div className="dashboard-content">
           <h1 className="dashboard-title">Top Up</h1>
 
-          <div className="wallet-management-card" style={{ maxWidth: 900 }}>
-            <div className="wallet-header">
-              <div className="wallet-header-icon">
-                <img src={cardHeaderIcon} alt="Top Up" className="wallet-header-icon-img" />
-              </div>
-              <h2 className="wallet-header-title">Select Saved Card</h2>
-            </div>
-            <p className="wallet-section-description" style={{ marginTop: -8 }}>Select how you want to top up using a card.</p>
-
-            <div style={{ marginTop: 16 }}>
-              <h3 className="wallet-section-title" style={{ marginBottom: 12 }}>Cards</h3>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 16,
-                overflowX: 'auto',
-                overflowY: 'visible',
-                paddingBottom: 12,
-                borderBottom: '1px solid #E5E7EB',
-                paddingTop: 20
-              }}>
-                <div
-                  className="wallet-section no-hover"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 200,
-                    height: 120,
-                    background: '#E6F4FB',
-                    border: '2px solid #55CAF3',
-                    borderRadius: 16,
-                    cursor: 'pointer',
-                    boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6)'
-                  }}
-                  onClick={() => navigate('/services/topup/card/select-method')}
-                >
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      background: '#5C74A0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#FFFFFF',
-                      fontSize: 28,
-                      lineHeight: '28px',
-                      margin: '0 auto 10px'
-                    }}>+
-                    </div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: '#022466' }}>Add card</div>
-                  </div>
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <div className="wallet-management-card" style={{ maxWidth: 600, margin: '0 auto' }}>
+              <div className="wallet-header">
+                <div className="wallet-header-icon">
+                  <img src={cardHeaderIcon} alt="Top Up" className="wallet-header-icon-img" />
                 </div>
+                <div className="wallet-header-text">
+                  <h2 className="wallet-header-title">Select Saved Card</h2>
+                  <p className="wallet-header-subtitle">Select how you want to top up using a card.</p>
+                </div>
+              </div>
+              <div className="wallet-header-divider"></div>
 
-                {cards.map((c) => (
-                  <div key={c.id} style={{ position: 'relative', overflow: 'visible' }}>
-                    <img
-                      onClick={() => setSelected(c.id)}
-                      src={selected === c.id ? nonSelectedBadge : selectedBadge}
-                      alt={selected === c.id ? 'Selected' : 'Not Selected'}
-                      style={{
-                        position: 'absolute',
-                        top: -16,
-                        left: 6,
-                        width: 26,
-                        height: 26,
-                        zIndex: 5,
-                        cursor: 'pointer',
-                        userSelect: 'none'
-                      }}
-                    />
+              <div>
+              {/* Card Type Selector */}
+              <div className="card-type-selector">
+                <button
+                  className={`card-type-button ${cardType === 'physical' ? 'active' : ''}`}
+                  onClick={() => setCardType('physical')}
+                >
+                  Physical card
+                </button>
+                <button
+                  className={`card-type-button ${cardType === 'virtual' ? 'active' : ''}`}
+                  onClick={() => setCardType('virtual')}
+                >
+                  Virtual card
+                </button>
+              </div>
 
-                    <button
-                      onClick={() => setSelected(c.id)}
-                      style={{
-                        padding: 0,
-                        borderRadius: 12,
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        overflow: 'visible',
-                        position: 'relative'
-                      }}
+              {/* Card Display Container */}
+              <div className="card-display-container">
+                <div className="card-display-inner">
+                  <button 
+                    className="card-arrow card-arrow-left" 
+                    onClick={handlePreviousCard}
+                    aria-label="Previous card"
+                    disabled={currentCards.length <= 1}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <div className="card-preview">
+                    {loading ? (
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        height: '100%',
+                        color: '#666'
+                      }}>
+                        Loading cards...
+                      </div>
+                    ) : error ? (
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        height: '100%',
+                        color: '#d32f2f',
+                        textAlign: 'center',
+                        padding: '20px'
+                      }}>
+                        {error}
+                      </div>
+                    ) : currentCards.length > 0 && currentCards[currentCardIndex] ? (
+                      <div 
+                        key={`${cardType}-${currentCardIndex}`}
+                        className={`card-image ${slideDirection ? `slide-${slideDirection}` : ''}`}
+                        onAnimationEnd={() => setSlideDirection(null)}
+                      >
+                        <CardDisplay card={currentCards[currentCardIndex]} smallText={true} />
+                      </div>
+                    ) : (
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        height: '100%',
+                        color: '#666',
+                        textAlign: 'center',
+                        padding: '20px'
+                      }}>
+                        No {cardType} cards available
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    className="card-arrow card-arrow-right" 
+                    onClick={handleNextCard}
+                    aria-label="Next card"
+                    disabled={currentCards.length <= 1}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+                {cardType === 'virtual' ? (
+                  <button 
+                    className="request-card-button"
+                    onClick={() => navigate('/app/services/cards/request-virtual')}
+                  >
+                    Request Virtual Card
+                  </button>
+                ) : (
+                  <div className="physical-card-buttons">
+                    <button 
+                      className="request-card-button"
+                      onClick={() => navigate('/app/services/cards/request-physical')}
                     >
-                      <img src={c.img} alt={c.label} style={{ width: 200, height: 120, display: 'block', borderRadius: 12 }} />
-                      
-                      {/* Card Number Overlay */}
-                      <div style={{
-                        position: 'absolute',
-                        top: 45,
-                        left: 12,
-                        right: 12,
-                        color: '#FFFFFF',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        pointerEvents: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        <span >* * * *</span>
-                        <span >* * * *</span>
-                        <span >* * * *</span>
-                        <span style={{ letterSpacing: '3px', fontSize: 16, fontWeight: 500 }}>{c.last4}</span>
-                      </div>
-
-                      {/* Expiry Date Overlay */}
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 8,
-                        right: 12,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-end',
-                        pointerEvents: 'none'
-                      }}>
-                        <div style={{
-                          color: 'rgba(255, 255, 255, 0.95)',
-                          fontSize: 9,
-                          fontWeight: 300,
-                          marginBottom: 2
-                        }}>
-                          Expiry Date
-                        </div>
-                        <div style={{
-                          color: '#FFFFFF',
-                          fontSize: 12,
-                          fontWeight: 300
-                        }}>
-                          {c.expiry}
-                        </div>
-                      </div>
+                      Request Physical Card
+                    </button>
+                    <button 
+                      className="request-card-button request-card-button-activation"
+                      onClick={() => {
+                        const currentCard = currentCards[currentCardIndex];
+                        if (!currentCard) return;
+                        navigate('/app/services/cards/activate-physical', {
+                          state: { cardId: currentCard.id }
+                        });
+                      }}
+                      disabled={currentCards.length === 0}
+                    >
+                      <span>Request Physical</span>
+                      <span>Card Activation</span>
                     </button>
                   </div>
-                ))}
+                )}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
                 <button className="limits-button limits-button-secondary" onClick={goBack}>Back</button>
-                <button className="limits-button limits-button-primary" onClick={handleContinue} disabled={selected === null}>Continue</button>
+                <button className="limits-button limits-button-primary" onClick={handleContinue} disabled={!currentCard}>Continue</button>
+              </div>
               </div>
             </div>
           </div>

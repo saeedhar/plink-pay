@@ -1,15 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AccountBlockedModal from '../../../components/modals/AccountBlockedModal';
+import { sendCardOtp, verifyCardOtp } from '../../../services/cardAPI';
 import '../../../styles/card-management.css';
 
 const ChangeCardPINOTP: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const cardId = (location.state as { cardId?: string })?.cardId;
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(true);
+  const [otpCode, setOtpCode] = useState<string | null>(null);
   const [showAccountBlockedModal, setShowAccountBlockedModal] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -23,12 +28,44 @@ const ChangeCardPINOTP: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Focus first input on mount
+  // Send OTP on mount
   useEffect(() => {
+    const sendOtp = async () => {
+      if (!cardId) {
+        setError('Card ID is missing');
+        setIsSendingOtp(false);
+        return;
+      }
+
+      try {
+        setIsSendingOtp(true);
+        setError('');
+        const response = await sendCardOtp({ operation: 'CHANGE_PIN' });
+        setOtpCode(response.otpCode || null); // Display OTP code if provided (for testing)
+        setTimeLeft(response.expiresIn || 30);
+        setIsSendingOtp(false);
+        
+        setTimeout(() => {
+          inputRefs.current[0]?.focus();
+        }, 100);
+      } catch (err: any) {
+        console.error('Failed to send OTP:', err);
+        setError(err.message || 'Failed to send OTP. Please try again.');
+        setIsSendingOtp(false);
+      }
+    };
+
+    sendOtp();
+  }, [cardId]);
+
+  // Focus first input after OTP is sent
+  useEffect(() => {
+    if (!isSendingOtp) {
     setTimeout(() => {
       inputRefs.current[0]?.focus();
     }, 100);
-  }, []);
+    }
+  }, [isSendingOtp]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -51,19 +88,38 @@ const ChangeCardPINOTP: React.FC = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
+    if (!cardId) {
+      setError('Card ID is missing');
+      return;
+    }
+
     setIsResendDisabled(true);
     setError('');
     setOtp(['', '', '', '', '', '']);
-    setTimeLeft(30);
-    // TODO: Implement resend OTP API call
+    
+    try {
+      const response = await sendCardOtp({ operation: 'CHANGE_PIN' });
+      setOtpCode(response.otpCode || null); // Display OTP code if provided (for testing)
+      setTimeLeft(response.expiresIn || 30);
+      
     setTimeout(() => {
       inputRefs.current[0]?.focus();
     }, 100);
+    } catch (err: any) {
+      console.error('Failed to resend OTP:', err);
+      setError(err.message || 'Failed to resend OTP. Please try again.');
+      setIsResendDisabled(false);
+    }
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!cardId) {
+      setError('Card ID is missing');
+      return;
+    }
     
     const otpValue = otp.join('');
     if (otpValue.length !== 6) {
@@ -75,12 +131,23 @@ const ChangeCardPINOTP: React.FC = () => {
     setError('');
     
     try {
-      // TODO: Implement OTP verification API call
-      // For now, simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify OTP
+      const verifyResponse = await verifyCardOtp({
+        otp: otpValue,
+        operation: 'CHANGE_PIN'
+      });
+
+      if (!verifyResponse.verified) {
+        throw new Error('OTP verification failed');
+      }
       
-      // Navigate to success screen after OTP verification
-      navigate('/app/services/cards/change-pin/success');
+      // Navigate to set PIN screen after OTP verification
+      navigate('/app/services/cards/change-pin/success', {
+        state: { 
+          cardId,
+          otpToken: verifyResponse.token
+        }
+      });
     } catch (error: any) {
       console.error('OTP verification failed:', error);
       setError(error.message || 'Invalid OTP. Please try again.');
@@ -128,7 +195,21 @@ const ChangeCardPINOTP: React.FC = () => {
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-[#1F2937] mb-2">Mobile Number</h2>
               <h3 className="text-2xl font-bold text-[#1F2937] mb-2">OTP Verification</h3>
-              <p className="text-gray-600">Enter your OTP code to change your card PIN</p>
+              <p className="text-gray-600">
+                {isSendingOtp ? 'Sending OTP...' : 'Enter your OTP code to change your card PIN'}
+              </p>
+              
+              {/* Display OTP code if provided (for testing/development) */}
+              {otpCode && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    Your OTP code:
+                  </p>
+                  <p className="text-2xl font-bold text-blue-600 tracking-wider">
+                    {otpCode}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* OTP Input Fields */}

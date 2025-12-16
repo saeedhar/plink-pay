@@ -3,13 +3,23 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import cardIcon from '../../../assets/card-service/physical-card.svg';
 import checkCircle from '../../../assets/check_circle.svg';
+import { changeCardPin, requestVirtualCard } from '../../../services/cardAPI';
 import '../../../styles/dashboard.css';
 
 const ConfirmCardPIN: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { cardType?: 'mada' | 'mastercard'; pin?: string; source?: string } | null;
+  const state = location.state as { 
+    cardType?: 'mada' | 'mastercard'; 
+    pin?: string; 
+    source?: string;
+    cardId?: string;
+    otpToken?: string;
+    currentPin?: string;
+  } | null;
   const isChangePin = state?.source === 'change-card-pin';
+  const isRequestVirtualCard = state?.source === 'request-virtual-card';
+  const [isLoading, setIsLoading] = useState(false);
   const [confirmPin, setConfirmPin] = useState(['', '', '', '']);
   const [error, setError] = useState('');
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
@@ -58,7 +68,7 @@ const ConfirmCardPIN: React.FC = () => {
     });
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const confirmPinString = confirmPin.join('');
     
     if (confirmPinString.length !== 4) {
@@ -74,15 +84,64 @@ const ConfirmCardPIN: React.FC = () => {
       }, 100);
       return;
     }
-
-    // PIN confirmed successfully
-    // TODO: Implement API call to save PIN
     
     if (isChangePin) {
+      // Change PIN flow - call API
+      if (!state?.cardId) {
+        setError('Card ID is missing');
+        return;
+      }
+
+      setIsLoading(true);
+      setError('');
+
+      try {
+        if (!state?.currentPin) {
+          setError('Current PIN is required');
+          setIsLoading(false);
+          return;
+        }
+
+        await changeCardPin(state.cardId, {
+          currentPin: state.currentPin,
+          newPin: confirmPinString,
+          confirmPin: confirmPinString
+        });
+
       // Navigate to final success screen for change PIN
       navigate('/app/services/cards/change-pin/final-success', { replace: true });
+      } catch (error: any) {
+        console.error('Failed to change PIN:', error);
+        setError(error.message || 'Failed to change PIN. Please try again.');
+        setIsLoading(false);
+      }
+    } else if (isRequestVirtualCard) {
+      // Request virtual card flow - call API
+      if (!state?.cardType) {
+        setError('Card type is missing');
+        return;
+      }
+
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const cardType = state.cardType.toUpperCase() as 'MADA' | 'MASTERCARD';
+        const response = await requestVirtualCard({
+          cardType,
+          pin: confirmPinString,
+          confirmPin: confirmPinString
+        });
+
+        // Show success screen with card details
+        setShowSuccessScreen(true);
+      } catch (error: any) {
+        console.error('Failed to request virtual card:', error);
+        setError(error.message || 'Failed to request virtual card. Please try again.');
+        setIsLoading(false);
+      }
     } else {
-      // Show success screen for new card
+      // Show success screen for new card (fallback)
       setShowSuccessScreen(true);
     }
   };
@@ -205,9 +264,11 @@ const ConfirmCardPIN: React.FC = () => {
                 <button 
                   className="set-card-pin-confirm-button"
                   onClick={handleConfirm}
-                  disabled={confirmPin.join('').length !== 4}
+                  disabled={confirmPin.join('').length !== 4 || isLoading}
                 >
-                  Confirm PIN
+                  {isLoading 
+                    ? (isChangePin ? 'Changing PIN...' : isRequestVirtualCard ? 'Requesting Card...' : 'Confirming...')
+                    : 'Confirm PIN'}
                 </button>
               </div>
             </div>

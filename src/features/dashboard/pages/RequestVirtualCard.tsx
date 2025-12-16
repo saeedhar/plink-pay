@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
+import { checkVirtualCardEligibility } from '../../../services/cardAPI';
 import madaIcon from '../../../assets/card-service/mada.svg';
 import mastercardLogoIcon from '../../../assets/topup/cards/mastercard-logo.svg';
 import requestIcon from '../../../assets/card-service/request.svg';
@@ -9,16 +10,40 @@ import '../../../styles/dashboard.css';
 const RequestVirtualCard: React.FC = () => {
   const navigate = useNavigate();
   const [selectedCardType, setSelectedCardType] = useState<'mada' | 'mastercard' | null>(null);
+  const [showEligibilityError, setShowEligibilityError] = useState(false);
+  const [eligibilityError, setEligibilityError] = useState('');
+  const [isCheckingEligibility, setIsCheckingEligibility] = useState(false);
 
   const handleBack = () => {
     navigate('/app/services/cards');
   };
 
-  const handleContinue = () => {
-    if (selectedCardType) {
+  const handleContinue = async () => {
+    if (!selectedCardType) return;
+
+    try {
+      setIsCheckingEligibility(true);
+      // Check eligibility first
+      const eligibility = await checkVirtualCardEligibility();
+      
+      if (!eligibility.eligible) {
+        // Show error popup
+        setEligibilityError(eligibility.reason || 'You already have an active virtual card');
+        setShowEligibilityError(true);
+        setIsCheckingEligibility(false);
+        return;
+      }
+
+      // If eligible, proceed to OTP screen
       navigate('/app/services/cards/request-virtual/otp', {
         state: { cardType: selectedCardType }
       });
+    } catch (error: any) {
+      console.error('Failed to check eligibility:', error);
+      setEligibilityError(error.message || 'Failed to check eligibility. Please try again.');
+      setShowEligibilityError(true);
+    } finally {
+      setIsCheckingEligibility(false);
     }
   };
 
@@ -70,15 +95,46 @@ const RequestVirtualCard: React.FC = () => {
                 <button 
                   className="request-virtual-card-continue-button"
                   onClick={handleContinue}
-                  disabled={!selectedCardType}
+                  disabled={!selectedCardType || isCheckingEligibility}
                 >
-                  Continue
+                  {isCheckingEligibility ? 'Checking...' : 'Continue'}
                 </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Eligibility Error Popup */}
+      {showEligibilityError && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 25%, #6A5ACD40 50%, #F8FAFC 100%)'
+          }}
+        >
+          <div className="backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-blue-200/50 relative bg-white max-w-md mx-4">
+            <div className="text-center">
+              <div className="mb-4">
+                <svg className="w-16 h-16 mx-auto text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Not Eligible</h3>
+              <p className="text-gray-600 mb-6">{eligibilityError}</p>
+              <button
+                onClick={() => {
+                  setShowEligibilityError(false);
+                  setEligibilityError('');
+                }}
+                className="w-full py-3 px-6 rounded-full bg-[#022466] text-white font-medium hover:bg-[#011a4d] transition-all"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

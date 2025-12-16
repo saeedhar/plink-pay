@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import physicalCardIcon from '../../../assets/card-service/physical-card.svg';
 import nfcIcon from '../../../assets/card-service/NFC.svg';
@@ -25,6 +25,9 @@ const checkNFCSupport = (): boolean => {
 
 const SelectPhysicalCardActivation: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { cardId?: string } | null;
+  const cardId = state?.cardId;
   const [selectedMethod, setSelectedMethod] = useState<ActivationMethod>('nfc');
   const [showNFCNotSupportedModal, setShowNFCNotSupportedModal] = useState(false);
 
@@ -33,25 +36,37 @@ const SelectPhysicalCardActivation: React.FC = () => {
   };
 
   const handleContinue = () => {
+    if (!cardId) {
+      // If no cardId, navigate back to cards
+      navigate('/app/services/cards');
+      return;
+    }
+
     if (selectedMethod === 'nfc') {
       // Check if NFC is supported
       const isNFCSupported = checkNFCSupport();
       if (isNFCSupported) {
         // Navigate to NFC activation screen
-        navigate('/app/services/cards/activate-physical/nfc');
+        navigate('/app/services/cards/activate-physical/nfc', {
+          state: { cardId }
+        });
       } else {
         // Show modal that NFC is not supported
         setShowNFCNotSupportedModal(true);
       }
     } else {
       // Navigate to manual activation screen
-      navigate('/app/services/cards/activate-physical/manual');
+      navigate('/app/services/cards/activate-physical/manual', {
+        state: { cardId }
+      });
     }
   };
 
   const handleContinueToManual = () => {
     setShowNFCNotSupportedModal(false);
-    navigate('/app/services/cards/activate-physical/manual');
+    navigate('/app/services/cards/activate-physical/manual', {
+      state: { cardId }
+    });
   };
 
   return (

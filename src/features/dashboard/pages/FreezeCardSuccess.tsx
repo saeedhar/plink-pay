@@ -2,19 +2,15 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import checkCircle from '../../../assets/check_circle.svg';
 
-const ChangeCardPINSuccess: React.FC = () => {
+const FreezeCardSuccess: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { cardId?: string; otpToken?: string } | null;
+  const state = location.state as { action?: 'freeze' | 'unfreeze' } | null;
+  const action = state?.action || 'freeze';
+  const isUnfreeze = action === 'unfreeze';
 
-  const handleContinue = () => {
-    navigate('/app/services/cards/set-pin', {
-      state: { 
-        source: 'change-card-pin',
-        cardId: state?.cardId,
-        otpToken: state?.otpToken
-      }
-    });
+  const handleDone = () => {
+    navigate('/app/services/cards', { replace: true });
   };
 
   return (
@@ -40,20 +36,22 @@ const ChangeCardPINSuccess: React.FC = () => {
             {/* Success Title */}
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-[#022466] mb-4">
-                Verification Successful
+                Card {isUnfreeze ? 'Unfrozen' : 'Frozen'}<br />Successfully
               </h2>
               <p className="text-gray-600 text-base leading-relaxed">
-                Dear customer, your verification code has been successfully confirmed. You can now proceed to set your card PIN to complete your virtual card request. Thank you for choosing Tayseer Pay Company.
+                {isUnfreeze 
+                  ? 'Your card has been successfully unfrozen and is now active. Thank you for choosing Tayseer Wallet Company.'
+                  : 'Your card has been successfully frozen. You can unfreeze it anytime from the card management screen. Thank you for choosing Tayseer Wallet Company.'}
               </p>
             </div>
 
-            {/* Continue Button */}
+            {/* Done Button */}
             <div className="flex justify-center">
               <button
-                onClick={handleContinue}
+                onClick={handleDone}
                 className="w-full max-w-xs py-3 px-6 rounded-xl border-2 border-[#022466] text-[#022466] font-medium hover:bg-[#F9FAFB] transition-all"
               >
-                Continue
+                Done
               </button>
             </div>
           </div>
@@ -63,5 +61,4 @@ const ChangeCardPINSuccess: React.FC = () => {
   );
 };
 
-export default ChangeCardPINSuccess;
-
+export default FreezeCardSuccess;

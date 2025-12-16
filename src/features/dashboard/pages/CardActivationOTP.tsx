@@ -1,23 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { sendCardOtp, verifyCardOtp, activateCard } from '../../../services/cardAPI';
 
 const CardActivationOTP: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const state = location.state as { cardId?: string; cardLastFour?: string } | null;
+  const cardId = state?.cardId;
+  const cardLastFour = state?.cardLastFour || '';
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [cardLastFour, setCardLastFour] = useState('');
-
-  // Get card digits from navigation state
-  useEffect(() => {
-    const state = location.state as { cardLastFour?: string };
-    if (state?.cardLastFour) {
-      setCardLastFour(state.cardLastFour);
-    }
-  }, [location]);
+  const [isSendingOtp, setIsSendingOtp] = useState(true);
+  const [otpCode, setOtpCode] = useState<string | null>(null);
+  const hasSentOtp = useRef(false);
 
   // Timer countdown
   useEffect(() => {
@@ -29,13 +27,44 @@ const CardActivationOTP: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Focus first input on mount
+  // Send OTP on mount
   useEffect(() => {
+    if (hasSentOtp.current || !cardId) return;
+
+    const sendOtp = async () => {
+      try {
+        setIsSendingOtp(true);
+        setError('');
+        hasSentOtp.current = true;
+        const response = await sendCardOtp({ operation: 'ACTIVATE_CARD' });
+        setOtpCode(response.otpCode || null);
+        setTimeLeft(response.expiresIn || 30);
+        setIsSendingOtp(false);
+        
+        setTimeout(() => {
+          const firstInput = document.getElementById('otp-0');
+          firstInput?.focus();
+        }, 100);
+      } catch (err: any) {
+        console.error('Failed to send OTP:', err);
+        setError(err.message || 'Failed to send OTP. Please try again.');
+        setIsSendingOtp(false);
+        hasSentOtp.current = false;
+      }
+    };
+
+    sendOtp();
+  }, [cardId]);
+
+  // Focus first input after OTP is sent
+  useEffect(() => {
+    if (!isSendingOtp) {
     setTimeout(() => {
       const firstInput = document.getElementById('otp-0');
       firstInput?.focus();
     }, 100);
-  }, []);
+    }
+  }, [isSendingOtp]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -62,20 +91,41 @@ const CardActivationOTP: React.FC = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
+    if (!cardId) return;
+
+    try {
     setIsResendDisabled(true);
     setError('');
     setOtp(['', '', '', '', '', '']);
-    setTimeLeft(30);
-    // TODO: Implement resend OTP API call
+      
+      const response = await sendCardOtp({ operation: 'ACTIVATE_CARD' });
+      setOtpCode(response.otpCode || null);
+      setTimeLeft(response.expiresIn || 30);
+      
     setTimeout(() => {
       const firstInput = document.getElementById('otp-0');
       firstInput?.focus();
     }, 100);
+    } catch (err: any) {
+      console.error('Failed to resend OTP:', err);
+      setError(err.message || 'Failed to resend OTP. Please try again.');
+      setIsResendDisabled(false);
+    }
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!cardId) {
+      setError('Card ID is missing');
+      return;
+    }
+
+    if (!cardLastFour) {
+      setError('Card last 4 digits are missing');
+      return;
+    }
     
     const otpValue = otp.join('');
     if (otpValue.length !== 6) {
@@ -87,26 +137,46 @@ const CardActivationOTP: React.FC = () => {
     setError('');
     
     try {
-      // TODO: Implement OTP verification API call
-      // For now, simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify OTP
+      const verifyResponse = await verifyCardOtp({
+        otp: otpValue,
+        operation: 'ACTIVATE_CARD'
+      });
+
+      if (!verifyResponse.verified) {
+        throw new Error('OTP verification failed');
+      }
+
+      // Activate the card
+      const activateResponse = await activateCard(cardId, {
+        activationMethod: 'MANUAL',
+        last4Digits: cardLastFour
+      });
+
+      if (!activateResponse.message || !activateResponse.message.toLowerCase().includes('success')) {
+        throw new Error(activateResponse.message || 'Failed to activate card');
+      }
       
-      // Navigate to success screen (same success screen for both NFC and manual)
+      // Navigate to success screen
       navigate('/app/services/cards/activate-physical/success');
     } catch (error: any) {
-      console.error('OTP verification failed:', error);
-      setError(error.message || 'Invalid OTP. Please try again.');
+      console.error('Card activation failed:', error);
+      setError(error.message || 'Failed to activate card. Please try again.');
       setOtp(['', '', '', '', '', '']);
       setIsLoading(false);
     }
   };
 
   const handleChangeNumber = () => {
-    navigate('/app/services/cards/activate-physical/manual');
+    navigate('/app/services/cards/activate-physical/manual', {
+      state: { cardId }
+    });
   };
 
   const handleClose = () => {
-    navigate('/app/services/cards/activate-physical/manual');
+    navigate('/app/services/cards/activate-physical/manual', {
+      state: { cardId }
+    });
   };
 
   const formatTime = (seconds: number) => {
@@ -144,7 +214,21 @@ const CardActivationOTP: React.FC = () => {
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-[#1F2937] mb-2">Mobile Number</h2>
               <h3 className="text-2xl font-bold text-[#1F2937] mb-2">OTP Verification</h3>
-              <p className="text-gray-600">Enter your OTP code</p>
+              <p className="text-gray-600">
+                {isSendingOtp ? 'Sending OTP...' : 'Enter your OTP code to activate your card'}
+              </p>
+              
+              {/* Display OTP code if provided (for testing/development) */}
+              {otpCode && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    Your OTP code:
+                  </p>
+                  <p className="text-2xl font-bold text-blue-600 tracking-wider">
+                    {otpCode}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* OTP Input Fields */}

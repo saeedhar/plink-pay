@@ -1,11 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import physicalCardIcon from '../../../assets/card-service/physical-card.svg';
 import '../../../styles/dashboard.css';
 
 const ManualActivation: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { cardId?: string } | null;
+  const cardId = state?.cardId;
   const [cardDigits, setCardDigits] = useState(['', '', '', '']);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -57,6 +60,12 @@ const ManualActivation: React.FC = () => {
   };
 
   const handleContinue = () => {
+    if (!cardId) {
+      // If no cardId, navigate back
+      navigate('/app/services/cards/activate-physical');
+      return;
+    }
+
     const cardDigitsString = cardDigits.join('');
     if (cardDigitsString.length !== 4) {
       // TODO: Show error message
@@ -65,7 +74,10 @@ const ManualActivation: React.FC = () => {
     
     // Navigate to OTP verification screen
     navigate('/app/services/cards/activate-physical/manual/otp', {
-      state: { cardLastFour: cardDigitsString }
+      state: { 
+        cardId,
+        cardLastFour: cardDigitsString 
+      }
     });
   };
 

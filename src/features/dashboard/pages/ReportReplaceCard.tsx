@@ -9,7 +9,11 @@ type ReportReason = 'lost' | 'stolen' | 'fraud' | 'damaged' | 'other';
 const ReportReplaceCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = location.state as { originalCardType?: 'mada' | 'mastercard'; action?: 'replace' | 'stop' } | null;
+  const state = location.state as { 
+    originalCardType?: 'mada' | 'mastercard'; 
+    action?: 'replace' | 'stop';
+    cardId?: string;
+  } | null;
   const action = state?.action || 'replace';
   const [selectedReason, setSelectedReason] = useState<ReportReason>();
   const [otherReason, setOtherReason] = useState('');
@@ -31,7 +35,8 @@ const ReportReplaceCard: React.FC = () => {
         state: { 
           reason,
           originalCardType: state?.originalCardType,
-          action
+          action,
+          cardId: state?.cardId
         } 
       });
     } else {
@@ -40,7 +45,8 @@ const ReportReplaceCard: React.FC = () => {
         state: { 
           reason,
           originalCardType: state?.originalCardType,
-          action
+          action,
+          cardId: state?.cardId
         } 
       });
     }

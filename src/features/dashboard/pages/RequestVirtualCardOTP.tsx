@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../../../assets/logo-mark.svg';
 import checkCircle from '../../../assets/check_circle.svg';
+import { sendCardOtp, verifyCardOtp } from '../../../services/cardAPI';
 
 const RequestVirtualCardOTP: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +13,39 @@ const RequestVirtualCardOTP: React.FC = () => {
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(true);
+  const [otpCode, setOtpCode] = useState<string | null>(null);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const hasSentOtp = useRef(false);
+
+  // Send OTP on mount
+  useEffect(() => {
+    if (hasSentOtp.current) return;
+
+    const sendOtp = async () => {
+      try {
+        setIsSendingOtp(true);
+        setError('');
+        hasSentOtp.current = true;
+        const response = await sendCardOtp({ operation: 'REQUEST_CARD' });
+        setOtpCode(response.otpCode || null);
+        setTimeLeft(response.expiresIn || 30);
+        setIsSendingOtp(false);
+        
+        setTimeout(() => {
+          const firstInput = document.getElementById('otp-0');
+          firstInput?.focus();
+        }, 100);
+      } catch (err: any) {
+        console.error('Failed to send OTP:', err);
+        setError(err.message || 'Failed to send OTP. Please try again.');
+        setIsSendingOtp(false);
+        hasSentOtp.current = false;
+      }
+    };
+
+    sendOtp();
+  }, []);
 
   // Timer countdown
   useEffect(() => {
@@ -24,13 +57,15 @@ const RequestVirtualCardOTP: React.FC = () => {
     }
   }, [timeLeft]);
 
-  // Focus first input on mount
+  // Focus first input after OTP is sent
   useEffect(() => {
+    if (!isSendingOtp) {
     setTimeout(() => {
       const firstInput = document.getElementById('otp-0');
       firstInput?.focus();
     }, 100);
-  }, []);
+    }
+  }, [isSendingOtp]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -57,16 +92,25 @@ const RequestVirtualCardOTP: React.FC = () => {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
+    try {
     setIsResendDisabled(true);
     setError('');
     setOtp(['', '', '', '', '', '']);
-    setTimeLeft(30);
-    // TODO: Implement resend OTP API call
+      
+      const response = await sendCardOtp({ operation: 'REQUEST_CARD' });
+      setOtpCode(response.otpCode || null);
+      setTimeLeft(response.expiresIn || 30);
+      
     setTimeout(() => {
       const firstInput = document.getElementById('otp-0');
       firstInput?.focus();
     }, 100);
+    } catch (err: any) {
+      console.error('Failed to resend OTP:', err);
+      setError(err.message || 'Failed to resend OTP. Please try again.');
+      setIsResendDisabled(false);
+    }
   };
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -82,11 +126,17 @@ const RequestVirtualCardOTP: React.FC = () => {
     setError('');
     
     try {
-      // TODO: Implement OTP verification API call
-      // For now, simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify OTP
+      const verifyResponse = await verifyCardOtp({
+        otp: otpValue,
+        operation: 'REQUEST_CARD'
+      });
+
+      if (!verifyResponse.verified) {
+        throw new Error('OTP verification failed');
+      }
       
-      // Show success screen
+      // Show success screen and navigate to set PIN
       setShowSuccessScreen(true);
     } catch (error: any) {
       console.error('OTP verification failed:', error);
@@ -97,9 +147,12 @@ const RequestVirtualCardOTP: React.FC = () => {
   };
 
   const handleSuccessContinue = () => {
-    // Navigate to set card PIN screen
+    // Navigate to set card PIN screen with OTP token
     navigate('/app/services/cards/set-pin', {
-      state: { cardType: state?.cardType }
+      state: { 
+        cardType: state?.cardType,
+        source: 'request-virtual-card'
+      }
     });
   };
 
@@ -202,7 +255,21 @@ const RequestVirtualCardOTP: React.FC = () => {
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-[#022466] mb-2">Mobile Number</h2>
                 <h3 className="text-xl font-bold text-[#022466] mb-2">OTP Verification</h3>
-                <p className="text-gray-600">Enter your OTP code</p>
+                <p className="text-gray-600">
+                  {isSendingOtp ? 'Sending OTP...' : 'Enter your OTP code to request your virtual card'}
+                </p>
+                
+                {/* Display OTP code if provided (for testing/development) */}
+                {otpCode && (
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Your OTP code:
+                    </p>
+                    <p className="text-2xl font-bold text-blue-600 tracking-wider">
+                      {otpCode}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* OTP Input Fields */}

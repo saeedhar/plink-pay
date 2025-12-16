@@ -49,6 +49,7 @@ import CardActivationSuccess from '../../features/dashboard/pages/CardActivation
 import ShowCardDetailsOTP from '../../features/dashboard/pages/ShowCardDetailsOTP';
 import ShowCardDetails from '../../features/dashboard/pages/ShowCardDetails';
 import FreezeCardOTP from '../../features/dashboard/pages/FreezeCardOTP';
+import FreezeCardSuccess from '../../features/dashboard/pages/FreezeCardSuccess';
 import DisplayCardPINOTP from '../../features/dashboard/pages/DisplayCardPINOTP';
 import DisplayCardPIN from '../../features/dashboard/pages/DisplayCardPIN';
 import ChangeCardPINOTP from '../../features/dashboard/pages/ChangeCardPINOTP';
@@ -114,6 +115,7 @@ const AppNavigator: React.FC = () => {
             <Route path="cards/show-details/otp" element={<ShowCardDetailsOTP />} />
             <Route path="cards/show-details" element={<ShowCardDetails />} />
             <Route path="cards/freeze/otp" element={<FreezeCardOTP />} />
+            <Route path="cards/freeze/success" element={<FreezeCardSuccess />} />
             <Route path="cards/display-pin/otp" element={<DisplayCardPINOTP />} />
             <Route path="cards/display-pin" element={<DisplayCardPIN />} />
             <Route path="cards/change-pin/otp" element={<ChangeCardPINOTP />} />
