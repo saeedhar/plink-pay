@@ -70,12 +70,14 @@ export interface LimitsOTPRequest {
 export interface UpdateOverallLimitsRequest {
   dailyLimit?: number;
   monthlyLimit?: number;
+  otp: string; // OTP for web, passcode for mobile
 }
 
 export interface UpdateTransactionLimitsRequest {
   limitType: 'DAILY' | 'MONTHLY';
   transactionType: string;
   limitAmount: number;
+  otp: string; // OTP for web, passcode for mobile
 }
 
 export interface UpdateLimitsResult {
@@ -147,7 +149,9 @@ export class LimitsService {
       
       // Remove undefined/null fields to avoid sending null values
       // But ensure at least one field is present
-      const cleanRequest: any = {};
+      const cleanRequest: any = {
+        otp: request.otp // Always include OTP
+      };
       if (request.dailyLimit !== undefined && request.dailyLimit !== null && !isNaN(request.dailyLimit)) {
         cleanRequest.dailyLimit = request.dailyLimit;
       }
@@ -156,7 +160,7 @@ export class LimitsService {
       }
       
       // Validate that at least one limit is provided
-      if (Object.keys(cleanRequest).length === 0) {
+      if (Object.keys(cleanRequest).length === 1) { // Only OTP, no limits
         throw new Error('At least one of dailyLimit or monthlyLimit must be provided');
       }
       
@@ -181,6 +185,7 @@ export class LimitsService {
       const url = subWalletId 
         ? `/api/v1/limits/transaction?subWalletId=${subWalletId}`
         : '/api/v1/limits/transaction';
+      // Request already includes OTP from frontend
       const data = await API.put(url, request);
       console.log('✅ Transaction limits updated:', data);
       return data;
@@ -238,63 +243,24 @@ export class LimitsService {
 
   /**
    * Request OTP for limits operations
-   * Uses authenticated email update endpoint to send OTP to current user's phone
-   * This is a workaround since there's no limits-specific OTP endpoint
+   * Uses dedicated wallet OTP endpoint
    */
   static async requestOTP(request: LimitsOTPRequest): Promise<LimitsOTPResponse> {
     try {
       console.log('🔍 Requesting OTP for limits operation:', request.action);
       
-      // Get current user to ensure we're authenticated and get their current email
-      const { getCurrentUser } = await import('./realBackendAPI');
-      const user = await getCurrentUser();
-      
-      if (!user.phoneE164) {
-        throw new Error('Phone number not found in user profile. Please contact support.');
-      }
-      
-      // Use email update endpoint as a workaround to send OTP to current user's phone
-      // This is an authenticated endpoint that works for existing users
-      // We'll use the current email (if exists) or a temp email to trigger OTP sending
-      // The OTP will be sent to the user's current phone number
-      const tempEmail = user.email ? `temp-${Date.now()}@${user.email.split('@')[1]}` : `limits-${Date.now()}@temp.com`;
-      
-      try {
-        const data = await API.post('/api/v1/users/me/email/update', {
-          email: tempEmail
+      // Use dedicated wallet OTP endpoint with limits business type
+      const data = await API.post('/api/v1/wallet/otp/send', {
+        businessType: 'limits_update'
       });
       
-        console.log('✅ OTP requested successfully via email update endpoint:', data);
+      console.log('✅ OTP requested successfully via wallet OTP endpoint:', data);
       return {
         success: data.success || true,
         message: data.message || 'OTP sent successfully',
-          otpCode: data.otpCode,
-          sessionId: data.sessionId // Return session ID for OTP verification
+        otpCode: data.otpCode,
+        sessionId: undefined // Wallet OTP doesn't use session ID - OTP is verified directly
       };
-      } catch (emailError: any) {
-        // Check if OTP was sent despite the error (some validation errors still send OTP)
-        if (emailError.response?.data?.otpCode) {
-          console.log('✅ OTP received despite validation error:', emailError.response.data);
-          return {
-            success: true,
-            message: 'OTP sent successfully',
-            otpCode: emailError.response.data.otpCode
-          };
-        }
-        
-        // If it's a phone-related error, rethrow with clearer message
-        if (emailError.message?.includes('phone') || emailError.message?.includes('Phone')) {
-          throw new Error('Failed to send OTP to your phone. Please contact support.');
-        }
-        
-        // For other errors, check if it's the "already exists" error from auth endpoint
-        if (emailError.message?.includes('already registered') || 
-            emailError.message?.includes('already exists')) {
-          throw new Error('Unable to send OTP. Please ensure you are logged in correctly.');
-        }
-        
-        throw new Error(emailError.message || 'Failed to request OTP. Please try again.');
-      }
     } catch (error: any) {
       console.error('Error requesting limits OTP:', error);
       throw error;

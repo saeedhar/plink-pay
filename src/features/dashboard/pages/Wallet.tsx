@@ -171,7 +171,7 @@ const Wallet: React.FC = () => {
   };
 
   const handleSubWalletClick = () => {
-    if (!isWalletActive) return; // Disable if wallet is deactivated
+    if (!isWalletActive || isSubWallet) return; // Disable if wallet is deactivated or viewing a sub-wallet
     navigate('/app/services/wallet/subwallet');
   };
 
@@ -258,9 +258,9 @@ const Wallet: React.FC = () => {
               
               {/* Create Sub-Wallet Section */}
               <div 
-                className={`wallet-section ${!isWalletActive ? 'wallet-section-disabled' : ''}`} 
+                className={`wallet-section ${(!isWalletActive || isSubWallet) ? 'wallet-section-disabled' : ''}`} 
                 onClick={handleSubWalletClick}
-                style={{ cursor: !isWalletActive ? 'not-allowed' : 'pointer', opacity: !isWalletActive ? 0.5 : 1 }}
+                style={{ cursor: (!isWalletActive || isSubWallet) ? 'not-allowed' : 'pointer', opacity: (!isWalletActive || isSubWallet) ? 0.5 : 1 }}
               >
                 <div className="wallet-section-content">
                   <div className="wallet-section-icon">
@@ -271,7 +271,9 @@ const Wallet: React.FC = () => {
                     <p className="wallet-section-description">
                       {!isWalletActive 
                         ? 'Wallet must be activated to create sub-wallets.' 
-                        : 'Add a new sub-wallet to manage your funds.'}
+                        : isSubWallet 
+                          ? 'You are currently in a sub-wallet. Return to the main wallet to create a new sub-wallet.' 
+                          : 'Add a new sub-wallet to manage your funds.'}
                     </p>
                   </div>
                 </div>

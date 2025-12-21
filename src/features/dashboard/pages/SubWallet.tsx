@@ -42,7 +42,6 @@ const SubWallet: React.FC = () => {
   const [isRequestingOTP, setIsRequestingOTP] = useState(false);
   const hasRequestedOTP = useRef(false);
   const isRequestingRef = useRef(false); // Track request state with ref to prevent race conditions
-  const emailUpdateSessionId = useRef<string | null>(null);
 
   // Request OTP from backend
   const requestOTP = async () => {
@@ -66,14 +65,6 @@ const SubWallet: React.FC = () => {
       if (response.otpCode) {
         setRealOTP(response.otpCode);
         console.log('✅ Real OTP received from backend for sub-wallet creation:', response.otpCode);
-      }
-      
-      // Store session ID if provided (for email update verification)
-      if (response.sessionId) {
-        emailUpdateSessionId.current = response.sessionId;
-        console.log('✅ Session ID stored for OTP verification:', response.sessionId);
-      } else {
-        console.warn('⚠️ No session ID received from OTP request');
       }
       
       // Reset timer
@@ -297,56 +288,39 @@ const SubWallet: React.FC = () => {
     setOtpError('');
     
     try {
-      // Verify OTP using email update verification endpoint
-      // This verifies OTP for the current user's phone without actually updating email
-      if (!emailUpdateSessionId.current) {
-        throw new Error('OTP session not found. Please request a new OTP.');
-      }
+      console.log('🔍 Verifying OTP and creating sub-wallet...', {
+        subWalletName: walletName.trim(),
+        otpLength: otpCode.length
+      });
       
-      try {
-        // Verify OTP using email update verification endpoint
-        // This will verify the OTP for the current user's phone
-        // Even if email update fails (due to invalid temp email), OTP verification should succeed
-        await API.post('/api/v1/users/me/email/verify-otp', {
-          sessionId: emailUpdateSessionId.current,
+      // Create sub-wallet with OTP - backend will verify OTP internally
+      // This will call POST /api/v1/sub-wallets with { subWalletName, otp }
+      const newWallet = await WalletService.createSubWallet({
+        subWalletName: walletName.trim(),
         otp: otpCode
       });
       
-        console.log('✅ OTP verified successfully for sub-wallet creation');
-      } catch (verifyError: any) {
-        // Check if it's an email validation error (OTP might still be valid)
-        // If it's an email format/validation error, OTP was likely verified but email update failed
-        // In that case, we can proceed with sub-wallet creation
-        if (verifyError.message?.includes('email') && verifyError.message?.includes('format')) {
-          // Email validation failed, but OTP might have been verified
-          // Check if the error response indicates OTP was verified
-          console.log('⚠️ Email validation failed, but checking if OTP was verified');
-          // Proceed with sub-wallet creation - if OTP was invalid, creation will fail
-        } else if (verifyError.message?.includes('Invalid') || verifyError.message?.includes('incorrect') || verifyError.message?.includes('expired') || verifyError.message?.includes('Session')) {
-          // OTP verification failed
-          throw new Error('The code you entered is incorrect. Please try again.');
-        } else {
-          // Other errors - might be OTP related, throw error
-          throw verifyError;
-        }
-      }
+      console.log('✅ Sub-wallet created successfully:', newWallet);
       
-      // OTP verified, now create the sub-wallet
-        const newWallet = await WalletService.createSubWallet({
-          subWalletName: walletName.trim()
-        });
+      // Add the new wallet to the list
+      setSubWallets(prev => [...prev, newWallet]);
         
-        // Add the new wallet to the list
-        setSubWallets(prev => [...prev, newWallet]);
-      
-      // Clear session ID
-      emailUpdateSessionId.current = null;
-        
-        // Show success screen
-        setShowSuccess(true);
+      // Show success screen
+      setShowSuccess(true);
     } catch (err: any) {
-      console.error('Error creating sub-wallet:', err);
-      setOtpError(err instanceof Error ? err.message : 'Failed to create sub-wallet');
+      console.error('❌ Error creating sub-wallet:', err);
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response,
+        status: err.response?.status
+      });
+      
+      // Check if it's an OTP validation error
+      if (err.message?.includes('Invalid') || err.message?.includes('incorrect') || err.message?.includes('expired') || err.message?.includes('OTP')) {
+        setOtpError('The code you entered is incorrect. Please try again.');
+      } else {
+        setOtpError(err instanceof Error ? err.message : 'Failed to create sub-wallet');
+      }
     } finally {
       setIsLoading(false);
     }

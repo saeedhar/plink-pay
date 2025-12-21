@@ -33,6 +33,7 @@ export interface SubWalletData {
 
 export interface CreateSubWalletRequest {
   subWalletName: string;
+  otp: string; // OTP for web, passcode for mobile
 }
 
 export interface CreateSubWalletResponse {
@@ -128,64 +129,31 @@ export class WalletService {
 
   /**
    * Request OTP for wallet operations
-   * Uses authenticated email update endpoint to send OTP to current user's phone
-   * This is a workaround since there's no wallet-specific OTP endpoint
+   * Uses dedicated wallet OTP endpoint
    */
   static async requestOTP(request: WalletOTPRequest): Promise<WalletOTPResponse> {
     try {
       console.log('🔍 Requesting OTP for wallet operation:', request.action);
       
-      // Get current user to ensure we're authenticated and get their current email
-      const { getCurrentUser } = await import('./realBackendAPI');
-      const user = await getCurrentUser();
+      // Map action to business type
+      const businessType = request.action === 'activate' 
+        ? 'wallet_activate' 
+        : request.action === 'deactivate'
+        ? 'wallet_deactivate'
+        : 'wallet_operation';
       
-      if (!user.phoneE164) {
-        throw new Error('Phone number not found in user profile. Please contact support.');
-      }
-      
-      // Use email update endpoint as a workaround to send OTP to current user's phone
-      // This is an authenticated endpoint that works for existing users
-      // We'll use the current email (if exists) or a temp email to trigger OTP sending
-      // The OTP will be sent to the user's current phone number
-      const tempEmail = user.email ? `temp-${Date.now()}@${user.email.split('@')[1]}` : `wallet-${Date.now()}@temp.com`;
-      
-      try {
-        const data = await API.post('/api/v1/users/me/email/update', {
-          email: tempEmail
+      // Use dedicated wallet OTP endpoint
+      const data = await API.post('/api/v1/wallet/otp/send', {
+        businessType: businessType
       });
       
-        console.log('✅ OTP requested successfully via email update endpoint:', data);
+      console.log('✅ OTP requested successfully via wallet OTP endpoint:', data);
       return {
         success: data.success || true,
         message: data.message || 'OTP sent successfully',
-          otpCode: data.otpCode,
-          sessionId: data.sessionId // Store session ID for consistency
+        otpCode: data.otpCode,
+        sessionId: undefined // Wallet OTP doesn't use session ID - OTP is verified directly
       };
-      } catch (emailError: any) {
-        // Check if OTP was sent despite the error (some validation errors still send OTP)
-        if (emailError.response?.data?.otpCode) {
-          console.log('✅ OTP received despite validation error:', emailError.response.data);
-          return {
-            success: true,
-            message: 'OTP sent successfully',
-            otpCode: emailError.response.data.otpCode,
-            sessionId: emailError.response.data.sessionId // Store session ID if available
-          };
-        }
-        
-        // If it's a phone-related error, rethrow with clearer message
-        if (emailError.message?.includes('phone') || emailError.message?.includes('Phone')) {
-          throw new Error('Failed to send OTP to your phone. Please contact support.');
-        }
-        
-        // For other errors, check if it's the "already exists" error from auth endpoint
-        if (emailError.message?.includes('already registered') || 
-            emailError.message?.includes('already exists')) {
-          throw new Error('Unable to send OTP. Please ensure you are logged in correctly.');
-        }
-        
-        throw new Error(emailError.message || 'Failed to request OTP. Please try again.');
-      }
     } catch (error: any) {
       console.error('Error requesting wallet OTP:', error);
       throw error;
@@ -194,43 +162,23 @@ export class WalletService {
 
   /**
    * Request OTP for sub-wallet operations
+   * Uses dedicated wallet OTP endpoint
    */
   static async requestSubWalletOTP(request: SubWalletOTPRequest): Promise<WalletOTPResponse> {
     try {
       console.log('🔍 Requesting OTP for sub-wallet operation:', request.action);
       
-      // Use the same workaround as wallet activate/deactivate
-      // Use the email update endpoint to send OTP to the current user's phone
-      const { getCurrentUser } = await import('./realBackendAPI');
-      const { UpdateEmailRequest, UpdateEmailResponse } = await import('./userManagementService');
+      // Use dedicated wallet OTP endpoint with sub-wallet business type
+      const data = await API.post('/api/v1/wallet/otp/send', {
+        businessType: 'sub_wallet_create'
+      });
       
-      let phoneNumber = localStorage.getItem('phoneNumber');
-
-      if (!phoneNumber) {
-        try {
-          const user = await getCurrentUser();
-          phoneNumber = user.phoneE164 || undefined;
-        } catch (err) {
-          console.warn('Could not fetch user profile for phone number:', err);
-        }
-      }
-
-      if (!phoneNumber) {
-        throw new Error('Phone number not found. Please ensure you are logged in.');
-      }
-
-      // Use the email update endpoint as a workaround to send OTP to the current user's phone
-      const emailUpdateRequest: UpdateEmailRequest = {
-        email: 'temp@example.com' // Dummy email, as we only need the OTP side effect
-      };
-      const data = await API.post<UpdateEmailResponse>('/api/v1/users/me/email/update', emailUpdateRequest);
-      
-      console.log('✅ OTP requested successfully via email update endpoint:', data);
+      console.log('✅ OTP requested successfully via wallet OTP endpoint:', data);
       return {
         success: data.success || true,
         message: data.message || 'OTP sent successfully',
-        otpCode: data.otpCode, // Assuming the response includes otpCode for testing
-        sessionId: data.sessionId // Store session ID for OTP verification
+        otpCode: data.otpCode,
+        sessionId: undefined // Wallet OTP doesn't use session ID - OTP is verified directly
       };
     } catch (error) {
       console.error('Error requesting sub-wallet OTP:', error);
@@ -350,7 +298,19 @@ export class WalletService {
    */
   static async createSubWallet(request: CreateSubWalletRequest): Promise<CreateSubWalletResponse> {
     try {
-      const data = await API.post('/api/v1/sub-wallets', request);
+      console.log('📤 Creating sub-wallet with request:', {
+        subWalletName: request.subWalletName,
+        hasOtp: !!request.otp,
+        otpLength: request.otp?.length
+      });
+      
+      const data = await API.post('/api/v1/sub-wallets', {
+        subWalletName: request.subWalletName,
+        otp: request.otp
+      });
+      
+      console.log('✅ Sub-wallet created successfully:', data);
+      
       return {
         subWalletId: data.subWalletId,
         subWalletName: data.subWalletName,
@@ -361,7 +321,7 @@ export class WalletService {
         createdAt: data.createdAt
       };
     } catch (error) {
-      console.error('Error creating sub-wallet:', error);
+      console.error('❌ Error creating sub-wallet:', error);
       throw error;
     }
   }

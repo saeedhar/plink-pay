@@ -24,7 +24,6 @@ export default function WalletOTPPage() {
   const [subWalletId, setSubWalletId] = useState<string | undefined>(state?.subWalletId);
   const [isSubWallet, setIsSubWallet] = useState<boolean>(state?.isSubWallet || false);
   const [realOTP, setRealOTP] = useState('');
-  const [sessionId, setSessionId] = useState<string>(''); // Store sessionId for OTP verification
   const [isRequestingOTP, setIsRequestingOTP] = useState(false);
   const hasRequestedOTP = useRef(false);
   const isRequestingRef = useRef(false); // Track request state with ref to prevent race conditions
@@ -49,12 +48,6 @@ export default function WalletOTPPage() {
       if (response.otpCode) {
         setRealOTP(response.otpCode);
         console.log('✅ Real OTP received from backend:', response.otpCode);
-      }
-      
-      // Store sessionId for OTP verification
-      if (response.sessionId) {
-        setSessionId(response.sessionId);
-        console.log('✅ Session ID stored for OTP verification:', response.sessionId);
       }
       
       // Reset timer
@@ -177,18 +170,14 @@ export default function WalletOTPPage() {
       return;
     }
     
-    // Validate sessionId exists
-    if (!sessionId) {
-      setError('Session expired. Please request a new OTP.');
-      return;
-    }
-    
     setIsLoading(true);
     setError('');
     
     try {
-      // Backend now handles OTP verification directly, so we just call activate/deactivate
+      // Backend verifies OTP internally when calling activate/deactivate
       console.log('🔍 Proceeding with wallet operation:', action, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
+      console.log('📤 Sending OTP with wallet operation request');
+      
       if (action === 'activate') {
         await WalletService.activateWallet({ otp: otpCode }, subWalletId);
         console.log('✅ Wallet activated successfully', isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');

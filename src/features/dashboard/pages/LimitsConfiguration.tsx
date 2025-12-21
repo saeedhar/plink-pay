@@ -513,57 +513,24 @@ const LimitsConfiguration: React.FC = () => {
       setIsLoading(true);
       setOtpError('');
       
-      // Verify OTP using email update verification endpoint
-      // This verifies OTP for the current user's phone without actually updating email
-      if (!emailUpdateSessionId.current) {
-        throw new Error('OTP session not found. Please request a new OTP.');
-      }
-      
-      try {
-        // Verify OTP using email update verification endpoint
-        // This will verify the OTP for the current user's phone
-        // Even if email update fails (due to invalid temp email), OTP verification should succeed
-        await API.post('/api/v1/users/me/email/verify-otp', {
-          sessionId: emailUpdateSessionId.current,
-        otp: otpCode
-      });
-      
-        console.log('✅ OTP verified successfully for limits update');
-      } catch (verifyError: any) {
-        // Check if it's an email validation error (OTP might still be valid)
-        // If it's an email format/validation error, OTP was likely verified but email update failed
-        // In that case, we can proceed with limits update
-        if (verifyError.message?.includes('email') && verifyError.message?.includes('format')) {
-          // Email validation failed, but OTP might have been verified
-          // Check if the error response indicates OTP was verified
-          console.log('⚠️ Email validation failed, but checking if OTP was verified');
-          // Proceed with limits update - if OTP was invalid, limits update will fail
-        } else if (verifyError.message?.includes('Invalid') || verifyError.message?.includes('incorrect') || verifyError.message?.includes('expired') || verifyError.message?.includes('Session')) {
-          // OTP verification failed
-          throw new Error('The code you entered is incorrect. Please try again.');
-        } else {
-          // Other errors - might be OTP related, throw error
-          throw verifyError;
+      // Update limits with OTP - backend will verify OTP internally
+      if (selectedLimitType === 'overall') {
+        // Update overall limits - only include non-empty values
+        const updateRequest: UpdateOverallLimitsRequest = {
+          dailyLimit: dailyLimit && dailyLimit.trim() ? parseFloat(dailyLimit) : undefined,
+          monthlyLimit: monthlyLimit && monthlyLimit.trim() ? parseFloat(monthlyLimit) : undefined,
+          otp: otpCode
+        };
+        
+        // Validate that at least one limit is provided
+        if (!updateRequest.dailyLimit && !updateRequest.monthlyLimit) {
+          throw new Error('At least one of daily or monthly limit must be provided');
         }
-      }
-      
-      // OTP verified, now update limits
-        if (selectedLimitType === 'overall') {
-          // Update overall limits - only include non-empty values
-          const updateRequest: UpdateOverallLimitsRequest = {
-            dailyLimit: dailyLimit && dailyLimit.trim() ? parseFloat(dailyLimit) : undefined,
-            monthlyLimit: monthlyLimit && monthlyLimit.trim() ? parseFloat(monthlyLimit) : undefined
-          };
-          
-          // Validate that at least one limit is provided
-          if (!updateRequest.dailyLimit && !updateRequest.monthlyLimit) {
-            throw new Error('At least one of daily or monthly limit must be provided');
-          }
-          
-          console.log('🔍 Updating overall limits:', updateRequest, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
-          const updateResult = await LimitsService.updateOverallLimits(updateRequest, isSubWallet ? subWalletId : undefined);
-          console.log('✅ Overall limits updated:', updateResult);
-        } else {
+        
+        console.log('🔍 Updating overall limits:', updateRequest, isSubWallet ? `(sub-wallet: ${subWalletId})` : '(main wallet)');
+        const updateResult = await LimitsService.updateOverallLimits(updateRequest, isSubWallet ? subWalletId : undefined);
+        console.log('✅ Overall limits updated:', updateResult);
+      } else {
         // Update transaction-specific limits based on active tab
         const limitType = activeTab === 'daily' ? 'DAILY' : 'MONTHLY';
         const limitAmount = activeTab === 'daily' 
@@ -574,10 +541,11 @@ const LimitsConfiguration: React.FC = () => {
           throw new Error('Transaction type not selected');
         }
         
-          const updateRequest: UpdateTransactionLimitsRequest = {
+        const updateRequest: UpdateTransactionLimitsRequest = {
           limitType: limitType,
-            transactionType: getBackendTransactionType(getTransactionCode(selectedTransaction)),
-          limitAmount: limitAmount
+          transactionType: getBackendTransactionType(getTransactionCode(selectedTransaction)),
+          limitAmount: limitAmount,
+          otp: otpCode
         };
         
         console.log('🔍 Updating transaction limits:', {
@@ -587,11 +555,11 @@ const LimitsConfiguration: React.FC = () => {
           activeTab
         });
           
-          const updateResult = await LimitsService.updateTransactionLimits(updateRequest, isSubWallet ? subWalletId : undefined);
-          console.log('✅ Transaction limits updated:', updateResult);
-        }
+        const updateResult = await LimitsService.updateTransactionLimits(updateRequest, isSubWallet ? subWalletId : undefined);
+        console.log('✅ Transaction limits updated:', updateResult);
+      }
       
-      // Clear session ID
+      // Clear session ID (no longer needed)
       emailUpdateSessionId.current = null;
       
       // Reload limits data to reflect the changes
