@@ -358,18 +358,7 @@ export default function OTPVerificationPage() {
                     )}
                   </Button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={isResendDisabled || isLoading}
-                  className={`w-full py-3 px-4 rounded-full border-2 border-[#022466] font-medium transition-all ${
-                    isResendDisabled || isLoading
-                      ? 'text-gray-400 border-gray-300 cursor-not-allowed'
-                      : 'text-[#022466] hover:bg-[#022466] hover:text-white'
-                  }`}
-                >
-                  {isLoading ? 'Sending...' : 'Resend'}
-                </button>
+               
               </div>
             </form>
           </div>

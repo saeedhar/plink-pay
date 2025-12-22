@@ -127,14 +127,7 @@ const OnHoldBalance: React.FC = () => {
           <h1 className="dashboard-title">On Hold Balance</h1>
           
           <div className="onhold-balance-table">
-            <div className="table-header">
-              <h3 className="table-title">On Hold Balances</h3>
-              {totalOnHoldBalance > 0 && (
-                <div style={{ marginTop: '8px', fontSize: '14px', color: '#6B7280' }}>
-                  Total On Hold: {TransactionService.formatCurrency(totalOnHoldBalance, 'SAR')}
-                </div>
-              )}
-            </div>
+           
             
             {isLoading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>

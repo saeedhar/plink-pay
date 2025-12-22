@@ -315,13 +315,7 @@ export default function ForgotPasswordOTPPage() {
                   )}
                 </button>
 
-                <button
-                  onClick={handleResend}
-                  disabled={isResendDisabled || isLoading}
-                  className="w-50 py-3 px-6 rounded-2xl font-semibold transition-all text-lg border-2 border-[#00BDFF] text-[#00BDFF] hover:bg-[#00BDFF] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? 'Sending...' : isResendDisabled ? `Resend in ${formatTime(timeLeft)}` : 'Resend'}
-                </button>
+              
               </div>
             </form>
           </div>

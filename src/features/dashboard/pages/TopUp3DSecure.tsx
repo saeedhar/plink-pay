@@ -261,18 +261,7 @@ const TopUp3DSecure: React.FC = () => {
                   </Button>
                 </div>
                 <div className="flex justify-center">
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    disabled={isResendDisabled || isLoading}
-                    className={`w-3/4 max-w-xs py-3 px-4 rounded-full border-2 border-[#022466] font-medium transition-all ${
-                      isResendDisabled || isLoading
-                        ? 'text-gray-400 border-gray-300 cursor-not-allowed'
-                        : 'text-[#022466] hover:bg-[#022466] hover:text-white'
-                    }`}
-                  >
-                    {isLoading ? 'Sending...' : 'Resend'}
-                  </button>
+                 
                 </div>
               </div>
             </form>

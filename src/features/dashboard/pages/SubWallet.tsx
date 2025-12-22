@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { WalletService, SubWalletData, SubWalletOTPRequest } from '../../../services/walletService';
 import { API } from '../../../lib/api';
 import subWalletIcon from '../../../assets/wallet-managment/sub-wallet.svg';
+import subWalletListIcon from '../../../assets/wallet-managment/subwalletlist.svg';
 import checkCircle from '../../../assets/check_circle.svg';
 import rejectIcon from '../../../assets/reject.svg';
 
@@ -558,18 +559,7 @@ const SubWallet: React.FC = () => {
                     </Button>
                   </div>
                   <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={handleResendOTP}
-                      disabled={isResendDisabled || isLoading || isRequestingOTP}
-                      className={`w-3/4 max-w-xs py-3 px-4 rounded-full border-2 border-[#022466] font-medium transition-all ${
-                        isResendDisabled || isLoading
-                          ? 'text-gray-400 border-gray-300 cursor-not-allowed'
-                          : 'text-[#022466] hover:bg-[#022466] hover:text-white'
-                      }`}
-                    >
-                      {isLoading ? 'Sending...' : isRequestingOTP ? 'Requesting...' : 'Resend'}
-                    </button>
+                   
                   </div>
                 </div>
               </form>
@@ -637,9 +627,14 @@ const SubWallet: React.FC = () => {
               ) : (
                 <>
                   <h3 className="subwallet-section-title">My Sub-Wallets</h3>
-                  <p className="subwallet-description">
-                    View and manage your sub-wallets. Create new sub-wallets to organize your funds and control spending.
-                  </p>
+                  <div className="subwallet-description-wrapper">
+                    <p className="subwallet-description">
+                      Create new sub-wallets to organize your funds and control spending.
+                    </p>
+                    <p className="subwallet-description-link">
+                      View and manage your sub-wallets
+                    </p>
+                  </div>
 
                   {isLoadingWallets || isLoadingMainWallet ? (
                     <div className="subwallet-loading">
@@ -675,30 +670,17 @@ const SubWallet: React.FC = () => {
                           onClick={() => handleWalletClick(mainWallet)}
                           style={{ cursor: 'pointer', opacity: mainWallet.status === 'INACTIVE' ? 0.7 : 1 }}
                         >
-                          <div className="subwallet-item-icon main-wallet" style={{ backgroundColor: '#022466', borderRadius: '8px', padding: '8px' }}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M19 7H5C3.89543 7 3 7.89543 3 9V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V9C21 7.89543 20.1046 7 19 7Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M7 11H17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M7 15H13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
+                          <div className="subwallet-item-icon light-blue">
+                            <img src={subWalletListIcon} alt="Wallet" className="subwallet-item-icon-img" />
                           </div>
                           <div className="subwallet-item-info">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <h4 className="subwallet-item-name">{mainWallet.subWalletName}</h4>
-                              {mainWallet.status === 'INACTIVE' && (
-                                <span style={{ 
-                                  padding: '2px 8px', 
-                                  borderRadius: '4px', 
-                                  fontSize: '12px', 
-                                  backgroundColor: '#FEE2E2', 
-                                  color: '#DC2626',
-                                  fontWeight: '600'
-                                }}>
-                                  Deactivated
-                                </span>
-                              )}
-                            </div>
+                            <h4 className="subwallet-item-name">{mainWallet.subWalletName || 'Name Wallet'}</h4>
                             <p className="subwallet-item-id">Main Account</p>
+                          </div>
+                          <div className="subwallet-item-chevron">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M9 18L15 12L9 6" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
                           </div>
                         </div>
                       )}
@@ -724,30 +706,17 @@ const SubWallet: React.FC = () => {
                             onClick={() => handleWalletClick(wallet)}
                             style={{ cursor: 'pointer', opacity: wallet.status === 'INACTIVE' ? 0.7 : 1 }}
                           >
-                            <div className={`subwallet-item-icon ${index % 2 === 0 ? 'brown' : 'purple'}`}>
-                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M19 7H5C3.89543 7 3 7.89543 3 9V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V9C21 7.89543 20.1046 7 19 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M7 11H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M7 15H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
+                            <div className="subwallet-item-icon light-blue">
+                              <img src={subWalletListIcon} alt="Wallet" className="subwallet-item-icon-img" />
                             </div>
                             <div className="subwallet-item-info">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <h4 className="subwallet-item-name">{wallet.subWalletName}</h4>
-                                {wallet.status === 'INACTIVE' && (
-                                  <span style={{ 
-                                    padding: '2px 8px', 
-                                    borderRadius: '4px', 
-                                    fontSize: '12px', 
-                                    backgroundColor: '#FEE2E2', 
-                                    color: '#DC2626',
-                                    fontWeight: '600'
-                                  }}>
-                                    Deactivated
-                                  </span>
-                                )}
-                              </div>
-                              <p className="subwallet-item-id">ID: {wallet.subWalletId}</p>
+                              <h4 className="subwallet-item-name">{wallet.subWalletName || 'Name Wallet'}</h4>
+                              <p className="subwallet-item-id">ID : {wallet.subWalletId}</p>
+                            </div>
+                            <div className="subwallet-item-chevron">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 18L15 12L9 6" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
                             </div>
                           </div>
                         ))
@@ -756,13 +725,17 @@ const SubWallet: React.FC = () => {
                   )}
 
                   <div className="subwallet-actions">
-                    <Button
+                    <button
                       onClick={handleCreateSubWallet}
                       className="subwallet-create-button"
                     >
-                      <img src={subWalletIcon} alt="Create" className="subwallet-button-icon" />
+                      <div className="subwallet-button-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="subwallet-button-icon">
+                          <path d="M12 5V19M5 12H19" stroke="#00BDFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
                       Create Sub-Wallet
-                    </Button>
+                    </button>
                   </div>
                 </>
               )}

@@ -372,11 +372,12 @@ html::-webkit-scrollbar {
 .limits-actions {
   display: flex;
   gap: 16px;
-  justify-content: flex-end;
+  justify-content: center;
+  margin-top: 32px;
 }
 
 .limits-button {
-  padding: 12px 24px;
+  padding: 12px 32px;
   border-radius: 12px;
   font-weight: 600;
   font-size: 16px;
@@ -384,13 +385,13 @@ html::-webkit-scrollbar {
   transition: all 0.2s ease;
   cursor: pointer;
   border: none;
-  min-width: 120px;
+  min-width: 180px;
 }
 
 .limits-button-secondary {
   background: white;
   color: #022466;
-  border: 2px solid #022466;
+  border: 1px solid #022466;
 }
 
 .limits-button-secondary:hover {
@@ -439,7 +440,7 @@ html::-webkit-scrollbar {
 .limits-tabs {
   display: flex;
   justify-content: center;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: none;
 }
 
 .limits-tab {
@@ -456,8 +457,9 @@ html::-webkit-scrollbar {
 }
 
 .limits-tab.active {
-  color: #022466;
+  color: #3B82F6;
   border-bottom-color: #3B82F6;
+  font-weight: 600;
 }
 
 .limits-tab:hover {
@@ -503,14 +505,13 @@ html::-webkit-scrollbar {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: white;
+  background: #F9FAFB;
   border-radius: 12px;
   margin-bottom: 16px;
-  border: none;
+  border: 1px solid #00000033;
   max-width: 350px;
   margin-left: auto;
   margin-right: auto;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .current-limit-label {
@@ -535,23 +536,46 @@ html::-webkit-scrollbar {
   font-family: 'Manrope', sans-serif;
 }
 
+.limit-inputs-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+.limit-inputs-row .limit-input-group {
+  flex: 1;
+  max-width: 350px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
 .limit-input-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: center;
+  gap: 8px;
+  align-items: flex-start;
+  max-width: 350px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }
 
 .limit-input-label {
   font-size: 14px;
   font-weight: 600;
-  color: #022466;
+  color: #374151;
   font-family: 'Manrope', sans-serif;
+  text-align: left;
 }
 
 .limit-input {
   padding: 12px 16px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid #00000033;
   border-radius: 8px;
   font-size: 16px;
   font-family: 'Manrope', sans-serif;
@@ -564,7 +588,7 @@ html::-webkit-scrollbar {
 
 .limit-input:focus {
   outline: none;
-  border-color: #3B82F6;
+  border-color: #00000033;
 }
 
 .limit-input.error {
@@ -581,6 +605,7 @@ html::-webkit-scrollbar {
   font-size: 12px;
   color: #3B82F6;
   font-family: 'Manrope', sans-serif;
+  text-align: left;
 }
 
 /* Confirmation Screen Styles */
@@ -688,15 +713,12 @@ html::-webkit-scrollbar {
 .transaction-dropdown-container {
   position: relative;
   width: 100%;
-  max-width: 350px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .transaction-dropdown-button {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid #00000033;
   border-radius: 8px;
   background: white;
   font-size: 16px;
@@ -707,19 +729,22 @@ html::-webkit-scrollbar {
   justify-content: space-between;
   align-items: center;
   transition: border-color 0.2s ease;
+  color: #374151;
 }
 
 .transaction-dropdown-button:hover {
-  border-color: #3B82F6;
+  border-color: #00000033;
 }
 
 .transaction-dropdown-button:focus {
   outline: none;
-  border-color: #3B82F6;
+  border-color: #00000033;
 }
 
 .transaction-dropdown-arrow {
   transition: transform 0.2s ease;
+  color: #374151;
+  flex-shrink: 0;
 }
 
 .transaction-dropdown-container.open .transaction-dropdown-arrow {
@@ -818,6 +843,17 @@ html::-webkit-scrollbar {
   height: 40px;
 }
 
+.subwallet-header-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.subwallet-header-icon-img {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+}
+
 .subwallet-header-title {
   font-size: 20px;
   font-weight: 600;
@@ -829,23 +865,50 @@ html::-webkit-scrollbar {
 .subwallet-content {
   padding: 24px 0;
   text-align: center;
+  position: relative;
+  min-height: 400px;
 }
 
 .subwallet-section-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1F2937;
-  margin: 0 0 12px 0;
   font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 150%;
+  letter-spacing: 1%;
+  text-align: center;
+  color: #022466;
+  margin: 0 0 12px 0;
+}
+
+.subwallet-description-wrapper {
+  margin-bottom: 32px;
+  text-align: center;
 }
 
 .subwallet-description {
-  font-size: 16px;
-  color: #6B7280;
-  margin-bottom: 32px;
-  line-height: 1.5;
   font-family: 'Manrope', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 14px;
+  line-height: 150%;
+  letter-spacing: 4%;
   text-align: center;
+  color: #02246680;
+  margin: 0 0 8px 0;
+}
+
+.subwallet-description-link {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 14px;
+  line-height: 150%;
+  letter-spacing: 4%;
+  text-align: center;
+  color: #02246680;
+  margin: 0;
+  cursor: pointer;
 }
 
 .subwallet-list {
@@ -853,7 +916,7 @@ html::-webkit-scrollbar {
   flex-direction: column;
   gap: 16px;
   margin-bottom: 32px;
-  max-width: 400px;
+  max-width: 600px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -862,12 +925,13 @@ html::-webkit-scrollbar {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 12px 16px;
   background: white;
   border-radius: 12px;
   border: 1px solid #E5E7EB;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .subwallet-item:hover {
@@ -882,15 +946,40 @@ html::-webkit-scrollbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  flex-shrink: 0;
+}
+
+.subwallet-item-icon-img {
+  width: 40px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.subwallet-item-icon.light-blue {
+  background: #ffffff;
 }
 
 .subwallet-item-icon.brown {
   background: #D97706;
+  color: white;
 }
 
 .subwallet-item-icon.purple {
-  background: #7C3AED;
+  color: white;
+}
+
+.subwallet-item-chevron {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1F2937;
+  flex-shrink: 0;
+}
+
+.subwallet-item-chevron svg {
+  width: 24px;
+  height: 24px;
 }
 
 .subwallet-item-info {
@@ -915,33 +1004,50 @@ html::-webkit-scrollbar {
 
 .subwallet-actions {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 24px;
 }
 
 .subwallet-create-button {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 24px;
+  width: 200px;
+  height: 48px;
+  padding: 0;
   background: white;
-  color: #3B82F6;
-  border: 2px solid #3B82F6;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
+  border: 1px solid #02246633;
+  border-radius: 10px;
   font-family: 'Manrope', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 16px;
+  line-height: 116%;
+  letter-spacing: 0%;
+  text-align: center;
+  color: #022466;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.subwallet-create-button:hover {
-  background: #3B82F6;
-  color: white;
+
+.subwallet-button-icon-wrapper {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .subwallet-button-icon {
   width: 20px;
   height: 20px;
+  stroke: #00BDFF;
+  fill: none;
 }
 
 /* Create Sub-Wallet Modal Styles */
@@ -1136,7 +1242,8 @@ html::-webkit-scrollbar {
 }
 
 .header-left {
-  flex: 1;
+  flex: 0 0 auto;
+  margin-left: -25px;
 }
 
 .balance-badge-wrapper {
@@ -2077,6 +2184,7 @@ html::-webkit-scrollbar {
 .filter-input,
 .filter-select {
   padding: 10px 12px;
+  padding-right: 32px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
@@ -2085,26 +2193,28 @@ html::-webkit-scrollbar {
   width: 100%;
   box-sizing: border-box;
   transition: border-color 0.2s ease;
-}
-
-.filter-input:focus,
-.filter-select:focus {
   outline: none;
-  border-color: #3b82f6;
-}
-
-.filter-input::placeholder {
-  color: #9ca3af;
-}
-
-.filter-select {
-  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
+  cursor: pointer;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 8px center;
   background-repeat: no-repeat;
   background-size: 16px;
-  padding-right: 32px;
+}
+
+.filter-input:focus,
+.filter-select:focus,
+.filter-select:focus-visible,
+.filter-select:active {
+  outline: none !important;
+  border-color: #3b82f6;
+  box-shadow: none;
+}
+
+.filter-input::placeholder {
+  color: #9ca3af;
 }
 
 .status-dropdown {
@@ -2824,9 +2934,9 @@ html::-webkit-scrollbar {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  margin-bottom: 32px;
-  padding-bottom: 0;
-  border-bottom: none;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .wallet-header-icon {

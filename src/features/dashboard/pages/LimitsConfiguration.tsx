@@ -936,18 +936,7 @@ const LimitsConfiguration: React.FC = () => {
                     </Button>
                   </div>
                   <div className="flex justify-center">
-                    <button
-                      type="button"
-                      onClick={handleResendOTP}
-                      disabled={isResendDisabled || isRequestingOTP}
-                      className={`w-3/4 max-w-xs py-3 px-4 rounded-full border-2 border-[#022466] font-medium transition-all ${
-                        isResendDisabled || isRequestingOTP
-                          ? 'text-gray-400 border-gray-300 cursor-not-allowed'
-                          : 'text-[#022466] hover:bg-[#022466] hover:text-white'
-                      }`}
-                    >
-                      {isRequestingOTP ? 'Requesting...' : 'Resend'}
-                    </button>
+                   
                   </div>
                 </div>
               </form>
@@ -1179,10 +1168,10 @@ const LimitsConfiguration: React.FC = () => {
                       <>
                         <div className="limit-tab-header">
                           <img src={limitsIcon} alt="Specific Transaction" className="limit-tab-icon" />
-                          <h3 className="limit-tab-title">Daily Limit</h3>
+                          <h3 className="limit-tab-title">Specific Transaction</h3>
                         </div>
                         <p className="limit-tab-description">
-                          Select the transaction to set a limit for.
+                          Specific Transaction Select the transaction to set a limit for.
                         </p>
                         
                         <div className="current-limit">
@@ -1195,79 +1184,81 @@ const LimitsConfiguration: React.FC = () => {
                           </span>
                         </div>
 
-                        <div className="limit-input-group">
-                          <label className="limit-input-label">Select the transaction</label>
-                          <div className="transaction-dropdown-container">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowTransactionDropdown(!showTransactionDropdown);
-                                if (showTransactionDropdown) {
-                                  setTransactionSearchQuery(''); // Clear search when closing dropdown
-                                }
-                              }}
-                              className="transaction-dropdown-button"
-                              disabled={isLoadingFilters}
-                            >
-                              <span>{selectedTransaction || 'Loading...'}</span>
-                              <svg className="transaction-dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </button>
-                            {showTransactionDropdown && (
-                              <div className="transaction-dropdown-menu">
-                                <div className="transaction-dropdown-search">
-                                  <input
-                                    type="text"
-                                    placeholder="Search transaction type"
-                                    className="transaction-search-input"
-                                    value={transactionSearchQuery}
-                                    onChange={(e) => setTransactionSearchQuery(e.target.value)}
-                                  />
-                                  <svg className="transaction-search-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                    <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                </div>
-                                <div className="transaction-dropdown-list">
-                                  {isLoadingFilters ? (
-                                    <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
-                                  ) : filteredTransactionTypes.length === 0 ? (
-                                    <div className="px-4 py-3 text-sm text-gray-500">
-                                      {transactionSearchQuery ? 'No matching transaction types found' : 'No transaction types available'}
-                                    </div>
-                                  ) : (
-                                    filteredTransactionTypes.map((filter) => (
-                                    <button
-                                        key={filter.id}
-                                      type="button"
-                                        onClick={() => handleTransactionSelect(filter.label)}
-                                        className={`transaction-dropdown-item ${selectedTransaction === filter.label ? 'selected' : ''}`}
-                                    >
-                                        {filter.label}
-                                    </button>
-                                    ))
-                                  )}
-                                </div>
-                              </div>
+                        <div className="limit-inputs-row">
+                          <div className="limit-input-group">
+                            <label className="limit-input-label">Daily Limit</label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="Enter daily limit.."
+                              value={transactionLimit}
+                              onChange={handleTransactionLimitChange}
+                              className={`limit-input ${transactionLimitError ? 'error' : ''}`}
+                            />
+                            {transactionLimitError ? (
+                              <span className="limit-error">{transactionLimitError}</span>
+                            ) : (
+                              <span className="limit-range">Allowed range: 0 - 100,000 SAR</span>
                             )}
                           </div>
-                        </div>
 
-                        <div className="limit-input-group">
-                          <label className="limit-input-label">Daily Limit</label>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="Enter Daily Limit"
-                            value={transactionLimit}
-                            onChange={handleTransactionLimitChange}
-                            className={`limit-input ${transactionLimitError ? 'error' : ''}`}
-                          />
-                          {transactionLimitError ? (
-                            <span className="limit-error">{transactionLimitError}</span>
-                          ) : (
-                            <span className="limit-range">Allowed range: 0 - 100,000 SAR</span>
-                          )}
+                          <div className="limit-input-group">
+                            <label className="limit-input-label">Select the transaction</label>
+                            <div className="transaction-dropdown-container">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowTransactionDropdown(!showTransactionDropdown);
+                                  if (showTransactionDropdown) {
+                                    setTransactionSearchQuery(''); // Clear search when closing dropdown
+                                  }
+                                }}
+                                className="transaction-dropdown-button"
+                                disabled={isLoadingFilters}
+                              >
+                                <span>{selectedTransaction || 'Loading...'}</span>
+                                <svg className="transaction-dropdown-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                  <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </button>
+                              {showTransactionDropdown && (
+                                <div className="transaction-dropdown-menu">
+                                  <div className="transaction-dropdown-search">
+                                    <input
+                                      type="text"
+                                      placeholder="Search transaction type"
+                                      className="transaction-search-input"
+                                      value={transactionSearchQuery}
+                                      onChange={(e) => setTransactionSearchQuery(e.target.value)}
+                                    />
+                                    <svg className="transaction-search-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                      <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </div>
+                                  <div className="transaction-dropdown-list">
+                                    {isLoadingFilters ? (
+                                      <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
+                                    ) : filteredTransactionTypes.length === 0 ? (
+                                      <div className="px-4 py-3 text-sm text-gray-500">
+                                        {transactionSearchQuery ? 'No matching transaction types found' : 'No transaction types available'}
+                                      </div>
+                                    ) : (
+                                      filteredTransactionTypes.map((filter) => (
+                                      <button
+                                          key={filter.id}
+                                        type="button"
+                                          onClick={() => handleTransactionSelect(filter.label)}
+                                          className={`transaction-dropdown-item ${selectedTransaction === filter.label ? 'selected' : ''}`}
+                                      >
+                                          {filter.label}
+                                      </button>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </>
                     ) : (
@@ -1318,10 +1309,10 @@ const LimitsConfiguration: React.FC = () => {
                       <>
                         <div className="limit-tab-header">
                           <img src={limitsIcon} alt="Specific Transaction" className="limit-tab-icon" />
-                          <h3 className="limit-tab-title">Monthly Limit</h3>
+                          <h3 className="limit-tab-title">Specific Transaction</h3>
                         </div>
                         <p className="limit-tab-description">
-                          Select the transaction to set a limit for.
+                          Specific Transaction Select the transaction to set a limit for.
                         </p>
                         
                         <div className="current-limit">
@@ -1334,79 +1325,81 @@ const LimitsConfiguration: React.FC = () => {
                           </span>
                         </div>
 
-                        <div className="limit-input-group">
-                          <label className="limit-input-label">Select the transaction</label>
-                          <div className="transaction-dropdown-container">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowTransactionDropdown(!showTransactionDropdown);
-                                if (showTransactionDropdown) {
-                                  setTransactionSearchQuery(''); // Clear search when closing dropdown
-                                }
-                              }}
-                              className="transaction-dropdown-button"
-                              disabled={isLoadingFilters}
-                            >
-                              <span>{selectedTransaction || 'Loading...'}</span>
-                              <svg className="transaction-dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </button>
-                            {showTransactionDropdown && (
-                              <div className="transaction-dropdown-menu">
-                                <div className="transaction-dropdown-search">
-                                  <input
-                                    type="text"
-                                    placeholder="Search transaction type"
-                                    className="transaction-search-input"
-                                    value={transactionSearchQuery}
-                                    onChange={(e) => setTransactionSearchQuery(e.target.value)}
-                                  />
-                                  <svg className="transaction-search-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                    <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                </div>
-                                <div className="transaction-dropdown-list">
-                                  {isLoadingFilters ? (
-                                    <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
-                                  ) : filteredTransactionTypes.length === 0 ? (
-                                    <div className="px-4 py-3 text-sm text-gray-500">
-                                      {transactionSearchQuery ? 'No matching transaction types found' : 'No transaction types available'}
-                                    </div>
-                                  ) : (
-                                    filteredTransactionTypes.map((filter) => (
-                                    <button
-                                        key={filter.id}
-                                      type="button"
-                                        onClick={() => handleTransactionSelect(filter.label)}
-                                        className={`transaction-dropdown-item ${selectedTransaction === filter.label ? 'selected' : ''}`}
-                                    >
-                                        {filter.label}
-                                    </button>
-                                    ))
-                                  )}
-                                </div>
-                              </div>
+                        <div className="limit-inputs-row">
+                          <div className="limit-input-group">
+                            <label className="limit-input-label">Monthly Limit</label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="Enter monthly limit.."
+                              value={monthlyLimit}
+                              onChange={handleMonthlyLimitChange}
+                              className={`limit-input ${monthlyLimitError ? 'error' : ''}`}
+                            />
+                            {monthlyLimitError ? (
+                              <span className="limit-error">{monthlyLimitError}</span>
+                            ) : (
+                              <span className="limit-range">Allowed range: 0 - 1,000,000 SAR</span>
                             )}
                           </div>
-                        </div>
 
-                        <div className="limit-input-group">
-                          <label className="limit-input-label">Monthly Limit</label>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="Enter Monthly Limit"
-                            value={monthlyLimit}
-                            onChange={handleMonthlyLimitChange}
-                            className={`limit-input ${monthlyLimitError ? 'error' : ''}`}
-                          />
-                          {monthlyLimitError ? (
-                            <span className="limit-error">{monthlyLimitError}</span>
-                          ) : (
-                            <span className="limit-range">Allowed range: 0 - 1,000,000 SAR</span>
-                          )}
+                          <div className="limit-input-group">
+                            <label className="limit-input-label">Select the transaction</label>
+                            <div className="transaction-dropdown-container">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowTransactionDropdown(!showTransactionDropdown);
+                                  if (showTransactionDropdown) {
+                                    setTransactionSearchQuery(''); // Clear search when closing dropdown
+                                  }
+                                }}
+                                className="transaction-dropdown-button"
+                                disabled={isLoadingFilters}
+                              >
+                                <span>{selectedTransaction || 'Loading...'}</span>
+                                <svg className="transaction-dropdown-arrow" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                  <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </button>
+                              {showTransactionDropdown && (
+                                <div className="transaction-dropdown-menu">
+                                  <div className="transaction-dropdown-search">
+                                    <input
+                                      type="text"
+                                      placeholder="Search transaction type"
+                                      className="transaction-search-input"
+                                      value={transactionSearchQuery}
+                                      onChange={(e) => setTransactionSearchQuery(e.target.value)}
+                                    />
+                                    <svg className="transaction-search-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                      <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </div>
+                                  <div className="transaction-dropdown-list">
+                                    {isLoadingFilters ? (
+                                      <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
+                                    ) : filteredTransactionTypes.length === 0 ? (
+                                      <div className="px-4 py-3 text-sm text-gray-500">
+                                        {transactionSearchQuery ? 'No matching transaction types found' : 'No transaction types available'}
+                                      </div>
+                                    ) : (
+                                      filteredTransactionTypes.map((filter) => (
+                                      <button
+                                          key={filter.id}
+                                        type="button"
+                                          onClick={() => handleTransactionSelect(filter.label)}
+                                          className={`transaction-dropdown-item ${selectedTransaction === filter.label ? 'selected' : ''}`}
+                                      >
+                                          {filter.label}
+                                      </button>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </>
                     ) : (
@@ -1451,18 +1444,18 @@ const LimitsConfiguration: React.FC = () => {
                 )}
 
                 <div className="limits-actions">
-                  <Button
+                  <button
                     onClick={handleBack}
                     className="limits-button limits-button-secondary"
                   >
-                    Close
-                  </Button>
-                  <Button
+                    Back
+                  </button>
+                  <button
                     onClick={handleConfirm}
                     className="limits-button limits-button-primary"
                   >
-                    Confirm
-                  </Button>
+                    Next
+                  </button>
                 </div>
               </div>
             )}

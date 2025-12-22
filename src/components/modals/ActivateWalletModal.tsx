@@ -19,11 +19,12 @@ export default function ActivateWalletModal({ isOpen, onClose, onConfirm }: Acti
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-3xl p-8 max-w-md mx-4 shadow-2xl">
+      <div className="relative bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl" style={{ padding: '32px' }}>
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+          className="absolute top-6 right-6 text-gray-500 hover:text-gray-700 transition-colors"
+          style={{ top: '24px', right: '24px' }}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -31,14 +32,14 @@ export default function ActivateWalletModal({ isOpen, onClose, onConfirm }: Acti
         </button>
 
         {/* Warning Icon */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center" style={{ marginBottom: '24px' }}>
           <img src={WarningIcon} alt="Warning" className="w-16 h-16" />
         </div>
 
         {/* Title */}
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Activate E-Wallet</h2>
-          <p className="text-gray-600 text-lg leading-relaxed mb-2">
+        <div className="text-center" style={{ marginBottom: '24px' }}>
+          <h2 className="text-3xl font-bold text-gray-800" style={{ marginBottom: '16px' }}>Activate E-Wallet</h2>
+          <p className="text-gray-600 text-lg leading-relaxed" style={{ marginBottom: '12px' }}>
             Are you sure you want to activate your e-wallet?
           </p>
           <p className="text-gray-700 text-base leading-relaxed">
@@ -47,16 +48,18 @@ export default function ActivateWalletModal({ isOpen, onClose, onConfirm }: Acti
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3" style={{ marginTop: '32px', gap: '12px' }}>
           <button
             onClick={onConfirm}
-            className="w-full py-4 px-6 rounded-2xl bg-black text-white font-bold hover:bg-gray-800 transition-colors"
+            className="w-full py-4 px-6 rounded-2xl bg-[#022466] text-white font-bold hover:bg-[#0475CC] transition-colors"
+            style={{ padding: '16px 24px' }}
           >
             Confirm
           </button>
           <button
             onClick={onClose}
             className="w-full py-4 px-6 rounded-2xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-colors"
+            style={{ padding: '16px 24px' }}
           >
             Close
           </button>
