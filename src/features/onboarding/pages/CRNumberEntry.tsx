@@ -7,6 +7,7 @@ import { SignupButton } from "../../../components/ui/SignupButton";
 import { AlertModal } from "../../../components/ui/Modal";
 import WhiteLogo from "../../../assets/select your buisness type assets/white-logo.svg";
 import CRIcon from "../../../assets/CR-Num.svg";
+import FreelancerIcon from "../../../assets/freelancerid.svg";
 import HeroLogo from "../../../assets/hero-logo-mini.svg";
 import StepSidebar from "../components/StepSidebar";
 import OnboardingFooter from "../components/OnboardingFooter";
@@ -23,6 +24,9 @@ export default function CRNumberEntry() {
   
   const navigate = useNavigate();
   const { state, dispatch } = useOnboarding();
+  
+  // Check if user is a freelancer
+  const isFreelancer = state.data.businessType === 'freelancer';
 
   // Real-time validation - only show errors after user interaction
   const validationError = validateCRNumber(crNumber);
@@ -78,7 +82,9 @@ export default function CRNumberEntry() {
       if (err instanceof CRVerificationError) {
         setShowFailureModal(true);
       } else {
-        setError("Failed to verify CR Number. Please try again.");
+        setError(isFreelancer 
+          ? "Failed to verify Freelancer License Number. Please try again."
+          : "Failed to verify CR Number. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -100,7 +106,7 @@ export default function CRNumberEntry() {
             steps={[
               "Select Your Business Type",
               "phone number", 
-              "CR Number",
+              isFreelancer ? "Freelancer" : "CR Number",
               "ID Number",
               "Nafath",
               "KYB"
@@ -117,23 +123,26 @@ export default function CRNumberEntry() {
 
             <div className="flex-1 flex items-start justify-center pt-16">
               <div className="max-w-md w-full px-8">
-                <div className="flex items-center justify-center gap-4 mb-6">
-                  <img src={CRIcon} alt="" className="h-12 w-12" />
+                <div className="flex flex-col items-center justify-center mb-6">
+                  <img src={isFreelancer ? FreelancerIcon : CRIcon} alt="" className={isFreelancer ? "h-20 w-20 mb-4" : "h-12 w-12"} />
                   <h1 className="text-4xl font-bold text-gray-800">
-                    CR Number
+                    {isFreelancer ? "Freelancer License No" : "CR Number"}
                   </h1>
                 </div>
 
                 <p className="text-gray-600 text-center mb-12">
-                  Enter your CR Number
+                  {isFreelancer 
+                    ? "Enter Freelancer License Number to Sign up."
+                    : "Enter your CR Number"}
                 </p>
 
                 {/* Inline error display as shown in Figma - only show after user interaction */}
                 {(error || shouldShowValidationError) && (
                   <div className="mb-4 text-center">
                     <p className="text-red-500 text-sm font-medium">
-                      The CR you entered is incorrect<br />
-                      Please check and try again.
+                      {isFreelancer 
+                        ? "The Freelancer License Number you entered is incorrect\nPlease check and try again."
+                        : "The CR you entered is incorrect\nPlease check and try again."}
                     </p>
                   </div>
                 )}
@@ -141,8 +150,8 @@ export default function CRNumberEntry() {
                 <div className="mb-8">
                   <SignupInput
                     id="crNumber"
-                    label="CR Number"
-                    placeholder="Enter your CR Number"
+                    label={isFreelancer ? "Freelancer Number" : "CR Number"}
+                    placeholder={isFreelancer ? "Enter your Freelancer Number" : "Enter your CR Number"}
                     value={crNumber}
                     onChange={(e) => handleCRChange(e.target.value)}
                     hasError={!!(error || shouldShowValidationError)}
@@ -173,11 +182,11 @@ export default function CRNumberEntry() {
         </div>
       </div>
 
-      {/* CR Verification Failed Modal */}
+      {/* CR/Freelancer License Verification Failed Modal */}
       <AlertModal
         isOpen={showFailureModal}
         onClose={() => setShowFailureModal(false)}
-        title="CR Verification Failed"
+        title={isFreelancer ? "Freelancer License Verification Failed" : "CR Verification Failed"}
         message="Something went wrong. Please try again later."
         buttonLabel="Close"
         variant="danger"
