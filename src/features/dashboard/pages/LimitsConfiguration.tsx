@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
 import { Button } from '../../../components/ui/Button';
+import { AlertModal } from '../../../components/ui/Modal';
 import { LimitsService, CurrentLimits, OverallLimits, LimitsOTPRequest, LimitsResponse, LimitItem, UpdateOverallLimitsRequest, UpdateTransactionLimitsRequest } from '../../../services/limitsService';
 import { API } from '../../../lib/api';
 import { fetchTransactionFilters, type TransactionFilter } from '../../../services/transactionFiltersService';
@@ -50,6 +51,8 @@ const LimitsConfiguration: React.FC = () => {
   const [limitsError, setLimitsError] = useState<string | null>(null);
   const [realOTP, setRealOTP] = useState('');
   const [isRequestingOTP, setIsRequestingOTP] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [showMaxAttemptsModal, setShowMaxAttemptsModal] = useState(false);
   const hasRequestedOTP = useRef(false);
   const isRequestingRef = useRef(false); // Track request state with ref to prevent race conditions
   const emailUpdateSessionId = useRef<string | null>(null); // Track email update session for OTP verification
@@ -562,6 +565,9 @@ const LimitsConfiguration: React.FC = () => {
       // Clear session ID (no longer needed)
       emailUpdateSessionId.current = null;
       
+      // Reset failed attempts on successful verification
+      setFailedAttempts(0);
+      
       // Reload limits data to reflect the changes
       console.log('🔄 Reloading limits data after successful update...');
       try {
@@ -629,12 +635,32 @@ const LimitsConfiguration: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Limits update failed:', error);
       
+      // Increment failed attempts for OTP-related errors
+      const isOTPError = error.message?.includes('Invalid') || 
+                        error.message?.includes('incorrect') || 
+                        error.message?.includes('expired') || 
+                        error.message?.includes('Session') ||
+                        error.message?.includes('OTP');
+      
+      if (isOTPError) {
+        const newFailedAttempts = failedAttempts + 1;
+        console.log(`⚠️ Failed attempt ${newFailedAttempts} of 3`);
+        setFailedAttempts(newFailedAttempts);
+        
+        // Show "Try Again Later" modal after 3 failed attempts
+        if (newFailedAttempts >= 3) {
+          console.log('🚫 Maximum attempts reached, showing modal');
+          setShowMaxAttemptsModal(true);
+          return; // Exit early, don't show error message
+        }
+      }
+      
       // Check for specific error messages
       if (error.message?.includes('phone number') || error.message?.includes('already exists')) {
         setOtpError('The code you entered is incorrect. Please try again.');
       } else if (error.message?.includes('Network') || error.message?.includes('fetch')) {
         setOtpError('Unable to connect to server. Please check your connection.');
-      } else if (error.message?.includes('Invalid') || error.message?.includes('incorrect') || error.message?.includes('expired') || error.message?.includes('Session')) {
+      } else if (isOTPError) {
         setOtpError('The code you entered is incorrect. Please try again.');
       } else {
         setOtpError(error.message || 'Failed to update limits. Please try again.');
@@ -682,6 +708,8 @@ const LimitsConfiguration: React.FC = () => {
     
     // Reset the flag to allow resending
     hasRequestedOTP.current = false;
+    // Reset failed attempts when resending OTP
+    setFailedAttempts(0);
     await requestOTP();
   };
 
@@ -889,7 +917,7 @@ const LimitsConfiguration: React.FC = () => {
                       value={digit}
                       onChange={(e) => handleOTPChange(index, e.target.value)}
                       onKeyDown={(e) => handleOTPKeyDown(index, e)}
-                      disabled={isLoading || isRequestingOTP}
+                      disabled={isLoading || isRequestingOTP || showMaxAttemptsModal}
                       className="w-14 h-14 text-4xl text-[#00BDFF] font-bold text-center rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#022466] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
                         border: '1px solid #2C2C2CB2',
@@ -898,7 +926,7 @@ const LimitsConfiguration: React.FC = () => {
                     />
                   ))}
                 </div>
-                {otpError && (
+                {otpError && !showMaxAttemptsModal && (
                   <div className="flex items-center justify-center mb-4">
                     <div className="flex items-center gap-2 text-red-600">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -930,7 +958,7 @@ const LimitsConfiguration: React.FC = () => {
                     <Button
                       type="submit"
                       className="w-full max-w-xs"
-                      disabled={otp.some(digit => !digit) || isRequestingOTP}
+                      disabled={otp.some(digit => !digit) || isRequestingOTP || showMaxAttemptsModal}
                     >
                       {isRequestingOTP ? 'Requesting...' : 'Verify'}
                     </Button>
@@ -943,6 +971,30 @@ const LimitsConfiguration: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Max Attempts Error Modal */}
+        <AlertModal
+          isOpen={showMaxAttemptsModal}
+          onClose={() => {
+            setShowMaxAttemptsModal(false);
+            setShowOTP(false);
+            setFailedAttempts(0);
+          }}
+          onConfirm={() => {
+            setShowMaxAttemptsModal(false);
+            setShowOTP(false);
+            setFailedAttempts(0);
+          }}
+          title="Maximum Attempts Exceeded"
+          message="You have exceeded the maximum number of attempts. Please try again later."
+          buttonLabel="Back to Limits Configuration"
+          variant="danger"
+          icon={
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          }
+        />
       </div>
     );
   }
@@ -1070,18 +1122,18 @@ const LimitsConfiguration: React.FC = () => {
                 </div>
 
                 <div className="confirmation-actions">
-                  <Button
+                  <button
                     onClick={() => setShowConfirmation(false)}
                     className="confirmation-button confirmation-button-secondary"
                   >
-                    Close
-                  </Button>
-                  <Button
+                    Back
+                  </button>
+                  <button
                     onClick={handleFinalConfirm}
                     className="confirmation-button confirmation-button-primary"
                   >
                     Confirm
-                  </Button>
+                  </button>
                 </div>
               </div>
             ) : !showLimitForm ? (

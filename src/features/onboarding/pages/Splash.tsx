@@ -53,7 +53,7 @@ export default function Splash() {
 
               {/* Heading */}
               <h1 className="text-4xl font-bold text-[#022466] text-center mb-6">
-                Create Collects, Timeless Artworks
+                Create Payments, <br /> Secure Digital Services
               </h1>
 
               {/* Description */}

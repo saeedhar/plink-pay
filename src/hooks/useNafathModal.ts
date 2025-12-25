@@ -11,7 +11,7 @@ export interface NafathModalState {
   isInitializing: boolean;
   session: NafathSession | null;
   processedRequestIds: Set<string>;
-}
+} 
 
 export function useNafathModal() {
   const [state, setState] = useState<NafathModalState>({

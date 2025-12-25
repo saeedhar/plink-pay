@@ -108,7 +108,7 @@ export default function PhoneNumberEntry() {
             steps={[
               "Select Your Business Type",
               "phone number", 
-              "CR Number",
+              state.data.businessType === "freelancer" ? "Freelancer ID" : "CR Number",
               "ID Number",
               "Nafath",
               "KYB"

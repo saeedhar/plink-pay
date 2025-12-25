@@ -61,7 +61,7 @@ export default function BusinessTypeSelection() {
             steps={[
               "Select Your Business Type",
               "phone number", 
-              "CR Number",
+              selectedType === "freelancer" ? "Freelancer ID" : "CR Number",
               "ID Number",
               "Nafath",
               "KYB"

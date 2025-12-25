@@ -62,7 +62,6 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ subWalletId, isSu
         <div className="table-header">
           <div className="table-cell">Reference ID</div>
           <div className="table-cell">Status</div>
-          <div className="table-cell">Currency</div>
           <div className="table-cell">Amount</div>
           <div className="table-cell">Transaction Type</div>
           <div className="table-cell">Time</div>
@@ -98,7 +97,6 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ subWalletId, isSu
                     {TransactionService.formatTransactionStatus(transaction.status)}
                   </span>
                 </div>
-                <div className="table-cell">{transaction.currency}</div>
                 <div className="table-cell">{TransactionService.formatCurrency(transaction.amount, transaction.currency)}</div>
                 <div className="table-cell">{TransactionService.formatTransactionType(transaction.transactionType)}</div>
                 <div className="table-cell">{time}</div>

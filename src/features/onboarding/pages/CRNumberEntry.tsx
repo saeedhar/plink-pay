@@ -106,7 +106,7 @@ export default function CRNumberEntry() {
             steps={[
               "Select Your Business Type",
               "phone number", 
-              isFreelancer ? "Freelancer" : "CR Number",
+              isFreelancer ? "Freelancer ID" : "CR Number",
               "ID Number",
               "Nafath",
               "KYB"
