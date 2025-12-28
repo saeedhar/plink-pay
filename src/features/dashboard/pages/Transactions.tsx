@@ -17,7 +17,6 @@ const Transactions: React.FC = () => {
     periodStart: '',
     periodEnd: '',
     amountRange: { min: 10, max: 100000 },
-    amountValue: 10, // Current slider value
     status: [] as string[],
     transactionType: [] as string[],
     merchant: ''
@@ -25,8 +24,7 @@ const Transactions: React.FC = () => {
   const [appliedFilters, setAppliedFilters] = useState({
     periodStart: '',
     periodEnd: '',
-    amountRange: { min: 10, max: 10000 },
-    amountValue: 10,
+    amountRange: { min: 10, max: 100000 },
     status: [] as string[],
     transactionType: [] as string[],
     merchant: ''
@@ -35,8 +33,8 @@ const Transactions: React.FC = () => {
   const [showTransactionTypeDropdown, setShowTransactionTypeDropdown] = useState(false);
   const [showPeriodPicker, setShowPeriodPicker] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
-  const sliderRef = useRef<HTMLInputElement>(null);
-  const [sliderDisplayValue, setSliderDisplayValue] = useState(() => filters.amountValue || 10);
+  const minSliderRef = useRef<HTMLInputElement>(null);
+  const maxSliderRef = useRef<HTMLInputElement>(null);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
   const transactionTypeDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -157,8 +155,7 @@ const Transactions: React.FC = () => {
     appliedFilters.periodStart, 
     appliedFilters.periodEnd, 
     appliedFilters.amountRange.min, 
-    appliedFilters.amountRange.max, 
-    appliedFilters.amountValue
+    appliedFilters.amountRange.max
   ]);
 
   // Apply frontend filtering based on applied filters
@@ -188,10 +185,10 @@ const Transactions: React.FC = () => {
       });
     }
 
-    // Filter by amount range (using slider value as minimum threshold)
+    // Filter by amount range (using min and max slider values)
     filtered = filtered.filter(t => {
       const amount = Math.abs(t.amount); // Use absolute value to handle both positive and negative amounts
-      return amount >= appliedFilters.amountValue && amount <= appliedFilters.amountRange.max;
+      return amount >= appliedFilters.amountRange.min && amount <= appliedFilters.amountRange.max;
     });
 
     // Filter by status (multiple statuses)
@@ -325,7 +322,6 @@ const Transactions: React.FC = () => {
       periodStart: '',
       periodEnd: '',
       amountRange: { min: 10, max: 100000 },
-      amountValue: 10,
       status: [] as string[],
       transactionType: [] as string[],
       merchant: ''
@@ -522,11 +518,9 @@ const Transactions: React.FC = () => {
   };
 
   const handleApplyFilters = () => {
-    // Apply current filter inputs to applied filters, including slider value
-    const currentSliderValue = sliderRef.current ? parseInt(sliderRef.current.value, 10) : filters.amountValue;
-    setAppliedFilters({ ...filters, amountValue: currentSliderValue });
-    setFilters(prev => ({ ...prev, amountValue: currentSliderValue }));
-    console.log('Filters applied:', { ...filters, amountValue: currentSliderValue });
+    // Apply current filter inputs to applied filters, including slider values
+    setAppliedFilters({ ...filters });
+    console.log('Filters applied:', filters);
   };
 
   return (
@@ -645,28 +639,48 @@ const Transactions: React.FC = () => {
                 <div className="filter-section amount-range-filter">
                   <label className="filter-label">Amount Range</label>
                   <div className="amount-range-input-container">
-                    <span className="amount-range-label-left">{sliderDisplayValue.toLocaleString('en-US')} SAR</span>
+                    <span className="amount-range-label-left">{filters.amountRange.min.toLocaleString('en-US')} SAR</span>
                     <div className="amount-range-slider-wrapper">
                       <input
-                        ref={sliderRef}
+                        ref={minSliderRef}
                         type="range"
-                        className="amount-range-slider"
-                        min={filters.amountRange.min}
-                        max={filters.amountRange.max}
+                        className="amount-range-slider amount-range-slider-min"
+                        min={10}
+                        max={100000}
                         step="10"
-                        value={sliderDisplayValue}
-                        onInput={(e) => {
-                          const newValue = parseInt((e.target as HTMLInputElement).value, 10);
-                          setSliderDisplayValue(newValue);
-                        }}
+                        value={Math.min(filters.amountRange.min, filters.amountRange.max)}
                         onChange={(e) => {
-                          const newValue = parseInt(e.target.value, 10);
-                          setSliderDisplayValue(newValue);
-                          setFilters(prev => ({ ...prev, amountValue: newValue }));
+                          const newMinValue = parseInt(e.target.value, 10);
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            amountRange: { 
+                              min: Math.min(newMinValue, prev.amountRange.max),
+                              max: prev.amountRange.max
+                            } 
+                          }));
+                        }}
+                      />
+                      <input
+                        ref={maxSliderRef}
+                        type="range"
+                        className="amount-range-slider amount-range-slider-max"
+                        min={10}
+                        max={100000}
+                        step="10"
+                        value={Math.max(filters.amountRange.max, filters.amountRange.min)}
+                        onChange={(e) => {
+                          const newMaxValue = parseInt(e.target.value, 10);
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            amountRange: { 
+                              min: prev.amountRange.min,
+                              max: Math.max(newMaxValue, prev.amountRange.min)
+                            } 
+                          }));
                         }}
                       />
                     </div>
-                    <span className="amount-range-label-right">{filters.amountRange.max.toLocaleString('en-US')}</span>
+                    <span className="amount-range-label-right">{filters.amountRange.max.toLocaleString('en-US')} SAR</span>
                   </div>
                 </div>
 

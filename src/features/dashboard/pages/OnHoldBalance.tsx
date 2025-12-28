@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar, Header } from '../components';
+import { FiDownload } from 'react-icons/fi';
 import { TransactionService, TransactionSummary } from '../../../services/transactionService';
 
 interface OnHoldTransaction {
@@ -23,6 +24,8 @@ const OnHoldBalance: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalOnHoldBalance, setTotalOnHoldBalance] = useState<number>(0);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const root = document.getElementById('root');
@@ -40,6 +43,23 @@ const OnHoldBalance: React.FC = () => {
   useEffect(() => {
     loadOnHoldData();
   }, [isSubWallet, subWalletId]);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target as Node)) {
+        setShowExportDropdown(false);
+      }
+    };
+
+    if (showExportDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showExportDropdown]);
 
   const loadOnHoldData = async () => {
     try {
@@ -118,6 +138,146 @@ const OnHoldBalance: React.FC = () => {
     }
   };
 
+  const exportToCSV = () => {
+    const headers = ['Name Transaction', 'Amount', 'Status', 'Reason', 'Transaction Ref', 'Hold Date', 'Expected Release'];
+    const rows = onHoldTransactions.map(t => [
+      t.name,
+      t.amount,
+      t.status,
+      t.reason,
+      t.transactionRef,
+      t.holdDate,
+      t.expectedRelease
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `onhold_balance_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowExportDropdown(false);
+  };
+
+  const exportToExcel = () => {
+    const headers = ['Name Transaction', 'Amount', 'Status', 'Reason', 'Transaction Ref', 'Hold Date', 'Expected Release'];
+    const rows = onHoldTransactions.map(t => [
+      t.name,
+      t.amount,
+      t.status,
+      t.reason,
+      t.transactionRef,
+      t.holdDate,
+      t.expectedRelease
+    ]);
+
+    let htmlContent = '<html><head><meta charset="utf-8"><style>table{border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background-color:#f2f2f2;font-weight:bold;}</style></head><body><table>';
+    htmlContent += '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+    rows.forEach(row => {
+      htmlContent += '<tr>' + row.map(cell => `<td>${String(cell)}</td>`).join('') + '</tr>';
+    });
+    htmlContent += '</table></body></html>';
+
+    const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `onhold_balance_${new Date().toISOString().split('T')[0]}.xls`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setShowExportDropdown(false);
+  };
+
+  const exportToPDF = () => {
+    const headers = ['Name Transaction', 'Amount', 'Status', 'Reason', 'Transaction Ref', 'Hold Date', 'Expected Release'];
+    const rows = onHoldTransactions.map(t => [
+      t.name,
+      t.amount,
+      t.status,
+      t.reason,
+      t.transactionRef,
+      t.holdDate,
+      t.expectedRelease
+    ]);
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>On-Hold Balance Export</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #1F2937; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; font-weight: bold; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+          @media print {
+            body { padding: 0; }
+            @page { margin: 1cm; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>On-Hold Balance Report</h1>
+        <p>Generated on: ${new Date().toLocaleString()}</p>
+        <p>Total On-Hold Transactions: ${rows.length}</p>
+        <p>Total On-Hold Balance: ${TransactionService.formatCurrency(totalOnHoldBalance, 'SAR')}</p>
+        <table>
+          <thead>
+            <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `<tr>${row.map(cell => `<td>${String(cell)}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+    setShowExportDropdown(false);
+  };
+
+  const handleExport = (format: 'csv' | 'excel' | 'pdf') => {
+    if (onHoldTransactions.length === 0) {
+      alert('No on-hold transactions to export.');
+      return;
+    }
+
+    switch (format) {
+      case 'csv':
+        exportToCSV();
+        break;
+      case 'excel':
+        exportToExcel();
+        break;
+      case 'pdf':
+        exportToPDF();
+        break;
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <Sidebar />
@@ -127,6 +287,49 @@ const OnHoldBalance: React.FC = () => {
           <h1 className="dashboard-title">On Hold Balance</h1>
           
           <div className="onhold-balance-table">
+            <div className="transactions-header-row" style={{ marginBottom: '20px', justifyContent: 'flex-end' }}>
+              <div className="export-dropdown-container" ref={exportDropdownRef}>
+                <button 
+                  className="action-button download-filter"
+                  onClick={() => setShowExportDropdown(!showExportDropdown)}
+                >
+                  <FiDownload className="button-icon" />
+                  Download
+                  <svg 
+                    className={`export-dropdown-arrow ${showExportDropdown ? 'open' : ''}`}
+                    width="12" 
+                    height="8" 
+                    viewBox="0 0 12 8" 
+                    fill="none"
+                    style={{ marginLeft: '8px' }}
+                  >
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {showExportDropdown && (
+                  <div className="export-dropdown-menu">
+                    <button 
+                      className="export-option"
+                      onClick={() => handleExport('csv')}
+                    >
+                      <span>Export as CSV</span>
+                    </button>
+                    <button 
+                      className="export-option"
+                      onClick={() => handleExport('excel')}
+                    >
+                      <span>Export as Excel</span>
+                    </button>
+                    <button 
+                      className="export-option"
+                      onClick={() => handleExport('pdf')}
+                    >
+                      <span>Export as PDF</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
            
             
             {isLoading ? (
